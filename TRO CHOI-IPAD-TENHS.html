@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Escape the Cartoon Forest - Tự Động Gửi Điểm</title>
+    <style>
+        body { 
+            margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; 
+        }
+        #game-container { width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; }
+        
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .login-box {
+            background: white; padding: 30px 20px; border-radius: 15px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f;
+            width: 85%; max-width: 400px;
+        }
+        .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
+        .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7;
+            border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none;
+            transition: border 0.3s; user-select: auto;
+        }
+        .login-box input:focus { border-color: #3498db; }
+        .login-box button {
+            background: #e74c3c; color: white; padding: 15px; width: 100%;
+            border: none; border-radius: 8px; font-size: 18px; font-weight: bold;
+            cursor: pointer; margin-top: 15px; transition: 0.2s;
+        }
+        .login-box button:hover { background: #c0392b; }
+        .login-box button:active { transform: scale(0.98); }
+
+        #result-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+        }
+        .result-box {
+            background: white; padding: 30px; border-radius: 15px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 6px solid #f1c40f;
+            width: 85%; max-width: 450px;
+        }
+        #result-title { margin-top: 0; font-size: 32px; font-weight: bold; }
+        .result-box p { color: #2c3e50; font-size: 20px; margin: 12px 0; font-weight: bold; }
+        .result-box .info-text { font-size: 16px; color: #27ae60; margin-top: 20px; margin-bottom: 10px; font-weight: bold;}
+        .result-box button {
+            background: #3498db; color: white; padding: 15px; width: 100%;
+            border: none; border-radius: 8px; font-size: 18px; font-weight: bold;
+            cursor: pointer; margin-top: 15px; transition: 0.2s;
+        }
+        .result-box button:hover { background: #2980b9; }
+
+        #toast-msg {
+            position: fixed; top: 30%; left: 50%; transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.95); color: white; padding: 15px 30px;
+            border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 5000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; text-align: center; border: 2px solid #fff;
+        }
+
+        #player-info {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(52, 152, 219, 0.9); color: white; padding: 10px 20px;
+            border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5;
+            border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none;
+        }
+
+        #ui-panel {
+            position: absolute; bottom: -400px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 700px; background: rgba(40, 50, 60, 0.95);
+            color: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.6);
+            transition: bottom 0.3s ease-out; display: flex; flex-direction: column; align-items: center;
+            padding: 15px 20px 25px 20px; z-index: 20; border-radius: 20px 20px 0 0; border-top: 5px solid #ffcc00;
+        }
+        #ui-panel.active { bottom: 0; }
+        #question-text { font-size: 18px; margin-bottom: 15px; text-align: center; color: #ffcc00; font-weight: bold; }
+        #answers-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .btn-answer {
+            background: #4CAF50; color: white; border: 2px solid #388E3C; padding: 15px;
+            font-size: 16px; border-radius: 10px; cursor: pointer; font-weight: bold;
+        }
+        .btn-answer:active { background: #45a049; transform: scale(0.98); }
+        
+        #instructions {
+            position: absolute; top: 15px; left: 15px; color: white;
+            background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; pointer-events: none;
+        }
+        #instructions h2 { margin: 0 0 5px 0; font-size: 18px; color: #ffcc00;}
+        #instructions p { margin: 0; font-size: 14px; }
+
+        #timer-box {
+            position: absolute; top: 15px; right: 15px; color: white;
+            background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5;
+            font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none;
+        }
+
+        #dpad {
+            position: absolute; bottom: 30px; left: 30px; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .dpad-row { display: flex; gap: 5px; }
+        .dpad-btn {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6); border: 3px solid rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: #333; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+            user-select: none; -webkit-user-select: none; touch-action: none; 
+        }
+        .dpad-btn:active { background: rgba(255, 204, 0, 0.8); transform: scale(0.95); }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="toast-msg"></div>
+
+    <div id="login-screen">
+        <form class="login-box" onsubmit="startGame(); return false;">
+            <h2>Đăng Ký Thi Đấu</h2>
+            <p>Vui lòng điền thông tin để bắt đầu tính giờ</p>
+            <input type="text" id="input-name" placeholder="Tên Học Sinh / Tên Nhóm" autocomplete="off" required>
+            <input type="text" id="input-id" placeholder="Số Báo Danh / Số Nhóm" autocomplete="off" required>
+            <button type="submit" id="btn-start">BẮT ĐẦU CHƠI</button>
+        </form>
+    </div>
+
+    <div id="result-screen">
+        <div class="result-box">
+            <h2 id="result-title"></h2>
+            <div id="result-details"></div>
+            <button onclick="hideResultAndReset()">CHƠI LẠI TỪ ĐẦU</button>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+    <div id="player-info">Người chơi: Đang tải...</div>
+
+    <div id="instructions">
+        <h2>Bài 1: Ester</h2>
+        <p>Máy tính: Phím W, A, S, D<br>iPad: Dùng phím ảo để đi.</p>
+    </div>
+
+    <div id="timer-box">05:00</div>
+
+    <div id="dpad">
+        <div class="dpad-btn" id="btn-up">▲</div>
+        <div class="dpad-row">
+            <div class="dpad-btn" id="btn-left">◀</div>
+            <div class="dpad-btn" id="btn-down">▼</div>
+            <div class="dpad-btn" id="btn-right">▶</div>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <div id="question-text">Câu hỏi?</div>
+        <div id="answers-container"></div>
+    </div>
+
+    <script>
+        // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT WEB APP CỦA BẠN VÀO ĐÂY ===
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyL1GCeKcV-UhsKHN0jQXDauteNbrdSNMnQ4TMOr9wuWPP3UCMVauCldHYbdz4ivvcjnw/exec";
+
+        function sendScoreToSheet(name, id, seconds) {
+            if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; // Chưa cấu hình thì bỏ qua
+            
+            fetch(GOOGLE_SHEET_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name, id: id, time: seconds })
+            }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
+        }
+
+        let toastTimeout;
+        function showToast(msg, bgColor = "rgba(231, 76, 60, 0.95)") {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        const questionBank = [
+            { q: "Công thức chung của ester no, đơn chức mạch hở?", a: ["CnH2n+2O2", "CnH2nO2 (n≥2)", "CnH2n-2O2", "CnH2nO"], c: 1 },
+            { q: "C2H5OH + CH3COOH (H2SO4 đặc, t°) tạo ra:", a: ["Methyl acetate", "Ethyl formate", "Ethyl acetate", "Propyl acetate"], c: 2 },
+            { q: "Isoamyl acetate có mùi đặc trưng của:", a: ["Dứa", "Hoa nhài", "Chuối chín", "Táo"], c: 2 },
+            { q: "Thủy phân ester trong môi trường kiềm gọi là:", a: ["Este hóa", "Xà phòng hóa", "Tráng gương", "Hiđrat hóa"], c: 1 },
+            { q: "Chất nào sau đây có nhiệt độ sôi thấp nhất?", a: ["CH3COOH", "C2H5OH", "CH3COOCH3", "C3H7OH"], c: 2 },
+            { q: "Ester có công thức phân tử C4H8O2 là?", a: ["Methyl formate", "Ethyl acetate", "Vinyl acetate", "Methyl acrylate"], c: 1 },
+            { q: "Phân biệt ester và axit cacboxylic bằng:", a: ["Quỳ tím", "Dung dịch NaCl", "AgNO3/NH3", "Nước Br2"], c: 0 },
+            { q: "Đặc điểm KHÔNG phải tính chất vật lý của ester?", a: ["Lỏng hoặc rắn", "Nhẹ hơn nước", "Tan rất tốt trong nước", "Có mùi thơm"], c: 2 },
+            { q: "Benzyl acetate có mùi thơm của:", a: ["Hoa hồng", "Hoa nhài", "Quả dứa", "Quả chuối"], c: 1 },
+            { q: "Thủy phân ethyl acetate trong NaOH thu được:", a: ["CH3COONa, CH3OH", "HCOONa, C2H5OH", "CH3COONa, C2H5OH", "C2H5COONa, CH3OH"], c: 2 }
+        ];
+
+        let activeQuestions = []; 
+
+        function generateRandomizedQuestions() {
+            let cloned = JSON.parse(JSON.stringify(questionBank));
+            for (let i = cloned.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+            }
+            cloned.forEach(item => {
+                let correctAnswerText = item.a[item.c]; 
+                for (let i = item.a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [item.a[i], item.a[j]] = [item.a[j], item.a[i]];
+                }
+                item.c = item.a.indexOf(correctAnswerText);
+            });
+            return cloned;
+        }
+
+        let playerName = ""; let playerId = ""; let gameStarted = false; 
+
+        function startGame() {
+            const nameInput = document.getElementById('input-name').value.trim();
+            const idInput = document.getElementById('input-id').value.trim();
+            
+            if(nameInput === "" || idInput === "") {
+                showToast("Vui lòng điền đủ Tên và Số báo danh!"); return false;
+            }
+            playerName = nameInput; playerId = idInput;
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('player-info').style.display = 'block';
+            document.getElementById('player-info').innerText = `${playerName} - SBD: ${playerId}`;
+            
+            gameStartTime = Date.now(); gameStarted = true; return false;
+        }
+
+        function hideResultAndReset() {
+            document.getElementById('result-screen').style.display = 'none';
+            resetGame();
+        }
+
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9bd4e4); 
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); 
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xfff5b6, 0.6); dirLight.position.set(20, 50, 20); scene.add(dirLight);
+
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 1000), new THREE.MeshLambertMaterial({ color: 0x82d844 }));
+        ground.rotation.x = -Math.PI / 2; scene.add(ground);
+
+        const sun = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0xffe666, side: THREE.DoubleSide }));
+        sun.position.set(120, 90, -500); scene.add(sun);
+
+        const mtnGeo = new THREE.SphereGeometry(1, 32, 16); 
+        function createDistantMountain(x, z, r, color) {
+            const mesh = new THREE.Mesh(mtnGeo, new THREE.MeshBasicMaterial({ color: color }));
+            mesh.scale.set(r, r * 0.35, r * 0.2); mesh.position.set(x, -r * 0.25, z); scene.add(mesh);
+        }
+        createDistantMountain(-250, -550, 300, 0x82c8e5); createDistantMountain(200, -500, 250, 0x6bb5d8);
+        createDistantMountain(0, -600, 400, 0x9bd4e4); createDistantMountain(-100, -450, 200, 0x5aa4c7); 
+
+        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        function createCloud(x, y, z, scale) {
+            const group = new THREE.Group();
+            group.add(new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), cloudMat)); 
+            const c2 = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16), cloudMat); c2.position.set(-4, -1, 0); group.add(c2);
+            const c3 = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), cloudMat); c3.position.set(4, -1.5, 0); group.add(c3);
+            group.position.set(x, y, z); group.scale.set(scale, scale * 0.7, scale); scene.add(group);
+        }
+        for (let i = 0; i < 15; i++) createCloud((Math.random() - 0.5) * 600, 50 + Math.random() * 50, -300 - Math.random() * 300, 0.8 + Math.random() * 1.5);
+
+        function createSignTexture(text) {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#6e4321'; ctx.fillRect(0, 0, 512, 128); ctx.strokeStyle = '#4a2c15'; ctx.lineWidth = 15; ctx.strokeRect(0, 0, 512, 128);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 42px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 256, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const startGate = new THREE.Group(); const woodMat = new THREE.MeshLambertMaterial({ color: 0x6e4321 }); 
+        const pillarGeo = new THREE.BoxGeometry(1, 8, 1);
+        const p1 = new THREE.Mesh(pillarGeo, woodMat); p1.position.set(-4.5, 4, 0); const p2 = new THREE.Mesh(pillarGeo, woodMat); p2.position.set(4.5, 4, 0); startGate.add(p1, p2);
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(11, 1, 1), woodMat); beam.position.set(0, 7.5, 0); startGate.add(beam);
+        const signMatArray = [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("THOÁT KHỎI KHU RỪNG") }), woodMat ];
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), signMatArray); sign.position.set(0, 7.5, 0); startGate.add(sign);
+        startGate.position.set(0, 0, 10); scene.add(startGate);
+
+        const gate = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 2), new THREE.MeshLambertMaterial({ color: 0xffd700 }));
+        gate.position.set(0, 5, -300); scene.add(gate);
+
+        activeQuestions = generateRandomizedQuestions();
+
+        const obsGeo = new THREE.BoxGeometry(1.8, 1.8, 1.8);
+        const obsMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+        let obstacles = [];
+        const zigzagX = [0, -12, 10, -14, 12, -10, 14, -8, 10, 0]; 
+        
+        for (let i = 0; i < activeQuestions.length; i++) {
+            const obs = new THREE.Mesh(obsGeo, obsMat);
+            obs.position.set(zigzagX[i], 1.2, -i * 28 - 15); scene.add(obs);
+            obstacles.push({ mesh: obs, data: activeQuestions[i], active: true });
+        }
+
+        const stoneGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 8); const stoneMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); 
+        let pathPoints = [{x: 0, z: 10}]; obstacles.forEach(o => pathPoints.push({x: o.mesh.position.x, z: o.mesh.position.z})); pathPoints.push({x: 0, z: gate.position.z}); 
+        let pathStones = []; 
+
+        for(let i=0; i<pathPoints.length - 1; i++) {
+            let p1 = pathPoints[i]; let p2 = pathPoints[i+1]; let dist = Math.sqrt(Math.pow(p2.x-p1.x, 2) + Math.pow(p2.z-p1.z, 2));
+            let steps = Math.floor(dist / 2.5); 
+            for(let j=1; j<steps; j++) {
+                let sx = p1.x + (p2.x - p1.x) * (j / steps); let sz = p1.z + (p2.z - p1.z) * (j / steps);
+                let actualX = sx + (Math.random()-0.5)*0.8; let actualZ = sz + (Math.random()-0.5)*0.8;
+                let stone = new THREE.Mesh(stoneGeo, stoneMat); stone.position.set(actualX, 0.05, actualZ); scene.add(stone);
+                pathStones.push({x: actualX, z: actualZ}); 
+            }
+        }
+        obstacles.forEach(o => pathStones.push({x: o.mesh.position.x, z: o.mesh.position.z}));
+
+        function createTree(x, z, scale) {
+            const tg = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), new THREE.MeshLambertMaterial({ color: 0x6e4321 }));
+            trunk.position.y = 1.5; tg.add(trunk);
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x3cb371 }); 
+            const lPos = [[0, 3.5, 0], [1.2, 3, 0.5], [-1.2, 3, 0.5], [0, 3, -1.2], [0, 4.8, 0]];
+            lPos.forEach(p => { const leaf = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 12), leafMat); leaf.position.set(p[0], p[1], p[2]); tg.add(leaf); });
+            tg.scale.set(scale, scale, scale); tg.position.set(x, 0, z); scene.add(tg);
+        }
+        
+        let treesPlanted = 0; let attempts = 0;
+        while(treesPlanted < 200 && attempts < 2000) {
+            attempts++; let x = (Math.random() - 0.5) * 80; let z = 12 - Math.random() * 352;
+            let tooClose = false;
+            for(let i=0; i<pathStones.length; i++) {
+                if(Math.sqrt(Math.pow(x-pathStones[i].x, 2) + Math.pow(z-pathStones[i].z, 2)) < 4.5) { tooClose = true; break; }
+            }
+            if(!tooClose) { createTree(x, z, 0.7 + Math.random() * 0.6); treesPlanted++; }
+        }
+
+        const playerGroup = new THREE.Group();
+        const matY = new THREE.MeshLambertMaterial({ color: 0xffd700 }); const matB = new THREE.MeshLambertMaterial({ color: 0x2980b9 });   
+        const matK = new THREE.MeshLambertMaterial({ color: 0x222222 }); const matW = new THREE.MeshLambertMaterial({ color: 0xffffff });  
+        function addPart(geo, mat, x, y, z) { const mesh = new THREE.Mesh(geo, mat); mesh.position.set(x, y, z); playerGroup.add(mesh); return mesh; }
+
+        addPart(new THREE.CylinderGeometry(0.6, 0.6, 1.2, 16), matY, 0, 1.6, 0); addPart(new THREE.SphereGeometry(0.6, 16, 16), matY, 0, 2.2, 0); 
+        addPart(new THREE.CylinderGeometry(0.61, 0.61, 0.6, 16), matB, 0, 1.3, 0); addPart(new THREE.SphereGeometry(0.61, 16, 16), matB, 0, 1.0, 0); 
+        addPart(new THREE.CylinderGeometry(0.62, 0.62, 0.15, 16), matK, 0, 2.1, 0); addPart(new THREE.CylinderGeometry(0.25, 0.25, 0.1, 16).rotateX(Math.PI/2), matK, 0, 2.1, 0.55); 
+        addPart(new THREE.SphereGeometry(0.22, 16, 16), matW, 0, 2.1, 0.52); addPart(new THREE.SphereGeometry(0.08, 16, 16), matK, 0, 2.1, 0.68); 
+        const armGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.6, 8); armGeo.translate(0, -0.3, 0); 
+        const leftArm = addPart(armGeo, matY, 0.7, 1.7, 0); const rightArm = addPart(armGeo, matY, -0.7, 1.7, 0);
+        const legGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.4, 8); legGeo.translate(0, -0.2, 0); 
+        const leftLeg = addPart(legGeo, matB, 0.25, 0.7, 0); const rightLeg = addPart(legGeo, matB, -0.25, 0.7, 0);
+
+        playerGroup.rotation.y = Math.PI; playerGroup.position.set(0, 0, 18); scene.add(playerGroup);
+
+        const keys = { w: false, a: false, s: false, d: false };
+        let isPaused = false; let walkTime = 0; 
+        let gameTimeLimit = 300; let gameStartTime; let gameEnded = false;
+        const timerUI = document.getElementById('timer-box');
+
+        window.addEventListener('keydown', (e) => { 
+            if(!gameStarted) return;
+            let key = e.key.toLowerCase();
+            if(key === 'w' || key === 'arrowup') keys.w = true; if(key === 's' || key === 'arrowdown') keys.s = true;
+            if(key === 'a' || key === 'arrowleft') keys.a = true; if(key === 'd' || key === 'arrowright') keys.d = true;
+        });
+        window.addEventListener('keyup', (e) => { 
+            if(!gameStarted) return;
+            let key = e.key.toLowerCase();
+            if(key === 'w' || key === 'arrowup') keys.w = false; if(key === 's' || key === 'arrowdown') keys.s = false;
+            if(key === 'a' || key === 'arrowleft') keys.a = false; if(key === 'd' || key === 'arrowright') keys.d = false;
+        });
+
+        function bindTouchButton(btnId, targetKey) {
+            const btn = document.getElementById(btnId);
+            const press = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = true; } };
+            const release = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = false; } };
+            btn.addEventListener('touchstart', press, {passive: false}); btn.addEventListener('touchend', release, {passive: false});
+            btn.addEventListener('mousedown', press); btn.addEventListener('mouseup', release); btn.addEventListener('mouseleave', release);
+        }
+        bindTouchButton('btn-up', 'w'); bindTouchButton('btn-down', 's');
+        bindTouchButton('btn-left', 'a'); bindTouchButton('btn-right', 'd');
+
+        const uiPanel = document.getElementById('ui-panel');
+        const questionText = document.getElementById('question-text');
+        const answersContainer = document.getElementById('answers-container');
+
+        function resetGame() {
+            playerGroup.position.set(0, 0, 18); playerGroup.rotation.y = Math.PI;
+            gameStartTime = Date.now(); gameEnded = false; isPaused = false;
+            uiPanel.classList.remove('active');
+            
+            activeQuestions = generateRandomizedQuestions();
+            obstacles.forEach((obs, idx) => { 
+                obs.active = true; 
+                obs.data = activeQuestions[idx]; 
+                scene.add(obs.mesh); 
+            });
+        }
+
+        function showQuestion(index) {
+            isPaused = true; keys.w = keys.a = keys.s = keys.d = false; 
+            const q = obstacles[index].data; questionText.innerText = `Câu ${index + 1}: ${q.q}`; answersContainer.innerHTML = '';
+            
+            q.a.forEach((ans, i) => {
+                const btn = document.createElement('button'); btn.className = 'btn-answer'; btn.innerText = ans;
+                const submitAnswer = (e) => {
+                    if(e) e.preventDefault();
+                    uiPanel.classList.remove('active'); 
+                    if (i === q.c) {
+                        scene.remove(obstacles[index].mesh); obstacles[index].active = false;
+                    } else {
+                        playerGroup.position.z += 12; 
+                        showToast("❌ Sai rồi! Em hãy lùi lại suy nghĩ thêm nhé.");
+                    }
+                    setTimeout(() => { if(!gameEnded) isPaused = false; }, 300);
+                };
+                btn.addEventListener('click', submitAnswer); btn.addEventListener('touchstart', submitAnswer, {passive: false});
+                answersContainer.appendChild(btn);
+            });
+            uiPanel.classList.add('active'); 
+        }
+
+        const speed = 0.35;
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!gameStarted) {
+                camera.position.x += (playerGroup.position.x - camera.position.x) * 0.1;
+                camera.position.y = playerGroup.position.y + 7;
+                camera.position.z += (playerGroup.position.z + 16 - camera.position.z) * 0.1;
+                camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z);
+                renderer.render(scene, camera); return;
+            }
+
+            if (!gameEnded) {
+                let elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+                let remaining = gameTimeLimit - elapsedSeconds;
+                if (remaining <= 0) {
+                    remaining = 0; gameEnded = true; isPaused = true; uiPanel.classList.remove('active');
+                    
+                    document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳";
+                    document.getElementById('result-title').style.color = "#e74c3c";
+                    document.getElementById('result-details').innerHTML = `
+                        <p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p>
+                        <div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 5 phút.<br>Đề thi đã được xáo trộn lại, hãy thử sức nhé!</div>
+                    `;
+                    document.getElementById('result-screen').style.display = 'flex';
+                } else {
+                    let m = Math.floor(remaining / 60); let s = remaining % 60;
+                    timerUI.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+                }
+            }
+
+            if (!isPaused && !gameEnded) {
+                let isMoving = false; let targetRotation = playerGroup.rotation.y;
+                let nextZ = playerGroup.position.z; let nextX = playerGroup.position.x;
+
+                if (keys.w) { nextZ -= speed; targetRotation = Math.PI; isMoving = true; }
+                if (keys.s) { nextZ += speed; targetRotation = 0; isMoving = true; }
+                if (keys.a) { nextX -= speed; targetRotation = -Math.PI / 2; isMoving = true; }
+                if (keys.d) { nextX += speed; targetRotation = Math.PI / 2; isMoving = true; }
+
+                if (nextZ > 9.5) {
+                    if (nextX > 3.5) nextX = 3.5; if (nextX < -3.5) nextX = -3.5;
+                } else {
+                    if (nextX > 25) nextX = 25; if (nextX < -25) nextX = -25;
+                }
+
+                let currentGateIndex = obstacles.findIndex(o => o.active === true);
+                if (currentGateIndex !== -1) {
+                    let gateZ = obstacles[currentGateIndex].mesh.position.z;
+                    if (nextZ < gateZ + 2.0) { nextZ = gateZ + 2.0; }
+                }
+
+                playerGroup.position.z = nextZ;
+                playerGroup.position.x = nextX;
+                playerGroup.rotation.y = targetRotation;
+
+                if (isMoving) {
+                    walkTime += 0.25;
+                    leftArm.rotation.x = Math.sin(walkTime) * 0.8; rightArm.rotation.x = -Math.sin(walkTime) * 0.8;
+                    leftLeg.rotation.x = -Math.sin(walkTime) * 0.8; rightLeg.rotation.x = Math.sin(walkTime) * 0.8;
+                } else {
+                    leftArm.rotation.x = 0; rightArm.rotation.x = 0; leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+                }
+
+                obstacles.forEach((obs, idx) => {
+                    if (obs.active) {
+                        obs.mesh.rotation.x += 0.02; obs.mesh.rotation.y += 0.03;
+                        let dx = playerGroup.position.x - obs.mesh.position.x; let dz = playerGroup.position.z - obs.mesh.position.z;
+                        if (Math.sqrt(dx*dx + dz*dz) < 2.8 && !isPaused) { showQuestion(idx); }
+                    }
+                });
+
+                if (playerGroup.position.z <= gate.position.z + 5 && !gameEnded) {
+                    isPaused = true; gameEnded = true;
+                    let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+                    let m = Math.floor(timeTaken / 60); let s = timeTaken % 60;
+                    let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
+                    
+                    // GỬI KẾT QUẢ TỰ ĐỘNG LÊN GOOGLE SHEETS
+                    sendScoreToSheet(playerName, playerId, timeTaken);
+
+                    document.getElementById('result-title').innerText = "🎉 XUẤT SẮC! 🎉";
+                    document.getElementById('result-title').style.color = "#27ae60";
+                    document.getElementById('result-details').innerHTML = `
+                        <p>Người chơi: <span style="color:#e74c3c">${playerName}</span></p>
+                        <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
+                        <p>Thời gian: <span style="color:#e74c3c">${timeString}</span></p>
+                        <div class="info-text">✅ Kết quả đã được tự động gửi về máy giáo viên!</div>
+                    `;
+                    document.getElementById('result-screen').style.display = 'flex';
+                }
+            }
+
+            camera.position.x += (playerGroup.position.x - camera.position.x) * 0.1;
+            camera.position.y = playerGroup.position.y + 7;
+            camera.position.z += (playerGroup.position.z + 16 - camera.position.z) * 0.1;
+            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
