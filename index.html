@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Tính Điểm</title>
+    <title>Escape the Cartoon Forest - Hiệu Ứng Nổ Hộp</title>
     <style>
+        /* SỬA LỖI MÀN HÌNH IPAD */
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         #game-container canvas { width: 100% !important; height: 100% !important; display: block; outline: none;}
@@ -29,8 +30,16 @@
 
         #toast-msg { position: fixed; top: 30%; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 5000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; text-align: center; border: 2px solid #fff; }
 
-        #player-info { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(52, 152, 219, 0.95); color: white; padding: 10px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; text-align: center; line-height: 1.5; }
-        .score-highlight { color: #f1c40f; font-size: 20px; }
+        #player-info { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(52, 152, 219, 0.95); color: white; padding: 10px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; text-align: center; }
+        
+        #timer-box { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5; font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none; text-align: center;}
+        
+        /* BẢNG ĐIỂM DƯỚI ĐỒNG HỒ */
+        #score-box { position: absolute; top: 65px; right: 15px; color: white; background: rgba(39, 174, 96, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 20px; font-weight: bold; border: 2px solid #2ecc71; display: none; pointer-events: none;}
+
+        /* HIỆU ỨNG +1 ĐIỂM BAY LÊN */
+        .floating-score { position: absolute; color: #2ecc71; font-size: 36px; font-weight: bold; text-shadow: 0 0 10px white, 0 0 5px green; pointer-events: none; animation: floatUp 1.5s ease-out forwards; z-index: 100; transform: translate(-50%, -50%);}
+        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -150px) scale(1.5); } }
 
         #ui-panel { position: absolute; bottom: -400px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 700px; background: rgba(40, 50, 60, 0.95); color: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.6); transition: bottom 0.3s ease-out; display: flex; flex-direction: column; align-items: center; padding: 15px 20px 25px 20px; z-index: 20; border-radius: 20px 20px 0 0; border-top: 5px solid #ffcc00; }
         #ui-panel.active { bottom: 0; }
@@ -42,8 +51,6 @@
         #instructions { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; pointer-events: none; }
         #instructions h2 { margin: 0 0 5px 0; font-size: 18px; color: #ffcc00;}
         #instructions p { margin: 0; font-size: 14px; }
-
-        #timer-box { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5; font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none; }
 
         #dpad { position: absolute; bottom: 30px; left: 30px; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .dpad-row { display: flex; gap: 5px; }
@@ -76,14 +83,17 @@
     </div>
 
     <div id="game-container"></div>
+    
     <div id="player-info">Người chơi: Đang tải...</div>
+
+    <!-- UI ĐỒNG HỒ & ĐIỂM -->
+    <div id="timer-box">05:00</div>
+    <div id="score-box">⭐ Điểm: 0</div>
 
     <div id="instructions">
         <h2>Bài 1: Ester</h2>
-        <p>Phím ảo để di chuyển.</p>
+        <p>Điều khiển phím ảo để đi.</p>
     </div>
-
-    <div id="timer-box">05:00</div>
 
     <div id="dpad">
         <div class="dpad-btn" id="btn-up">▲</div>
@@ -135,7 +145,7 @@
 
         let activeQuestions = []; 
         let playerName = ""; let playerId = ""; let gameStarted = false; 
-        let currentScore = 0; // ĐIỂM SỐ
+        let currentScore = 0; 
 
         function generateRandomizedQuestions() {
             let cloned = JSON.parse(JSON.stringify(questionBank));
@@ -155,7 +165,7 @@
         }
 
         function updateScoreUI() {
-            document.getElementById('player-info').innerHTML = `${playerName} - SBD: ${playerId} <br> <span class="score-highlight">Điểm: ${currentScore}/10</span>`;
+            document.getElementById('score-box').innerText = `⭐ Điểm: ${currentScore}`;
         }
 
         function startGame() {
@@ -167,6 +177,8 @@
             
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('player-info').style.display = 'block';
+            document.getElementById('score-box').style.display = 'block';
+            document.getElementById('player-info').innerText = `${playerName} - SBD: ${playerId}`;
             updateScoreUI();
             
             gameStartTime = Date.now(); gameStarted = true; return false;
@@ -274,6 +286,41 @@
 
         const uiPanel = document.getElementById('ui-panel'); const questionText = document.getElementById('question-text'); const answersContainer = document.getElementById('answers-container');
 
+        // ==== HỆ THỐNG NỔ HỘP VÀ BAY ĐIỂM ====
+        let explosionParticles = [];
+        function createExplosion(x, y, z) {
+            const pGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const pMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+            for(let i=0; i<25; i++) {
+                let p = new THREE.Mesh(pGeo, pMat);
+                p.position.set(x, y, z);
+                // Tạo hướng văng ngẫu nhiên
+                p.userData.velocity = new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.6 + 0.2, (Math.random()-0.5)*0.8);
+                p.userData.life = 1.0;
+                scene.add(p);
+                explosionParticles.push(p);
+            }
+        }
+
+        // Tạo chữ +1 điểm bay lên màn hình 2D
+        function showFloatingScore(x, y, z) {
+            // Tính toán tọa độ 3D thành tọa độ màn hình 2D
+            let pos = new THREE.Vector3(x, y + 2, z);
+            pos.project(camera);
+            let screenX = (pos.x * .5 + .5) * window.innerWidth;
+            let screenY = (pos.y * -.5 + .5) * window.innerHeight;
+
+            let el = document.createElement('div');
+            el.className = 'floating-score';
+            el.innerText = '+1 Điểm';
+            el.style.left = screenX + 'px';
+            el.style.top = screenY + 'px';
+            document.body.appendChild(el);
+
+            setTimeout(() => el.remove(), 1500); // Tự xóa sau 1.5s
+        }
+        // ===================================
+
         function resetGame() {
             playerGroup.position.set(0, 0, 18); playerGroup.rotation.y = Math.PI;
             currentScore = 0; updateScoreUI(); gameStartTime = Date.now(); gameEnded = false; isPaused = false; uiPanel.classList.remove('active');
@@ -291,16 +338,23 @@
                     if(e) e.preventDefault();
                     uiPanel.classList.remove('active'); 
                     
-                    // XÉT ĐIỂM SỐ Ở ĐÂY
+                    let obsPos = obstacles[index].mesh.position;
+
+                    // TRẢ LỜI ĐÚNG: Nổ tung hộp quà, bay chữ +1 và cộng điểm
                     if (i === q.c) {
                         currentScore += 1;
                         updateScoreUI();
                         showToast("✅ Chính xác! +1 Điểm", "rgba(46, 204, 113, 0.95)");
-                    } else {
+                        createExplosion(obsPos.x, obsPos.y, obsPos.z);
+                        showFloatingScore(obsPos.x, obsPos.y, obsPos.z);
+                    } 
+                    // TRẢ LỜI SAI: Mất hộp nhưng KHÔNG bị đẩy lùi, đi tiếp bình thường
+                    else {
                         showToast("❌ Sai rồi! Bạn không được điểm câu này.", "rgba(231, 76, 60, 0.95)");
+                        // Không có code đẩy lùi (playerGroup.position.z += 12) ở đây nữa
                     }
                     
-                    // DÙ ĐÚNG HAY SAI CŨNG MỞ ĐƯỜNG CHO ĐI TIẾP
+                    // Xóa hộp mở đường
                     scene.remove(obstacles[index].mesh); 
                     obstacles[index].active = false;
                     
@@ -315,6 +369,17 @@
         const speed = 0.35;
         function animate() {
             requestAnimationFrame(animate);
+
+            // ANIMATE HIỆU ỨNG NỔ
+            for(let i = explosionParticles.length - 1; i >= 0; i--) {
+                let p = explosionParticles[i];
+                p.position.add(p.userData.velocity);
+                p.userData.velocity.y -= 0.03; // Trọng lực hút xuống
+                p.scale.multiplyScalar(0.92); // Hạt nhỏ dần
+                p.rotation.x += 0.1; p.rotation.y += 0.1;
+                p.userData.life -= 0.02;
+                if(p.userData.life <= 0) { scene.remove(p); explosionParticles.splice(i, 1); }
+            }
 
             if (!gameStarted) { camera.position.x += (playerGroup.position.x - camera.position.x) * 0.1; camera.position.y = playerGroup.position.y + 7; camera.position.z += (playerGroup.position.z + 16 - camera.position.z) * 0.1; camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z); renderer.render(scene, camera); return; }
 
