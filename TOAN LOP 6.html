@@ -124,50 +124,78 @@
             toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
-        // BỘ 1: TẬP HỢP VÀ CÁC PHÉP TÍNH CƠ BẢN
+        // BỘ 1: CHƯƠNG 1 - ESTER & LIPID
         const bank1 = [
-            { q: "Cho tập hợp A = {1; 2; 3; 4}. Khẳng định nào đúng?", a: ["1 ∉ A", "5 ∈ A", "0 ∈ A", "2 ∈ A"], c: 3 },
-            { q: "Số La Mã XIV có giá trị tương ứng trong hệ thập phân là:", a: ["16", "14", "15", "24"], c: 1 },
-            { q: "Kết quả của phép tính 15 + 25 x 2 là:", a: ["80", "65", "40", "50"], c: 1 },
-            { q: "Giá trị của lũy thừa 3^2 là:", a: ["6", "9", "5", "8"], c: 1 },
-            { q: "Kết quả của phép tính 20 - 5 x 3 là:", a: ["45", "15", "5", "10"], c: 2 },
-            { q: "Trong các số sau, số nào chia hết cho 2?", a: ["13", "24", "35", "47"], c: 1 },
-            { q: "Viết gọn tích 2^3 x 2^2 dưới dạng lũy thừa:", a: ["2^6", "4^5", "2^5", "2^1"], c: 2 },
-            { q: "Tập hợp B = {x ∈ N | x < 5} gồm các phần tử:", a: ["{1; 2; 3; 4; 5}", "{0; 1; 2; 3; 4}", "{1; 2; 3; 4}", "{0; 1; 2; 3; 4; 5}"], c: 1 },
-            { q: "Phép chia 15 : 4 có số dư là:", a: ["1", "2", "3", "0"], c: 2 },
-            { q: "Tính giá trị biểu thức: 2 x (5 + 3^2)", a: ["28", "32", "22", "16"], c: 0 }
+            { q: "Công thức chung của ester no, đơn chức, mạch hở là?", a: ["CnH2nO2 (n≥2)", "CnH2nO (n≥1)", "CnH2n-2O2 (n≥3)", "CnH2n+2O2 (n≥2)"], c: 0 },
+            { q: "Tên gọi của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl acetate", "Propyl acetate", "Ethyl formate"], c: 0 },
+            { q: "Phản ứng xà phòng hóa ester là phản ứng thủy phân trong môi trường nào?", a: ["Acid", "Base (Kiềm)", "Muối trung tính", "Nước nguyên chất"], c: 1 },
+            { q: "Ở điều kiện thường, chất béo tồn tại ở trạng thái lỏng thường chứa gốc acid béo loại nào?", a: ["No", "Không no", "Thơm", "Vòng"], c: 1 },
+            { q: "Ester sinh ra từ phản ứng giữa acid CH3COOH và cồn CH3OH là?", a: ["CH3COOCH3", "HCOOCH3", "CH3COOC2H5", "C2H5COOCH3"], c: 0 },
+            { q: "Chất béo là triester của glycerol với?", a: ["Acid vô cơ", "Acid đa chức", "Acid béo", "Amino acid"], c: 2 },
+            { q: "Phản ứng biến chất béo lỏng thành chất béo rắn (bơ nhân tạo) là phản ứng gì?", a: ["Xà phòng hóa", "Cộng hydrogen (H2)", "Thủy phân", "Trùng hợp"], c: 1 },
+            { q: "Ester nào sau đây có mùi chuối chín đặc trưng?", a: ["Isoamyl acetate", "Benzyl acetate", "Ethyl butyrate", "Geranyl acetate"], c: 0 },
+            { q: "Trạng thái tồn tại của phần lớn các ester ở điều kiện thường là?", a: ["Chất rắn", "Chất lỏng", "Chất khí", "Plasma"], c: 1 },
+            { q: "Lipid bao gồm các chất nào sau đây?", a: ["Chất béo, sáp, steroid, phospholipid", "Chỉ gồm chất béo", "Chỉ gồm sáp và steroid", "Dầu ăn và mỡ động vật"], c: 0 }
         ];
 
-        // BỘ 2: LŨY THỪA VÀ THỨ TỰ THỰC HIỆN PHÉP TÍNH
+        // BỘ 2: CHƯƠNG 2 - CARBOHYDRATE
         const bank2 = [
-            { q: "Kí hiệu nào sau đây chỉ phần tử 'thuộc' tập hợp?", a: ["⊂", "∈", "∉", "∅"], c: 1 },
-            { q: "Số tự nhiên liền sau của số 99 là:", a: ["98", "100", "101", "90"], c: 1 },
-            { q: "Tìm x, biết x - 12 = 8:", a: ["x = 20", "x = 4", "x = 10", "x = 96"], c: 0 },
-            { q: "Kết quả của phép tính 5^4 : 5^2 là:", a: ["5^6", "5^2", "5^3", "1^2"], c: 1 },
-            { q: "Biểu thức có ngoặc vuông [ ] và ngoặc tròn ( ), ta tính:", a: ["Ngoặc vuông trước", "Từ trái sang phải", "Ngoặc tròn trước", "Tùy ý"], c: 2 },
-            { q: "Số nào sau đây chia hết cho 5?", a: ["125", "123", "204", "551"], c: 0 },
-            { q: "Viết gọn tích 7 x 7 x 7 x 7 dưới dạng lũy thừa:", a: ["7^3", "4^7", "7^4", "28"], c: 2 },
-            { q: "Số 19 viết trong hệ La Mã là:", a: ["IXX", "XIX", "XVIIII", "XXI"], c: 1 },
-            { q: "Trong phép chia cho 3, số dư lớn nhất có thể là:", a: ["1", "2", "3", "0"], c: 1 },
-            { q: "Tính giá trị biểu thức: 10 + [50 - (5-2)^2]", a: ["51", "61", "41", "55"], c: 0 }
+            { q: "Carbohydrate được chia thành mấy nhóm chủ yếu?", a: ["2 nhóm", "3 nhóm", "4 nhóm", "5 nhóm"], c: 1 },
+            { q: "Công thức phân tử của glucose và fructose là?", a: ["C6H12O6", "C12H22O11", "(C6H10O5)n", "C6H12O5"], c: 0 },
+            { q: "Chất nào sau đây thuộc loại monosaccharide?", a: ["Saccharose", "Maltose", "Fructose", "Cellulose"], c: 2 },
+            { q: "Phân tử Saccharose được cấu tạo từ?", a: ["2 gốc α-glucose", "1 gốc α-glucose và 1 gốc β-fructose", "2 gốc β-fructose", "Nhiều gốc glucose"], c: 1 },
+            { q: "Dung dịch glucose có phản ứng tráng bạc vì trong phân tử có chứa nhóm chức nào?", a: ["Hydroxyl (-OH)", "Carboxyl (-COOH)", "Aldehyde (-CHO)", "Ketone (>C=O)"], c: 2 },
+            { q: "Chất nào sau đây KHÔNG bị thủy phân trong môi trường acid?", a: ["Saccharose", "Tinh bột", "Cellulose", "Glucose"], c: 3 },
+            { q: "Cellulose (thành phần chính của gỗ, bông) thuộc loại hợp chất nào?", a: ["Monosaccharide", "Disaccharide", "Polysaccharide", "Lipid"], c: 2 },
+            { q: "Để nhận biết hồ tinh bột, người ta dùng thuốc thử nào sau đây?", a: ["Dung dịch I2 (Iodine)", "AgNO3/NH3", "Cu(OH)2", "Quỳ tím"], c: 0 },
+            { q: "Đặc điểm nào sau đây KHÔNG đúng với tinh bột?", a: ["Dạng bột vô định hình", "Màu trắng", "Tan nhiều trong nước lạnh", "Không tan trong nước lạnh"], c: 2 },
+            { q: "Nước ép quả nho chín chứa rất nhiều chất nào sau đây (còn gọi là đường nho)?", a: ["Fructose", "Glucose", "Saccharose", "Maltose"], c: 1 }
         ];
 
-        // BỘ 3: TỔNG HỢP VÀ VẬN DỤNG
+        // BỘ 3: CHƯƠNG 3 - AMINE, AMINO ACID, PEPTIDE, PROTEIN
         const bank3 = [
-            { q: "Tập hợp N* là tập hợp các số tự nhiên:", a: ["Chẵn", "Lẻ", "Lớn hơn 0", "Nhỏ hơn 10"], c: 2 },
-            { q: "Tổng 15 + 30 + 85 bằng:", a: ["130", "120", "140", "115"], c: 0 },
-            { q: "Lũy thừa 10^3 có giá trị bằng:", a: ["30", "100", "1000", "10000"], c: 2 },
-            { q: "Kết quả của phép tính a^m x a^n (a ≠ 0) là:", a: ["a^(m x n)", "a^(m+n)", "a^(m-n)", "a^(m:n)"], c: 1 },
-            { q: "Tính giá trị biểu thức: 4 x 5^2 - 3 x 2^3", a: ["76", "84", "100", "68"], c: 0 },
-            { q: "Khẳng định nào sau đây là đúng?", a: ["15 chia hết cho 2", "18 chia hết cho 5", "20 chia hết cho 4", "25 chia hết cho 3"], c: 2 },
-            { q: "Tích của số tự nhiên lớn nhất có 1 chữ số và số tự nhiên nhỏ nhất có 2 chữ số:", a: ["99", "90", "100", "89"], c: 1 },
-            { q: "Cho tập hợp M = {x ∈ N* | x ≤ 3}. Tập M gồm:", a: ["{0; 1; 2; 3}", "{1; 2; 3}", "{0; 1; 2}", "{1; 2}"], c: 1 },
-            { q: "Tìm số bị chia biết số chia là 5, thương là 4, số dư là 2:", a: ["20", "18", "22", "24"], c: 2 },
-            { q: "Tính: 100 : {2 x [50 - (7 - 2)^2]}", a: ["5", "2", "1", "10"], c: 1 }
+            { q: "Amine bậc 1 có nhóm chức nào sau đây?", a: ["-NH2", "-NH-", ">N-", "-COOH"], c: 0 },
+            { q: "Tên gốc - chức của amine CH3NH2 là?", a: ["Methylamine", "Ethylamine", "Propylamine", "Phenylamine"], c: 0 },
+            { q: "Chất nào sau đây là một amine thơm?", a: ["Methylamine", "Ethylamine", "Aniline (C6H5NH2)", "Dimethylamine"], c: 2 },
+            { q: "Amino acid là hợp chất hữu cơ tạp chức chứa đồng thời các nhóm chức nào?", a: ["-NH2 và -COOH", "-OH và -COOH", "-NH2 và -OH", "-CHO và -COOH"], c: 0 },
+            { q: "Công thức của Glycine (amino acid nhỏ nhất) là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "H2N-CH2-CH2-COOH", "CH3-CH2-COOH"], c: 0 },
+            { q: "Chất nào sau đây có tính lưỡng tính (tác dụng được với cả acid và base)?", a: ["CH3NH2", "CH3COOH", "H2N-CH2-COOH", "C2H5OH"], c: 2 },
+            { q: "Liên kết peptide là liên kết -CO-NH- giữa hai đơn vị nào?", a: ["α-amino acid", "β-amino acid", "Carboxylic acid", "Amine"], c: 0 },
+            { q: "Phản ứng màu biuret dùng thuốc thử Cu(OH)2 trong môi trường kiềm cho màu gì?", a: ["Đỏ máu", "Vàng cam", "Tím đặc trưng", "Xanh lam"], c: 2 },
+            { q: "Peptide mạch hở chứa 3 gốc α-amino acid được gọi là gì?", a: ["Dipeptide", "Tripeptide", "Tetrapeptide", "Polypeptide"], c: 1 },
+            { q: "Sự đông tụ protein (như luộc trứng, nấu riêu cua) xảy ra khi nào?", a: ["Khi đun nóng", "Khi thêm acid", "Khi thêm base hoặc muối", "Cả 3 trường hợp trên"], c: 3 }
         ];
 
-        const allQuestionBanks = [bank1, bank2, bank3];
+        // BỘ 4: TỔNG HỢP KIẾN THỨC TÍNH CHẤT VẬT LÝ VÀ PHẢN ỨNG MÀU
+        const bank4 = [
+            { q: "Ở nhiệt độ thường, chất béo triolein tồn tại ở trạng thái nào?", a: ["Rắn", "Lỏng", "Khí", "Nhũ tương"], c: 1 },
+            { q: "Chất nào sau đây là chất rắn, dạng sợi, màu trắng, không tan trong nước?", a: ["Tinh bột", "Saccharose", "Cellulose", "Glucose"], c: 2 },
+            { q: "Dung dịch chất nào sau đây làm quỳ tím hóa xanh (có tính base)?", a: ["Aniline", "Glycine", "Methylamine", "Valine"], c: 2 },
+            { q: "Dung dịch acid aminoacetic (Glycine) làm quỳ tím chuyển màu gì?", a: ["Đỏ", "Xanh", "Không đổi màu", "Mất màu"], c: 2 },
+            { q: "Cho AgNO3/NH3 vào ống nghiệm chứa glucose đun nóng nhẹ sẽ thấy hiện tượng gì?", a: ["Kết tủa đỏ gạch", "Lớp kim loại trắng bạc bám vào thành ống", "Sủi bọt khí", "Dung dịch màu xanh thẫm"], c: 1 },
+            { q: "Sản phẩm thủy phân hoàn toàn tinh bột trong môi trường acid đun nóng là?", a: ["Fructose", "Glucose", "Saccharose", "Maltose"], c: 1 },
+            { q: "Chất béo là thành phần chính của?", a: ["Mật ong", "Dầu, mỡ động thực vật", "Gỗ", "Tóc và móng sừng"], c: 1 },
+            { q: "Fructose (đường ngọt nhất) có mặt nhiều nhất trong?", a: ["Quả nho chín", "Mật ong", "Cây mía", "Cây bông"], c: 1 },
+            { q: "Tơ tằm, lông cừu, tóc, sừng thuộc loại hợp chất nào?", a: ["Polysaccharide", "Protein", "Lipid", "Ester"], c: 1 },
+            { q: "Xà phòng là hỗn hợp muối Natri hoặc Kali của hợp chất nào?", a: ["Acid vô cơ", "Acid carboxylic đơn giản", "Acid béo", "Amino acid"], c: 2 }
+        ];
 
+        // BỘ 5: TỔNG HỢP CÔNG THỨC VÀ ĐỒNG PHÂN
+        const bank5 = [
+            { q: "Ester Vinyl acetate có công thức cấu tạo là?", a: ["CH3COOCH=CH2", "CH2=CHCOOCH3", "HCOOCH=CH2", "C2H5COOCH=CH2"], c: 0 },
+            { q: "Chất nào sau đây là đồng phân của glucose?", a: ["Saccharose", "Fructose", "Cellulose", "Tinh bột"], c: 1 },
+            { q: "Công thức phân tử của chất béo Triolein là?", a: ["(C17H35COO)3C3H5", "(C15H31COO)3C3H5", "(C17H33COO)3C3H5", "(C17H31COO)3C3H5"], c: 2 },
+            { q: "Amine bậc 2 có công thức cấu tạo dạng chung là?", a: ["R-NH2", "R-NH-R'", "R-N(R')-R''", "R-NO2"], c: 1 },
+            { q: "Số liên kết peptide có trong phân tử Tetrapeptide mạch hở là bao nhiêu?", a: ["4", "3", "2", "5"], c: 1 },
+            { q: "Alanine (một amino acid) có công thức cấu tạo thu gọn là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "HOOC-CH2-CH2-CH(NH2)-COOH", "H2N-[CH2]4-CH(NH2)-COOH"], c: 1 },
+            { q: "Phân tử Amylopectin (trong tinh bột) có cấu trúc mạch như thế nào?", a: ["Mạch không phân nhánh", "Mạch phân nhánh", "Mạch vòng khép kín", "Mạng không gian"], c: 1 },
+            { q: "Amine nào sau đây tồn tại ở trạng thái khí ở điều kiện thường?", a: ["Aniline", "Dimethylamine", "Phenylamine", "Benzylamine"], c: 1 },
+            { q: "Chất nào sau đây tác dụng được với Cu(OH)2 ở nhiệt độ thường tạo dung dịch màu xanh lam?", a: ["Ethanol", "Fructose", "Ethyl acetate", "Cellulose"], c: 1 },
+            { q: "Lysine có đặc điểm cấu tạo chứa mấy nhóm amino (-NH2) và mấy nhóm carboxyl (-COOH)?", a: ["1 nhóm -NH2 và 1 nhóm -COOH", "2 nhóm -NH2 và 1 nhóm -COOH", "1 nhóm -NH2 và 2 nhóm -COOH", "2 nhóm -NH2 và 2 nhóm -COOH"], c: 1 }
+        ];
+
+        // Khai báo mảng chứa tất cả 5 bộ đề
+        const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5];
         let activeQuestions = []; 
         let playerName = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
