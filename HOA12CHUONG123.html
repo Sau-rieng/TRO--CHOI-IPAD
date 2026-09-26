@@ -10,6 +10,7 @@
         #game-container canvas { width: 100% !important; height: 100% !important; display: block; outline: none;}
         
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        /* Đổi .login-box áp dụng cho div */
         .login-box { background: white; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f; width: 85%; max-width: 400px; }
         .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
         .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
@@ -78,8 +79,8 @@
     <div id="toast-msg"></div>
 
     <div id="login-screen">
-        <!-- Đã sửa lại onsubmit trực tiếp tại đây để tránh lỗi trên một số trình duyệt iPad -->
-        <form class="login-box" id="login-form" onsubmit="startGame(); return false;">
+        <!-- Đã đổi thẻ form thành thẻ div tĩnh để chống load lại trang web -->
+        <div class="login-box" id="login-form">
             <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
             <span class="warning-text" id="warning-msg">⚠️ Chú ý: Tuyệt đối không thoát hoặc chuyển thẻ (tab) khi đang thi. Vi phạm sẽ bị thu bài ngay lập tức!</span>
@@ -87,7 +88,6 @@
             <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
 
             <div id="input-group">
-                <!-- Bỏ thuộc tính required mặc định của HTML để dùng thông báo lỗi rung lắc riêng -->
                 <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off">
                 <select id="input-class">
                     <option value="" disabled selected>-- Chọn Lớp --</option>
@@ -99,10 +99,11 @@
                 <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
             </div>
 
-            <button type="submit" id="btn-start">BẮT ĐẦU CHƠI</button>
+            <!-- Nút bấm gọi hàm trực tiếp, không dùng submit -->
+            <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
             <div id="form-error-msg">❌ SBD không có trong DS</div>
-            <button type="button" id="btn-unlock">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
-        </form>
+            <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
+        </div>
     </div>
 
     <div id="result-screen">
@@ -124,7 +125,7 @@
         <p>Điều khiển phím ảo để đi.</p>
     </div>
     
-    <div id="audio-control">🔊 Bật Nhạc</div>
+    <div id="audio-control" onclick="toggleAudio()">🔊 Bật Nhạc</div>
 
     <div id="dpad">
         <div class="dpad-btn" id="btn-up">▲</div>
@@ -141,11 +142,10 @@
     </div>
 
     <script>
-    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
     (function() {
         
         // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwwu58Eza1r4E6PIW6r7BQW4atxluE2cH0PeOw-cY4fBos7tDmkK_nWI8aNJ4WeUCLMsA/exec";
+        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
 
         // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
         const validStudentIDs = {
@@ -324,18 +324,15 @@
         let playerName = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
 
-        // Lấy TOÀN BỘ 20 CÂU cho đường chạy dài
         function generateRandomizedQuestions() {
             let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
             let cloned = JSON.parse(JSON.stringify(selectedBank));
             
-            // Xáo trộn vị trí 20 câu
             for (let i = cloned.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
             }
             
-            // Xáo trộn vị trí đáp án của từng câu
             cloned.forEach(item => {
                 let correctAnswerText = item.a[item.c]; 
                 for (let i = item.a.length - 1; i > 0; i--) {
@@ -344,7 +341,7 @@
                 }
                 item.c = item.a.indexOf(correctAnswerText);
             });
-            return cloned; // Trả về đủ 20 câu
+            return cloned; 
         }
 
         let loginTimeString = "";
@@ -374,27 +371,25 @@
             if(!isMuted) sfxWrong.play();
         }
 
-        // Khởi động game
+        // HÀM KHỞI ĐỘNG GAME (Được gọi trực tiếp từ nút bấm)
         window.startGame = function() {
             const nameInput = document.getElementById('input-name').value.trim();
             const classSelect = document.getElementById('input-class');
-            const classInput = classSelect.options[classSelect.selectedIndex].value; 
+            const classInput = classSelect.value; // Lấy giá trị của Lớp
             const idInput = document.getElementById('input-id').value.trim();
             
-            // Cảnh báo nếu để trống
+            // 1. Kiểm tra để trống
             if(nameInput === "" || classInput === "" || idInput === "") { 
-                showToast("Vui lòng điền đủ Tên, Lớp và SBD!"); 
-                showFormError("⚠️ Vui lòng điền đủ thông tin!");
-                return false; 
+                showFormError("⚠️ Vui lòng điền đủ Tên, Lớp và SBD!");
+                return; 
             }
 
-            // KIỂM TRA MÃ SỐ BÁO DANH (TRỪ MÃ ĐẶC CÁCH 9999 CHO GIÁO VIÊN)
+            // 2. KIỂM TRA SBD (Nếu nhập 9999 thì cho qua luôn)
             if (idInput !== "9999") {
                 let allowedIDs = validStudentIDs[classInput];
                 if (!allowedIDs || !allowedIDs.includes(idInput)) {
-                    showToast("❌ SBD không có trong DS");
-                    showFormError("❌ SBD không có trong DS"); 
-                    return false;
+                    showFormError("❌ SBD không hợp lệ hoặc sai Lớp!"); 
+                    return;
                 }
             }
 
@@ -411,7 +406,114 @@
             
             if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
 
-            gameStartTime = Date.now(); gameStarted = true; return false;
+            gameStartTime = Date.now(); gameStarted = true;
+        }
+
+        // Thoát game và load lại
+        document.getElementById('btn-exit').addEventListener('click', function() { 
+            location.reload(); 
+        });
+
+        document.getElementById('btn-unlock').addEventListener('click', unlockGame);
+
+        if(localStorage.getItem('daThiHoa12') === 'true') {
+            document.getElementById('input-group').style.display = 'none';
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('login-desc').style.display = 'none';
+            document.getElementById('warning-msg').style.display = 'none';
+            document.getElementById('locked-msg').style.display = 'block';
+            document.getElementById('btn-unlock').style.display = 'block';
+        }
+
+        function unlockGame() {
+            let pin = prompt("Vui lòng nhập MÃ BẢO MẬT của Giáo Viên:");
+            if (pin === "123456") { 
+                localStorage.removeItem('daThiHoa12');
+                alert("Mở khóa thành công! Học sinh có thể làm lại bài.");
+                location.reload();
+            } else if (pin !== null) {
+                alert("Mã bảo mật không chính xác!");
+            }
+        }
+
+        function sendScoreToSheet(name, id, score, seconds) {
+            if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
+            
+            let safeScore = parseInt(score);
+            if (safeScore > 20 || safeScore < 0) { // Điểm tối đa giờ là 20
+                safeScore = 0; 
+            }
+
+            let completeTimeString = getFormattedTime();
+
+            fetch(GOOGLE_SHEET_URL, {
+                method: "POST", mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    name: name, 
+                    id: id, 
+                    score: safeScore, 
+                    time: seconds,
+                    loginTime: loginTimeString,
+                    completeTime: completeTimeString
+                })
+            }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
+        }
+
+        function triggerAntiCheat() {
+            if (!gameStarted || gameEnded) return; 
+
+            isPaused = true; 
+            gameEnded = true;
+            uiPanel.classList.remove('active'); 
+            
+            bgMusic.pause();
+            if(!isMuted) sfxWrong.play();
+
+            let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+            
+            sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
+            localStorage.setItem('daThiHoa12', 'true');
+
+            document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
+            document.getElementById('result-title').style.color = "#e74c3c";
+            document.getElementById('result-details').innerHTML = `
+                <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
+                <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
+                <div class="info-text" style="color:#e74c3c; font-size: 15px;">Hệ thống phát hiện thiết bị đã thoát màn hình hoặc mở thẻ (tab) khác.<br>Bài thi đã bị khóa và tự động nộp!</div>
+            `;
+            document.getElementById('result-screen').style.display = 'flex';
+        }
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) { triggerAntiCheat(); }
+        });
+
+        window.addEventListener("blur", function() {
+            triggerAntiCheat();
+        });
+
+        const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3");
+        bgMusic.loop = true; bgMusic.volume = 0.2; 
+        const sfxCorrect = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
+        const sfxWrong = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
+        const sfxWin = new Audio("https://assets.mixkit.co/active_storage/sfx/2002/2002-preview.mp3");
+        const sfxExplode = new Audio("https://assets.mixkit.co/active_storage/sfx/170/170-preview.mp3");
+
+        let isMuted = false;
+        function toggleAudio() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted; sfxCorrect.muted = isMuted; sfxWrong.muted = isMuted; sfxWin.muted = isMuted; sfxExplode.muted = isMuted;
+            document.getElementById('audio-control').innerText = isMuted ? "🔇 Tắt Nhạc" : "🔊 Bật Nhạc";
+        }
+
+        let toastTimeout;
+        function showToast(msg, bgColor = "rgba(231, 76, 60, 0.95)") {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9bd4e4); 
@@ -636,6 +738,10 @@
                 if (playerGroup.position.z <= gate.position.z + 2.5 && !gameEnded) {
                     isPaused = true; gameEnded = true;
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
+                    
+                    // NẾU TỚI ĐÍCH, KHÔNG CHẠY ANTICHEAT NỮA
+                    document.removeEventListener("visibilitychange", triggerAntiCheat);
+                    window.removeEventListener("blur", triggerAntiCheat);
                     
                     sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
                     localStorage.setItem('daThiHoa12', 'true');
