@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Hóa Học 12 (Bảo Mật SBD)</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12 (Quản Lý Thời Gian)</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -28,7 +28,6 @@
         .login-box button:hover { background: #c0392b; }
         .login-box button:active { transform: scale(0.98); }
 
-        /* Chỉnh thông báo lỗi nội bộ form */
         #form-error-msg { color: #c0392b; font-weight: bold; font-size: 14px; margin-top: 10px; display: none; }
         .shake { animation: shake 0.5s; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
@@ -43,7 +42,6 @@
         .result-box p { color: #2c3e50; font-size: 20px; margin: 12px 0; font-weight: bold; }
         .result-box .info-text { font-size: 16px; color: #27ae60; margin-top: 20px; margin-bottom: 10px; font-weight: bold;}
 
-        /* Nâng z-index lên 100000 để nằm đè lên mọi thứ */
         #toast-msg { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 100000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; text-align: center; border: 2px solid #fff; }
 
         #player-info { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(52, 152, 219, 0.95); color: white; padding: 10px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; text-align: center; line-height: 1.5; }
@@ -144,7 +142,7 @@
     (function() {
         
         // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyjmuQj8rMmAzJnWV03Ns_yGr0c40yJqWFT46upALKk1JzzEq5gH_5aZKW3NVBYnUMy1Q/exec";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxcf_H9hSVYNC5TN5s6s-nIZzxzxLhRVUPszIkbkX64DIWV-qIx-FCOfhMo9C4BdOIj/exec";
 
         // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
         const validStudentIDs = {
@@ -175,6 +173,19 @@
             ]
         };
 
+        let loginTimeString = "";
+
+        function getFormattedTime() {
+            let now = new Date();
+            let hours = String(now.getHours()).padStart(2, '0');
+            let minutes = String(now.getMinutes()).padStart(2, '0');
+            let seconds = String(now.getSeconds()).padStart(2, '0');
+            let day = String(now.getDate()).padStart(2, '0');
+            let month = String(now.getMonth() + 1).padStart(2, '0');
+            let year = now.getFullYear();
+            return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+        }
+
         function sendScoreToSheet(name, id, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
             
@@ -183,10 +194,19 @@
                 safeScore = 0; 
             }
 
+            let completeTimeString = getFormattedTime();
+
             fetch(GOOGLE_SHEET_URL, {
                 method: "POST", mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name, id: id, score: safeScore, time: seconds })
+                body: JSON.stringify({ 
+                    name: name, 
+                    id: id, 
+                    score: safeScore, 
+                    time: seconds,
+                    loginTime: loginTimeString,
+                    completeTime: completeTimeString
+                })
             }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
         }
 
@@ -387,11 +407,10 @@
                 return false; 
             }
 
-            // KIỂM TRA MÃ SỐ BÁO DANH VÀ BÁO LỖI TRỰC TIẾP TRÊN FORM
             let allowedIDs = validStudentIDs[classInput];
             if (!allowedIDs || !allowedIDs.includes(idInput)) {
                 showToast("❌ SBD không có trong DS");
-                showFormError(); // Rung lắc và hiện dòng chữ đỏ
+                showFormError(); 
                 return false;
             }
 
@@ -399,6 +418,9 @@
             playerId = classInput + " - " + idInput; 
             currentScore = 0;
             
+            // LƯU THỜI GIAN ĐĂNG NHẬP (GHI NHẬN KHI BẤM BẮT ĐẦU)
+            loginTimeString = getFormattedTime();
+
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('player-info').style.display = 'block';
             document.getElementById('score-box').style.display = 'block';
@@ -586,6 +608,7 @@
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
                     document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 5 phút.</div>`;
                     
+                    sendScoreToSheet(playerName, playerId, currentScore, elapsedSeconds);
                     localStorage.setItem('daThiHoa12', 'true'); 
                     document.getElementById('result-screen').style.display = 'flex';
                 } else { let m = Math.floor(remaining / 60); let s = remaining % 60; timerUI.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); }
