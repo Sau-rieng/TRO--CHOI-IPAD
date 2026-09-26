@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Hóa Học 12 (Quản Lý Thời Gian)</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12 (20 Câu - 7 Phút)</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -114,11 +114,11 @@
     <div id="game-container"></div>
     <div id="player-info">Người chơi: Đang tải...</div>
 
-    <div id="timer-box">05:00</div>
+    <div id="timer-box">07:00</div>
     <div id="score-box">⭐ Điểm: 0</div>
 
     <div id="instructions">
-        <h2>Hóa Học 12: Ôn Tập</h2>
+        <h2>Hóa Học 12: KNTT</h2>
         <p>Điều khiển phím ảo để đi.</p>
     </div>
     
@@ -142,7 +142,7 @@
     (function() {
         
         // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwluDUDNZR2BVunWFS058d2_J5q7C2g0_lJYdzLwtwphOCjcwQK7Bd4FKWP2ojva5GObw/exec";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwwu58Eza1r4E6PIW6r7BQW4atxluE2cH0PeOw-cY4fBos7tDmkK_nWI8aNJ4WeUCLMsA/exec";
 
         // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
         const validStudentIDs = {
@@ -173,6 +173,179 @@
             ]
         };
 
+        // ==========================================
+        // NGÂN HÀNG CÂU HỎI KNTT HÓA 12 MỚI NHẤT
+        // ==========================================
+        
+        const bank1 = [
+            { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
+            { q: "Tên thay thế của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl ethanoate", "Ethyl formate"], c: 0 },
+            { q: "Ester HCOOCH3 có tên gọi là gì?", a: ["Methyl formate", "Ethyl formate", "Methyl acetate", "Propyl formate"], c: 0 },
+            { q: "Hợp chất CH2=CHCOOCH3 có tên gọi là gì?", a: ["Methyl acrylate", "Ethyl acrylate", "Vinyl acetate", "Methyl methacrylate"], c: 0 },
+            { q: "Mùi hương của isoamyl acetate giống với mùi của loại quả nào?", a: ["Chuối chín", "Dứa chín", "Hoa nhài", "Táo xanh"], c: 0 },
+            { q: "Benzyl acetate là ester có mùi đặc trưng của hoa gì?", a: ["Hoa nhài", "Hoa hồng", "Hoa cúc", "Hoa lan"], c: 0 },
+            { q: "Nhiệt độ sôi của ester so với carboxylic acid và alcohol có cùng phân tử khối thường?", a: ["Thấp hơn", "Cao hơn", "Bằng nhau", "Không xác định"], c: 0 },
+            { q: "Tính tan trong nước của các ester ở điều kiện thường như thế nào?", a: ["Ít tan hoặc không tan", "Tan rất tốt", "Tan vô hạn", "Tạo dung dịch keo"], c: 0 },
+            { q: "Lipid là những hợp chất hữu cơ có trong tế bào sống, KHÔNG bao gồm nhóm nào?", a: ["Protein", "Chất béo", "Sáp", "Steroid"], c: 0 },
+            { q: "Chất béo là triester của glycerol với các acid nào?", a: ["Acid béo", "Acid vô cơ", "Amino acid", "Acid thơm"], c: 0 },
+            { q: "Acid béo có đặc điểm cấu tạo chung là gì?", a: ["Mạch carbon dài, không phân nhánh", "Mạch carbon ngắn", "Mạch vòng thơm", "Chứa nhiều nhóm -COOH"], c: 0 },
+            { q: "Công thức của palmitic acid là gì?", a: ["C15H31COOH", "C17H35COOH", "C17H33COOH", "CH3COOH"], c: 0 },
+            { q: "Stearic acid (acid béo no) có công thức là gì?", a: ["C17H35COOH", "C15H31COOH", "C17H33COOH", "C17H31COOH"], c: 0 },
+            { q: "Oleic acid (acid béo không no) có công thức phân tử là?", a: ["C17H33COOH", "C17H35COOH", "C15H31COOH", "C17H31COOH"], c: 0 },
+            { q: "Công thức cấu tạo của tristearin là?", a: ["(C17H35COO)3C3H5", "(C17H33COO)3C3H5", "(C15H31COO)3C3H5", "(C17H31COO)3C3H5"], c: 0 },
+            { q: "Triolein ở điều kiện thường tồn tại ở trạng thái nào?", a: ["Lỏng", "Rắn", "Khí", "Plasma"], c: 0 },
+            { q: "Chất béo động vật (mỡ) chủ yếu chứa gốc acid béo loại nào?", a: ["No", "Không no", "Chứa liên kết ba", "Mạch vòng"], c: 0 },
+            { q: "Dầu thực vật chủ yếu chứa gốc acid béo loại nào?", a: ["Không no", "No", "Chứa vòng benzen", "Phân nhánh"], c: 0 },
+            { q: "Tripalmitin ở điều kiện thường tồn tại ở trạng thái nào?", a: ["Rắn", "Lỏng", "Khí", "Tinh thể lỏng"], c: 0 },
+            { q: "Ester no, đơn chức, mạch hở có công thức chung là?", a: ["CnH2nO2 (n≥2)", "CnH2nO (n≥1)", "CnH2n+2O2", "CnH2n-2O2"], c: 0 }
+        ];
+
+        const bank2 = [
+            { q: "Phản ứng đặc trưng nhất của este là phản ứng gì?", a: ["Thủy phân", "Cộng H2", "Trùng hợp", "Tráng bạc"], c: 0 },
+            { q: "Phản ứng thủy phân este trong môi trường acid có đặc điểm gì?", a: ["Là phản ứng thuận nghịch", "Là phản ứng một chiều", "Tạo ra kết tủa", "Giải phóng khí H2"], c: 0 },
+            { q: "Phản ứng xà phòng hóa este được thực hiện trong môi trường nào?", a: ["Môi trường base/kiềm", "Môi trường acid", "Môi trường trung tính", "Không cần xúc tác"], c: 0 },
+            { q: "Thủy phân ethyl acetate trong dung dịch NaOH đun nóng thu được sản phẩm là?", a: ["Sodium acetate và ethyl alcohol", "Sodium formate và methyl alcohol", "Acetic acid và ethyl alcohol", "Sodium propanoate và nước"], c: 0 },
+            { q: "Phản ứng điều chế ester từ alcohol và carboxylic acid gọi là phản ứng gì?", a: ["Phản ứng ester hóa", "Phản ứng xà phòng hóa", "Phản ứng trùng hợp", "Phản ứng thế"], c: 0 },
+            { q: "Chất xúc tác thường dùng trong phản ứng ester hóa là gì?", a: ["H2SO4 đặc", "NaOH loãng", "KMnO4", "NaCl bão hòa"], c: 0 },
+            { q: "Thủy phân chất béo trong môi trường kiềm luôn thu được sản phẩm nào sau đây?", a: ["Glycerol", "Ethylene glycol", "Ethanol", "Methanol"], c: 0 },
+            { q: "Quá trình biến dầu thực vật (lỏng) thành bơ nhân tạo (rắn) sử dụng phản ứng nào?", a: ["Cộng hydrogen (H2)", "Xà phòng hóa", "Oxi hóa", "Thủy phân"], c: 0 },
+            { q: "Dầu mỡ để lâu bị ôi thiu nguyên nhân chính là do đâu?", a: ["Liên kết C=C bị oxi hóa chậm", "Bị thủy phân bởi nước", "Tác dụng với CO2", "Do nhiệt độ phòng quá nóng"], c: 0 },
+            { q: "Xà phòng là hỗn hợp muối sodium hoặc potassium của hợp chất nào?", a: ["Acid béo", "Acid vô cơ", "Amino acid", "Alcolhol đa chức"], c: 0 },
+            { q: "Cấu trúc của phân tử xà phòng và chất giặt rửa tổng hợp gồm những phần nào?", a: ["Phần ưa nước và phần kị nước", "Hai phần kị nước", "Hai phần ưa nước", "Chỉ có gốc hydrocarbon"], c: 0 },
+            { q: "Ưu điểm nổi bật của chất giặt rửa tổng hợp so với xà phòng là gì?", a: ["Có thể giặt rửa trong nước cứng", "Rẻ tiền hơn", "Làm từ mỡ động vật", "Dễ phân hủy sinh học hơn"], c: 0 },
+            { q: "Methyl methacrylate được trùng hợp để sản xuất loại vật liệu nào?", a: ["Thủy tinh hữu cơ (Plexiglas)", "Nhựa PVC", "Cao su thiên nhiên", "Tơ tằm"], c: 0 },
+            { q: "Trong thí nghiệm xà phòng hóa chất béo, việc thêm dung dịch NaCl bão hòa vào cuối phản ứng nhằm mục đích gì?", a: ["Làm muối của acid béo tách ra nổi lên trên", "Tăng tốc độ phản ứng", "Tạo mùi thơm cho xà phòng", "Hòa tan xà phòng"], c: 0 },
+            { q: "Thủy phân este X (C4H8O2) thu được ethyl alcohol. X là chất nào?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl formate", "Butyl acetate"], c: 0 },
+            { q: "Ester tạo bởi methyl alcohol và acetic acid có công thức là?", a: ["CH3COOCH3", "CH3COOC2H5", "HCOOCH3", "C2H5COOCH3"], c: 0 },
+            { q: "Chất béo lỏng dễ bị oxi hóa bởi oxygen không khí hơn chất béo rắn vì sao?", a: ["Chứa nhiều liên kết đôi C=C", "Có khối lượng nhẹ hơn", "Dễ bay hơi hơn", "Tan tốt trong nước hơn"], c: 0 },
+            { q: "Ester nào sau đây có khả năng tham gia phản ứng tráng bạc?", a: ["HCOOCH3", "CH3COOCH3", "CH3COOC2H5", "C2H5COOC2H5"], c: 0 },
+            { q: "Để tẩy vết mỡ bôi trơn xe máy dính trên quần áo, ta nên dùng chất nào?", a: ["Xăng", "Nước chanh", "Giấm ăn", "Nước cất"], c: 0 },
+            { q: "Glycerol có khả năng hòa tan Cu(OH)2 tạo dung dịch màu gì?", a: ["Xanh lam", "Đỏ gạch", "Tím", "Mất màu"], c: 0 }
+        ];
+
+        const bank3 = [
+            { q: "Carbohydrate (saccharide) là hợp chất hữu cơ tạp chức thường có công thức chung là?", a: ["Cn(H2O)m", "CnH2nO2", "CnH2n+2O", "CnH2nO"], c: 0 },
+            { q: "Monosaccharide là nhóm carbohydrate có đặc điểm gì?", a: ["Không bị thủy phân", "Bị thủy phân thành 2 phân tử", "Bị thủy phân thành nhiều phân tử", "Chứa liên kết peptide"], c: 0 },
+            { q: "Glucose và fructose đều có công thức phân tử là gì?", a: ["C6H12O6", "C12H22O11", "(C6H10O5)n", "C6H12O5"], c: 0 },
+            { q: "Trong máu người bình thường (lúc đói), nồng độ glucose duy trì ở mức khoảng bao nhiêu?", a: ["0,1%", "1%", "0,01%", "5%"], c: 0 },
+            { q: "Glucose tồn tại chủ yếu ở dạng mạch nào trong dung dịch?", a: ["Mạch vòng (α và β)", "Mạch hở", "Dạng phân nhánh", "Dạng khí"], c: 0 },
+            { q: "Phân tử mạch hở của glucose chứa mấy nhóm hydroxyl (-OH)?", a: ["5 nhóm", "4 nhóm", "6 nhóm", "Không có nhóm nào"], c: 0 },
+            { q: "Nhóm chức nào có trong phân tử glucose mạch hở giúp nó có phản ứng tráng bạc?", a: ["Aldehyde (-CHO)", "Ketone (>C=O)", "Carboxyl (-COOH)", "Hydroxyl (-OH)"], c: 0 },
+            { q: "Hiện tượng xảy ra khi đun nóng glucose với dung dịch AgNO3/NH3 (thuốc thử Tollens) là?", a: ["Xuất hiện lớp bạc bám vào thành ống nghiệm", "Kết tủa đỏ gạch", "Dung dịch màu xanh lam", "Sủi bọt khí"], c: 0 },
+            { q: "Dung dịch glucose hòa tan Cu(OH)2 ở nhiệt độ thường tạo thành dung dịch màu gì?", a: ["Màu xanh lam", "Màu tím đặc trưng", "Màu đỏ máu", "Màu vàng"], c: 0 },
+            { q: "Đun nóng dung dịch glucose với Cu(OH)2 trong môi trường NaOH sẽ xuất hiện hiện tượng gì?", a: ["Kết tủa đỏ gạch Cu2O", "Lớp bạc sáng bóng", "Mất màu dung dịch", "Kết tủa trắng"], c: 0 },
+            { q: "Lên men glucose (xúc tác enzyme) thu được khí CO2 và hợp chất nào?", a: ["Ethanol (C2H5OH)", "Methanol (CH3OH)", "Lactic acid", "Acetic acid"], c: 0 },
+            { q: "Dẫn khí H2 vào dung dịch glucose đun nóng (xúc tác Ni) thu được sản phẩm polyalcohol là gì?", a: ["Sorbitol", "Glycerol", "Mannitol", "Xylitol"], c: 0 },
+            { q: "Loại đường nào có nhiều trong mật ong (khoảng 40%) làm mật ong có vị ngọt gắt?", a: ["Fructose", "Saccharose", "Glucose", "Maltose"], c: 0 },
+            { q: "Phân tử mạch hở của fructose KHÔNG chứa nhóm chức nào?", a: ["Aldehyde (-CHO)", "Ketone (>C=O)", "Hydroxyl (-OH)", "Gốc hydrocarbon"], c: 0 },
+            { q: "Điểm khác biệt về phản ứng hóa học giữa glucose và fructose là gì?", a: ["Glucose làm mất màu nước bromine, fructose thì không", "Fructose tráng bạc được còn glucose thì không", "Chỉ glucose tan trong nước", "Fructose tạo kết tủa với I2"], c: 0 },
+            { q: "Cả glucose và fructose đều thuộc loại đồng phân gì của nhau?", a: ["Đồng phân cấu tạo", "Đồng phân hình học", "Đồng đẳng", "Đồng vị"], c: 0 },
+            { q: "Hiện tượng thực tiễn: Quả nho chín chứa nhiều loại đường nào nhất?", a: ["Glucose", "Fructose", "Saccharose", "Tinh bột"], c: 0 },
+            { q: "Sản phẩm quang hợp của cây xanh tạo ra chất nào đầu tiên để chuyển hóa thành carbohydrate?", a: ["Glucose", "Fructose", "Cellulose", "Maltose"], c: 0 },
+            { q: "Fructose có phản ứng tráng bạc không?", a: ["Có, vì trong môi trường kiềm nó chuyển thành glucose", "Không, vì nó là ketone", "Chỉ ở nhiệt độ cực cao", "Có, vì nó chứa nhóm -CHO"], c: 0 },
+            { q: "Dịch truyền glucose 5% (huyết thanh ngọt) dùng để làm gì trong y tế?", a: ["Cung cấp năng lượng cho bệnh nhân", "Làm thuốc tê", "Tẩy trùng vết thương", "Cầm máu"], c: 0 }
+        ];
+
+        const bank4 = [
+            { q: "Disaccharide khi thủy phân hoàn toàn tạo ra bao nhiêu phân tử monosaccharide?", a: ["2", "3", "4", "Nhiều phân tử"], c: 0 },
+            { q: "Saccharose (đường kính, đường mía) có công thức phân tử là?", a: ["C12H22O11", "C6H12O6", "(C6H10O5)n", "C12H24O12"], c: 0 },
+            { q: "Saccharose được cấu tạo từ các đơn vị nào?", a: ["1 đơn vị α-glucose và 1 đơn vị β-fructose", "2 đơn vị α-glucose", "2 đơn vị β-fructose", "1 đơn vị glucose và 1 galactose"], c: 0 },
+            { q: "Liên kết giữa hai đơn vị monosaccharide trong saccharose là liên kết gì?", a: ["Glycosidic", "Peptide", "Ester", "Hydrogen"], c: 0 },
+            { q: "Saccharose KHÔNG có tính chất hóa học nào sau đây?", a: ["Phản ứng tráng bạc", "Hòa tan Cu(OH)2", "Thủy phân", "Bị nung cháy"], c: 0 },
+            { q: "Thủy phân hoàn toàn saccharose trong môi trường acid đun nóng thu được?", a: ["Glucose và fructose", "Chỉ có glucose", "Chỉ có fructose", "Maltose"], c: 0 },
+            { q: "Maltose (đường mạch nha) được cấu tạo từ những đơn vị nào?", a: ["2 đơn vị glucose", "2 đơn vị fructose", "1 glucose và 1 fructose", "2 đơn vị saccharose"], c: 0 },
+            { q: "Maltose có phản ứng tráng bạc không?", a: ["Có", "Không", "Chỉ khi thêm xúc tác Ni", "Chỉ phản ứng trong bóng tối"], c: 0 },
+            { q: "Tinh bột và cellulose là các polymer thiên nhiên thuộc nhóm nào?", a: ["Polysaccharide", "Monosaccharide", "Disaccharide", "Lipid"], c: 0 },
+            { q: "Công thức chung của tinh bột và cellulose thường được viết là gì?", a: ["(C6H10O5)n", "C12H22O11", "C6H12O6", "(C5H8O4)n"], c: 0 },
+            { q: "Tinh bột gồm 2 thành phần chính là gì?", a: ["Amylose và amylopectin", "Glucose và fructose", "Cellulose và glycogen", "Amylose và maltose"], c: 0 },
+            { q: "Thành phần nào của tinh bột có cấu trúc mạch phân nhánh?", a: ["Amylopectin", "Amylose", "Cả hai thành phần", "Không có thành phần nào"], c: 0 },
+            { q: "Thuốc thử dùng để nhận biết hồ tinh bột là gì?", a: ["Dung dịch I2", "Dung dịch AgNO3/NH3", "Cu(OH)2", "Nước bromine"], c: 0 },
+            { q: "Khi cho vài giọt dung dịch I2 vào hồ tinh bột, dung dịch chuyển sang màu gì?", a: ["Xanh tím đặc trưng", "Đỏ gạch", "Vàng nhạt", "Mất màu"], c: 0 },
+            { q: "Cellulose cấu tạo bởi các đơn vị nào liên kết với nhau?", a: ["Các đơn vị β-glucose", "Các đơn vị α-glucose", "Các đơn vị fructose", "Các gốc acid béo"], c: 0 },
+            { q: "Hình thái cấu trúc mạch của cellulose là gì?", a: ["Mạch dài, không phân nhánh", "Mạch phân nhánh phức tạp", "Mạch xoắn ốc", "Dạng mạng không gian"], c: 0 },
+            { q: "Sự tiêu hóa tinh bột trong cơ thể người bắt đầu ở đâu và nhờ enzyme gì?", a: ["Ở khoang miệng, nhờ enzyme amylase", "Ở dạ dày, nhờ pepsin", "Ở ruột non, nhờ lipase", "Ở gan, nhờ dịch mật"], c: 0 },
+            { q: "Thủy phân hoàn toàn cellulose thu được monosaccharide duy nhất nào?", a: ["Glucose", "Fructose", "Ribose", "Galactose"], c: 0 },
+            { q: "Dung dịch nào sau đây có khả năng hòa tan được cellulose?", a: ["Nước Schweizer", "Nước sôi", "Dung dịch NaOH loãng", "Dung dịch HCl đặc"], c: 0 },
+            { q: "Cellulose trinitrate được ứng dụng phổ biến để làm gì?", a: ["Sản xuất thuốc súng không khói", "Làm màng bọc thực phẩm", "Sản xuất tơ visco", "Làm nhựa PVC"], c: 0 }
+        ];
+
+        const bank5 = [
+            { q: "Amine là hợp chất thu được khi thay thế nguyên tử H trong phân tử nào bằng gốc hydrocarbon?", a: ["Ammonia (NH3)", "Nước (H2O)", "Methane (CH4)", "Nitric acid (HNO3)"], c: 0 },
+            { q: "Bậc của amine được xác định dựa trên yếu tố nào?", a: ["Số gốc hydrocarbon liên kết với nguyên tử N", "Bậc của nguyên tử carbon chứa nhóm -NH2", "Số nguyên tử N trong phân tử", "Số liên kết đôi"], c: 0 },
+            { q: "Amine bậc 2 có dạng công thức chung là gì?", a: ["R-NH-R'", "R-NH2", "R-N(R')-R''", "R-NO2"], c: 0 },
+            { q: "Tên gốc-chức của amine CH3-CH2-NH2 là gì?", a: ["Ethylamine", "Methylamine", "Propylamine", "Ethanamine"], c: 0 },
+            { q: "Tên thay thế theo IUPAC của amine CH3NH2 là gì?", a: ["Methanamine", "Aminomethane", "Methylamine", "Dimethylamine"], c: 0 },
+            { q: "Aniline có công thức phân tử là gì?", a: ["C6H5NH2", "C6H5CH3", "C6H5OH", "CH3NH2"], c: 0 },
+            { q: "Ở điều kiện thường, methylamine và ethylamine tồn tại ở trạng thái nào?", a: ["Chất khí, mùi khai", "Chất lỏng, mùi thơm", "Chất rắn, không mùi", "Chất khí, không mùi"], c: 0 },
+            { q: "Dung dịch methylamine trong nước làm quỳ tím chuyển sang màu gì?", a: ["Màu xanh", "Màu đỏ", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Aniline có làm đổi màu quỳ tím ẩm không?", a: ["Không, vì tính base rất yếu", "Có, chuyển sang màu xanh", "Có, chuyển sang màu đỏ", "Làm mất màu quỳ tím"], c: 0 },
+            { q: "Phản ứng nhận biết aniline là tác dụng với dung dịch nào tạo kết tủa trắng?", a: ["Nước bromine", "AgNO3/NH3", "Cu(OH)2", "NaCl"], c: 0 },
+            { q: "Amino acid là hợp chất hữu cơ tạp chức chứa đồng thời những nhóm chức nào?", a: ["Nhóm -NH2 và nhóm -COOH", "Nhóm -OH và nhóm -CHO", "Nhóm -NH2 và nhóm -OH", "Hai nhóm -COOH"], c: 0 },
+            { q: "Cấu tạo của phân tử Glycine (amino acid đơn giản nhất) là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "H2N-CH2-CH2-COOH", "CH3-CH2-COOH"], c: 0 },
+            { q: "Alanine có công thức cấu tạo thu gọn là gì?", a: ["CH3-CH(NH2)-COOH", "H2N-CH2-COOH", "C6H5-NH2", "HOOC-CH2-CH(NH2)-COOH"], c: 0 },
+            { q: "Ở điều kiện thường, các amino acid tồn tại chủ yếu ở dạng nào?", a: ["Ion lưỡng cực", "Phân tử không phân cực", "Dạng khí", "Tinh thể lỏng"], c: 0 },
+            { q: "Nhiệt độ nóng chảy của các amino acid thường như thế nào?", a: ["Rất cao, là chất rắn kết tinh", "Rất thấp, dễ bay hơi", "Nóng chảy ở nhiệt độ phòng", "Không xác định"], c: 0 },
+            { q: "Tính chất hóa học đặc trưng nhất của amino acid là gì?", a: ["Tính lưỡng tính", "Tính acid cực mạnh", "Tính base cực mạnh", "Tính trơ hóa học"], c: 0 },
+            { q: "Dung dịch Valine (1 nhóm -NH2, 1 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Không đổi màu", "Màu xanh", "Màu đỏ", "Màu vàng"], c: 0 },
+            { q: "Dung dịch Lysine (2 nhóm -NH2, 1 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Màu xanh", "Màu đỏ", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Dung dịch Glutamic acid (1 nhóm -NH2, 2 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Màu đỏ", "Màu xanh", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Bột ngọt (mì chính) được sản xuất từ muối monosodium của chất nào?", a: ["Glutamic acid", "Glycine", "Alanine", "Valine"], c: 0 }
+        ];
+
+        const bank6 = [
+            { q: "Peptide là hợp chất được hình thành từ 2 đến 50 đơn vị nào?", a: ["α-amino acid", "β-amino acid", "Carboxylic acid", "Amine bậc 1"], c: 0 },
+            { q: "Liên kết peptide là liên kết amide (-CO-NH-) tạo thành giữa hai đơn vị nào?", a: ["Giữa 2 gốc α-amino acid", "Giữa acid và alcohol", "Giữa 2 nhóm -OH", "Giữa aldehyde và ketone"], c: 0 },
+            { q: "Phân tử peptide chứa 2 liên kết peptide (3 gốc α-amino acid) được gọi là gì?", a: ["Tripeptide", "Dipeptide", "Tetrapeptide", "Polypeptide"], c: 0 },
+            { q: "Số liên kết peptide có trong một tetrapeptide mạch hở là bao nhiêu?", a: ["3", "4", "2", "5"], c: 0 },
+            { q: "Tên gọi của dipeptide cấu tạo từ Glycine (đầu N) và Alanine (đầu C) được viết tắt là gì?", a: ["Gly-Ala", "Ala-Gly", "Gly-Gly", "Ala-Ala"], c: 0 },
+            { q: "Protein là những hợp chất polypeptide cao phân tử có khối lượng mol khoảng bao nhiêu?", a: ["Từ vài chục nghìn đến vài triệu", "Rất nhỏ, dưới 1000", "Bằng với tinh bột", "Chỉ khoảng 100"], c: 0 },
+            { q: "Cấu trúc bậc 1 của protein là dạng cấu trúc như thế nào?", a: ["Trình tự sắp xếp các gốc α-amino acid trong mạch", "Dạng xoắn lò xo", "Dạng gấp nếp", "Dạng cuộn không gian 3D"], c: 0 },
+            { q: "Hiện tượng protein bị kết tủa thành mảng khi đun nóng hoặc thêm acid/base gọi là gì?", a: ["Sự đông tụ protein", "Sự thăng hoa", "Sự kết tinh", "Sự nóng chảy"], c: 0 },
+            { q: "Khi luộc cua, gạch cua nổi lên trên là do hiện tượng gì?", a: ["Đông tụ protein do nhiệt độ", "Đông tụ do hóa chất", "Sự bay hơi của nước", "Chất béo nổi lên"], c: 0 },
+            { q: "Vắt chanh vào sữa bò tươi thấy sữa bị vón cục là do hiện tượng gì?", a: ["Đông tụ protein do môi trường acid", "Sữa bị thiu", "Sự phản ứng của vitamin C", "Sữa kết tinh"], c: 0 },
+            { q: "Phản ứng đặc trưng để nhận biết các peptide (từ tripeptide trở lên) và protein là phản ứng gì?", a: ["Phản ứng màu biuret", "Phản ứng tráng bạc", "Phản ứng este hóa", "Phản ứng trùng ngưng"], c: 0 },
+            { q: "Thuốc thử của phản ứng màu biuret là gì?", a: ["Cu(OH)2 trong môi trường kiềm", "Dung dịch AgNO3/NH3", "Nước bromine", "Quỳ tím"], c: 0 },
+            { q: "Hiện tượng của phản ứng màu biuret giữa lòng trắng trứng và Cu(OH)2/NaOH là gì?", a: ["Xuất hiện màu tím đặc trưng", "Kết tủa đỏ gạch", "Dung dịch hóa xanh lam", "Sủi bọt khí"], c: 0 },
+            { q: "Chất nào sau đây KHÔNG có phản ứng màu biuret?", a: ["Dipeptide Gly-Gly", "Tripeptide Gly-Ala-Val", "Protein (Albumin)", "Lòng trắng trứng"], c: 0 },
+            { q: "Thủy phân hoàn toàn protein nhờ xúc tác acid/base đun nóng sẽ thu được hỗn hợp các chất nào?", a: ["α-amino acid", "Glucose", "Acid béo", "Glycerol"], c: 0 },
+            { q: "Đặc tính của các protein hình sợi (keratin trong tóc, móng; fibroin trong tơ tằm) đối với nước là gì?", a: ["Không tan trong nước", "Tan tốt trong nước lạnh", "Tan trong nước sôi", "Bay hơi cùng nước"], c: 0 },
+            { q: "Albumin (protein lòng trắng trứng) có khả năng hòa tan trong nước tạo thành dung dịch gì?", a: ["Dung dịch keo", "Dung dịch bão hòa", "Hỗn dịch đục", "Chất lỏng siêu tới hạn"], c: 0 },
+            { q: "Enzyme trong cơ thể sinh vật có bản chất là hợp chất nào?", a: ["Protein", "Carbohydrate", "Lipid", "Khoáng chất"], c: 0 },
+            { q: "Đặc điểm nổi bật của xúc tác enzyme trong các phản ứng hóa sinh là gì?", a: ["Tính chọn lọc rất cao và điều kiện êm dịu", "Xúc tác được mọi phản ứng", "Chịu được nhiệt độ hàng ngàn độ", "Cần xúc tác kim loại"], c: 0 },
+            { q: "Khi đốt cháy tóc, sừng hoặc lông cừu sẽ có hiện tượng gì đặc trưng?", a: ["Có mùi khét đặc trưng của protein", "Nổ lách tách", "Cháy sáng chói", "Không sinh ra khói"], c: 0 }
+        ];
+
+        const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5, bank6];
+
+        let activeQuestions = []; 
+        let playerName = ""; let playerId = ""; let gameStarted = false; 
+        let currentScore = 0; 
+
+        // Lấy NGẪU NHIÊN ĐÚNG 20 CÂU cho đường chạy
+        function generateRandomizedQuestions() {
+            let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
+            let cloned = JSON.parse(JSON.stringify(selectedBank));
+            
+            // Xáo trộn 20 câu trong bộ
+            for (let i = cloned.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+            }
+            
+            // Lấy 20 câu
+            let selected20 = cloned.slice(0, 20);
+            
+            selected20.forEach(item => {
+                let correctAnswerText = item.a[item.c]; 
+                for (let i = item.a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [item.a[i], item.a[j]] = [item.a[j], item.a[i]];
+                }
+                item.c = item.a.indexOf(correctAnswerText);
+            });
+            return selected20;
+        }
+
         let loginTimeString = "";
 
         function getFormattedTime() {
@@ -184,213 +357,6 @@
             let month = String(now.getMonth() + 1).padStart(2, '0');
             let year = now.getFullYear();
             return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
-        }
-
-        function sendScoreToSheet(name, id, score, seconds) {
-            if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
-            
-            let safeScore = parseInt(score);
-            if (safeScore > 10 || safeScore < 0) {
-                safeScore = 0; 
-            }
-
-            let completeTimeString = getFormattedTime();
-
-            fetch(GOOGLE_SHEET_URL, {
-                method: "POST", mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    name: name, 
-                    id: id, 
-                    score: safeScore, 
-                    time: seconds,
-                    loginTime: loginTimeString,
-                    completeTime: completeTimeString
-                })
-            }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
-        }
-
-        function triggerAntiCheat() {
-            if (!gameStarted || gameEnded) return; 
-
-            isPaused = true; 
-            gameEnded = true;
-            uiPanel.classList.remove('active'); 
-            
-            bgMusic.pause();
-            if(!isMuted) sfxWrong.play();
-
-            let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
-            
-            sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
-            localStorage.setItem('daThiHoa12', 'true');
-
-            document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
-            document.getElementById('result-title').style.color = "#e74c3c";
-            document.getElementById('result-details').innerHTML = `
-                <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
-                <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
-                <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 10</span></p>
-                <div class="info-text" style="color:#e74c3c; font-size: 15px;">Hệ thống phát hiện thiết bị đã thoát màn hình hoặc mở thẻ (tab) khác.<br>Bài thi đã bị khóa và tự động nộp!</div>
-            `;
-            document.getElementById('result-screen').style.display = 'flex';
-        }
-
-        document.addEventListener("visibilitychange", function() {
-            if (document.hidden) { triggerAntiCheat(); }
-        });
-
-        window.addEventListener("blur", function() {
-            triggerAntiCheat();
-        });
-
-        function showFormError() {
-            const msgObj = document.getElementById('form-error-msg');
-            msgObj.style.display = 'block';
-            msgObj.classList.remove('shake');
-            void msgObj.offsetWidth; 
-            msgObj.classList.add('shake');
-            if(!isMuted) sfxWrong.play();
-        }
-
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            startGame();
-        });
-
-        document.getElementById('btn-unlock').addEventListener('click', unlockGame);
-        document.getElementById('btn-exit').addEventListener('click', function() { location.reload(); });
-        document.getElementById('audio-control').addEventListener('click', toggleAudio);
-
-        if(localStorage.getItem('daThiHoa12') === 'true') {
-            document.getElementById('input-group').style.display = 'none';
-            document.getElementById('btn-start').style.display = 'none';
-            document.getElementById('login-desc').style.display = 'none';
-            document.getElementById('warning-msg').style.display = 'none';
-            document.getElementById('locked-msg').style.display = 'block';
-            document.getElementById('btn-unlock').style.display = 'block';
-        }
-
-        function unlockGame() {
-            let pin = prompt("Vui lòng nhập MÃ BẢO MẬT của Giáo Viên:");
-            if (pin === "123456") { 
-                localStorage.removeItem('daThiHoa12');
-                alert("Mở khóa thành công! Học sinh có thể làm lại bài.");
-                location.reload();
-            } else if (pin !== null) {
-                alert("Mã bảo mật không chính xác!");
-            }
-        }
-
-        const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3");
-        bgMusic.loop = true; bgMusic.volume = 0.2; 
-        const sfxCorrect = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
-        const sfxWrong = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
-        const sfxWin = new Audio("https://assets.mixkit.co/active_storage/sfx/2002/2002-preview.mp3");
-        const sfxExplode = new Audio("https://assets.mixkit.co/active_storage/sfx/170/170-preview.mp3");
-
-        let isMuted = false;
-        function toggleAudio() {
-            isMuted = !isMuted;
-            bgMusic.muted = isMuted; sfxCorrect.muted = isMuted; sfxWrong.muted = isMuted; sfxWin.muted = isMuted; sfxExplode.muted = isMuted;
-            document.getElementById('audio-control').innerText = isMuted ? "🔇 Tắt Nhạc" : "🔊 Bật Nhạc";
-        }
-
-        let toastTimeout;
-        function showToast(msg, bgColor = "rgba(231, 76, 60, 0.95)") {
-            const toast = document.getElementById('toast-msg');
-            toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-
-        const bank1 = [
-            { q: "Công thức chung của ester no, đơn chức, mạch hở là?", a: ["CnH2nO2 (n≥2)", "CnH2nO (n≥1)", "CnH2n-2O2 (n≥3)", "CnH2n+2O2 (n≥2)"], c: 0 },
-            { q: "Tên gọi của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl acetate", "Propyl acetate", "Ethyl formate"], c: 0 },
-            { q: "Phản ứng xà phòng hóa ester là phản ứng thủy phân trong môi trường nào?", a: ["Acid", "Base (Kiềm)", "Muối trung tính", "Nước nguyên chất"], c: 1 },
-            { q: "Ở điều kiện thường, chất béo tồn tại ở trạng thái lỏng thường chứa gốc acid béo loại nào?", a: ["No", "Không no", "Thơm", "Vòng"], c: 1 },
-            { q: "Ester sinh ra từ phản ứng giữa acid CH3COOH và cồn CH3OH là?", a: ["CH3COOCH3", "HCOOCH3", "CH3COOC2H5", "C2H5COOCH3"], c: 0 },
-            { q: "Chất béo là triester của glycerol với?", a: ["Acid vô cơ", "Acid đa chức", "Acid béo", "Amino acid"], c: 2 },
-            { q: "Phản ứng biến chất béo lỏng thành chất béo rắn (bơ nhân tạo) là phản ứng gì?", a: ["Xà phòng hóa", "Cộng hydrogen (H2)", "Thủy phân", "Trùng hợp"], c: 1 },
-            { q: "Ester nào sau đây có mùi chuối chín đặc trưng?", a: ["Isoamyl acetate", "Benzyl acetate", "Ethyl butyrate", "Geranyl acetate"], c: 0 },
-            { q: "Trạng thái tồn tại của phần lớn các ester ở điều kiện thường là?", a: ["Chất rắn", "Chất lỏng", "Chất khí", "Plasma"], c: 1 },
-            { q: "Lipid bao gồm các chất nào sau đây?", a: ["Chất béo, sáp, steroid, phospholipid", "Chỉ gồm chất béo", "Chỉ gồm sáp và steroid", "Dầu ăn và mỡ động vật"], c: 0 }
-        ];
-
-        const bank2 = [
-            { q: "Carbohydrate được chia thành mấy nhóm chủ yếu?", a: ["2 nhóm", "3 nhóm", "4 nhóm", "5 nhóm"], c: 1 },
-            { q: "Công thức phân tử của glucose và fructose là?", a: ["C6H12O6", "C12H22O11", "(C6H10O5)n", "C6H12O5"], c: 0 },
-            { q: "Chất nào sau đây thuộc loại monosaccharide?", a: ["Saccharose", "Maltose", "Fructose", "Cellulose"], c: 2 },
-            { q: "Phân tử Saccharose được cấu tạo từ?", a: ["2 gốc α-glucose", "1 gốc α-glucose và 1 gốc β-fructose", "2 gốc β-fructose", "Nhiều gốc glucose"], c: 1 },
-            { q: "Dung dịch glucose có phản ứng tráng bạc vì trong phân tử có chứa nhóm chức nào?", a: ["Hydroxyl (-OH)", "Carboxyl (-COOH)", "Aldehyde (-CHO)", "Ketone (>C=O)"], c: 2 },
-            { q: "Chất nào sau đây KHÔNG bị thủy phân trong môi trường acid?", a: ["Saccharose", "Tinh bột", "Cellulose", "Glucose"], c: 3 },
-            { q: "Cellulose (thành phần chính của gỗ, bông) thuộc loại hợp chất nào?", a: ["Monosaccharide", "Disaccharide", "Polysaccharide", "Lipid"], c: 2 },
-            { q: "Để nhận biết hồ tinh bột, người ta dùng thuốc thử nào sau đây?", a: ["Dung dịch I2 (Iodine)", "AgNO3/NH3", "Cu(OH)2", "Quỳ tím"], c: 0 },
-            { q: "Đặc điểm nào sau đây KHÔNG đúng với tinh bột?", a: ["Dạng bột vô định hình", "Màu trắng", "Tan nhiều trong nước lạnh", "Không tan trong nước lạnh"], c: 2 },
-            { q: "Nước ép quả nho chín chứa rất nhiều chất nào sau đây (còn gọi là đường nho)?", a: ["Fructose", "Glucose", "Saccharose", "Maltose"], c: 1 }
-        ];
-
-        const bank3 = [
-            { q: "Amine bậc 1 có nhóm chức nào sau đây?", a: ["-NH2", "-NH-", ">N-", "-COOH"], c: 0 },
-            { q: "Tên gốc - chức của amine CH3NH2 là?", a: ["Methylamine", "Ethylamine", "Propylamine", "Phenylamine"], c: 0 },
-            { q: "Chất nào sau đây là một amine thơm?", a: ["Methylamine", "Ethylamine", "Aniline (C6H5NH2)", "Dimethylamine"], c: 2 },
-            { q: "Amino acid là hợp chất hữu cơ tạp chức chứa đồng thời các nhóm chức nào?", a: ["-NH2 và -COOH", "-OH và -COOH", "-NH2 và -OH", "-CHO và -COOH"], c: 0 },
-            { q: "Công thức của Glycine (amino acid nhỏ nhất) là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "H2N-CH2-CH2-COOH", "CH3-CH2-COOH"], c: 0 },
-            { q: "Chất nào sau đây có tính lưỡng tính (tác dụng được với cả acid và base)?", a: ["CH3NH2", "CH3COOH", "H2N-CH2-COOH", "C2H5OH"], c: 2 },
-            { q: "Liên kết peptide là liên kết -CO-NH- giữa hai đơn vị nào?", a: ["α-amino acid", "β-amino acid", "Carboxylic acid", "Amine"], c: 0 },
-            { q: "Phản ứng màu biuret dùng thuốc thử Cu(OH)2 trong môi trường kiềm cho màu gì?", a: ["Đỏ máu", "Vàng cam", "Tím đặc trưng", "Xanh lam"], c: 2 },
-            { q: "Peptide mạch hở chứa 3 gốc α-amino acid được gọi là gì?", a: ["Dipeptide", "Tripeptide", "Tetrapeptide", "Polypeptide"], c: 1 },
-            { q: "Sự đông tụ protein (như luộc trứng, nấu riêu cua) xảy ra khi nào?", a: ["Khi đun nóng", "Khi thêm acid", "Khi thêm base hoặc muối", "Cả 3 trường hợp trên"], c: 3 }
-        ];
-
-        const bank4 = [
-            { q: "Ở nhiệt độ thường, chất béo triolein tồn tại ở trạng thái nào?", a: ["Rắn", "Lỏng", "Khí", "Nhũ tương"], c: 1 },
-            { q: "Chất nào sau đây là chất rắn, dạng sợi, màu trắng, không tan trong nước?", a: ["Tinh bột", "Saccharose", "Cellulose", "Glucose"], c: 2 },
-            { q: "Dung dịch chất nào sau đây làm quỳ tím hóa xanh (có tính base)?", a: ["Aniline", "Glycine", "Methylamine", "Valine"], c: 2 },
-            { q: "Dung dịch acid aminoacetic (Glycine) làm quỳ tím chuyển màu gì?", a: ["Đỏ", "Xanh", "Không đổi màu", "Mất màu"], c: 2 },
-            { q: "Cho AgNO3/NH3 vào ống nghiệm chứa glucose đun nóng nhẹ sẽ thấy hiện tượng gì?", a: ["Kết tủa đỏ gạch", "Lớp kim loại trắng bạc bám vào thành ống", "Sủi bọt khí", "Dung dịch màu xanh thẫm"], c: 1 },
-            { q: "Sản phẩm thủy phân hoàn toàn tinh bột trong môi trường acid đun nóng là?", a: ["Fructose", "Glucose", "Saccharose", "Maltose"], c: 1 },
-            { q: "Chất béo là thành phần chính của?", a: ["Mật ong", "Dầu, mỡ động thực vật", "Gỗ", "Tóc và móng sừng"], c: 1 },
-            { q: "Fructose (đường ngọt nhất) có mặt nhiều nhất trong?", a: ["Quả nho chín", "Mật ong", "Cây mía", "Cây bông"], c: 1 },
-            { q: "Tơ tằm, lông cừu, tóc, sừng thuộc loại hợp chất nào?", a: ["Polysaccharide", "Protein", "Lipid", "Ester"], c: 1 },
-            { q: "Xà phòng là hỗn hợp muối Natri hoặc Kali của hợp chất nào?", a: ["Acid vô cơ", "Acid carboxylic đơn giản", "Acid béo", "Amino acid"], c: 2 }
-        ];
-
-        const bank5 = [
-            { q: "Ester Vinyl acetate có công thức cấu tạo là?", a: ["CH3COOCH=CH2", "CH2=CHCOOCH3", "HCOOCH=CH2", "C2H5COOCH=CH2"], c: 0 },
-            { q: "Chất nào sau đây là đồng phân của glucose?", a: ["Saccharose", "Fructose", "Cellulose", "Tinh bột"], c: 1 },
-            { q: "Công thức phân tử của chất béo Triolein là?", a: ["(C17H35COO)3C3H5", "(C15H31COO)3C3H5", "(C17H33COO)3C3H5", "(C17H31COO)3C3H5"], c: 2 },
-            { q: "Amine bậc 2 có công thức cấu tạo dạng chung là?", a: ["R-NH2", "R-NH-R'", "R-N(R')-R''", "R-NO2"], c: 1 },
-            { q: "Số liên kết peptide có trong phân tử Tetrapeptide mạch hở là bao nhiêu?", a: ["4", "3", "2", "5"], c: 1 },
-            { q: "Alanine (một amino acid) có công thức cấu tạo thu gọn là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "HOOC-CH2-CH2-CH(NH2)-COOH", "H2N-[CH2]4-CH(NH2)-COOH"], c: 1 },
-            { q: "Phân tử Amylopectin (trong tinh bột) có cấu trúc mạch như thế nào?", a: ["Mạch không phân nhánh", "Mạch phân nhánh", "Mạch vòng khép kín", "Mạng không gian"], c: 1 },
-            { q: "Amine nào sau đây tồn tại ở trạng thái khí ở điều kiện thường?", a: ["Aniline", "Dimethylamine", "Phenylamine", "Benzylamine"], c: 1 },
-            { q: "Chất nào sau đây tác dụng được với Cu(OH)2 ở nhiệt độ thường tạo dung dịch màu xanh lam?", a: ["Ethanol", "Fructose", "Ethyl acetate", "Cellulose"], c: 1 },
-            { q: "Lysine có đặc điểm cấu tạo chứa mấy nhóm amino (-NH2) và mấy nhóm carboxyl (-COOH)?", a: ["1 nhóm -NH2 và 1 nhóm -COOH", "2 nhóm -NH2 và 1 nhóm -COOH", "1 nhóm -NH2 và 2 nhóm -COOH", "2 nhóm -NH2 và 2 nhóm -COOH"], c: 1 }
-        ];
-
-        const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5];
-
-        let activeQuestions = []; 
-        let playerName = ""; let playerId = ""; let gameStarted = false; 
-        let currentScore = 0; 
-
-        function generateRandomizedQuestions() {
-            let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
-            let cloned = JSON.parse(JSON.stringify(selectedBank));
-            for (let i = cloned.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
-            }
-            cloned.forEach(item => {
-                let correctAnswerText = item.a[item.c]; 
-                for (let i = item.a.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [item.a[i], item.a[j]] = [item.a[j], item.a[i]];
-                }
-                item.c = item.a.indexOf(correctAnswerText);
-            });
-            return cloned;
         }
 
         function updateScoreUI() {
@@ -417,8 +383,6 @@
             playerName = nameInput; 
             playerId = classInput + " - " + idInput; 
             currentScore = 0;
-            
-            // LƯU THỜI GIAN ĐĂNG NHẬP (GHI NHẬN KHI BẤM BẮT ĐẦU)
             loginTimeString = getFormattedTime();
 
             document.getElementById('login-screen').style.display = 'none';
@@ -440,18 +404,23 @@
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         const dirLight = new THREE.DirectionalLight(0xfff5b6, 0.6); dirLight.position.set(20, 50, 20); scene.add(dirLight);
 
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 1000), new THREE.MeshLambertMaterial({ color: 0x82d844 }));
-        ground.rotation.x = -Math.PI / 2; scene.add(ground);
+        // Kéo dài mặt đất ra 2000 đơn vị
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 2000), new THREE.MeshLambertMaterial({ color: 0x82d844 }));
+        ground.rotation.x = -Math.PI / 2; 
+        ground.position.z = -300; 
+        scene.add(ground);
 
+        // Dời mặt trời ra xa
         const sun = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0xffe666, side: THREE.DoubleSide }));
-        sun.position.set(120, 90, -500); scene.add(sun);
+        sun.position.set(120, 90, -800); scene.add(sun);
 
+        // Dời núi non ra xa
         function createDistantMountain(x, z, r, color) {
             const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.MeshBasicMaterial({ color: color }));
             mesh.scale.set(r, r * 0.35, r * 0.2); mesh.position.set(x, -r * 0.25, z); scene.add(mesh);
         }
-        createDistantMountain(-250, -550, 300, 0x82c8e5); createDistantMountain(200, -500, 250, 0x6bb5d8);
-        createDistantMountain(0, -600, 400, 0x9bd4e4); createDistantMountain(-100, -450, 200, 0x5aa4c7); 
+        createDistantMountain(-250, -850, 300, 0x82c8e5); createDistantMountain(200, -800, 250, 0x6bb5d8);
+        createDistantMountain(0, -900, 400, 0x9bd4e4); createDistantMountain(-100, -750, 200, 0x5aa4c7); 
 
         const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         function createCloud(x, y, z, scale) {
@@ -461,7 +430,7 @@
             const c3 = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), cloudMat); c3.position.set(4, -1.5, 0); group.add(c3);
             group.position.set(x, y, z); group.scale.set(scale, scale * 0.7, scale); scene.add(group);
         }
-        for (let i = 0; i < 15; i++) createCloud((Math.random() - 0.5) * 600, 50 + Math.random() * 50, -300 - Math.random() * 300, 0.8 + Math.random() * 1.5);
+        for (let i = 0; i < 25; i++) createCloud((Math.random() - 0.5) * 600, 50 + Math.random() * 50, -100 - Math.random() * 800, 0.8 + Math.random() * 1.5);
 
         function createSignTexture(text) {
             const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128; const ctx = canvas.getContext('2d');
@@ -476,12 +445,15 @@
         const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("KHU RỪNG HÓA HỌC") }), woodMat ]); sign.position.set(0, 7.5, 0); startGate.add(sign);
         startGate.position.set(0, 0, 10); scene.add(startGate);
 
+        // Dời cổng đích về mốc -600
         const gate = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 2), new THREE.MeshLambertMaterial({ color: 0xffd700 }));
-        gate.position.set(0, 5, -300); scene.add(gate);
+        gate.position.set(0, 5, -600); scene.add(gate);
 
         activeQuestions = generateRandomizedQuestions();
         const obsGeo = new THREE.BoxGeometry(1.8, 1.8, 1.8); const obsMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
-        let obstacles = []; const zigzagX = [0, -12, 10, -14, 12, -10, 14, -8, 10, 0]; 
+        let obstacles = []; 
+        // Lộ trình rải 20 vật cản
+        const zigzagX = [0, -12, 10, -14, 12, -10, 14, -8, 10, -12, 14, -10, 12, -14, 10, -12, 14, -10, 12, 0]; 
         for (let i = 0; i < activeQuestions.length; i++) {
             const obs = new THREE.Mesh(obsGeo, obsMat); obs.position.set(zigzagX[i], 1.2, -i * 28 - 15); scene.add(obs);
             obstacles.push({ mesh: obs, data: activeQuestions[i], active: true });
@@ -508,9 +480,11 @@
             lPos.forEach(p => { const leaf = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 12), leafMat); leaf.position.set(p[0], p[1], p[2]); tg.add(leaf); });
             tg.scale.set(scale, scale, scale); tg.position.set(x, 0, z); scene.add(tg);
         }
+        
+        // Trồng rừng gấp đôi độ dày
         let treesPlanted = 0; let attempts = 0;
-        while(treesPlanted < 200 && attempts < 2000) {
-            attempts++; let x = (Math.random() - 0.5) * 80; let z = 12 - Math.random() * 352; let tooClose = false;
+        while(treesPlanted < 350 && attempts < 3000) {
+            attempts++; let x = (Math.random() - 0.5) * 80; let z = 15 - Math.random() * 650; let tooClose = false;
             for(let i=0; i<pathStones.length; i++) { if(Math.sqrt(Math.pow(x-pathStones[i].x, 2) + Math.pow(z-pathStones[i].z, 2)) < 4.5) { tooClose = true; break; } }
             if(!tooClose) { createTree(x, z, 0.7 + Math.random() * 0.6); treesPlanted++; }
         }
@@ -523,7 +497,9 @@
         playerGroup.rotation.y = Math.PI; playerGroup.position.set(0, 0, 18); scene.add(playerGroup);
 
         const keys = { w: false, a: false, s: false, d: false }; let isPaused = false; let walkTime = 0; 
-        let gameTimeLimit = 300; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
+        
+        // THỜI GIAN LÀM BÀI 7 PHÚT (420 GIÂY)
+        let gameTimeLimit = 420; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
 
         window.addEventListener('keydown', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = true; if(key === 's' || key === 'arrowdown') keys.s = true; if(key === 'a' || key === 'arrowleft') keys.a = true; if(key === 'd' || key === 'arrowright') keys.d = true; });
         window.addEventListener('keyup', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = false; if(key === 's' || key === 'arrowdown') keys.s = false; if(key === 'a' || key === 'arrowleft') keys.a = false; if(key === 'd' || key === 'arrowright') keys.d = false; });
@@ -606,7 +582,7 @@
                     remaining = 0; gameEnded = true; isPaused = true; uiPanel.classList.remove('active');
                     bgMusic.pause(); 
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
-                    document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 5 phút.</div>`;
+                    document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>`;
                     
                     sendScoreToSheet(playerName, playerId, currentScore, elapsedSeconds);
                     localStorage.setItem('daThiHoa12', 'true'); 
@@ -661,7 +637,7 @@
                     document.getElementById('result-details').innerHTML = `
                         <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
                         <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
-                        <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 10</span></p>
+                        <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
                         <p>Thời gian: <span style="color:#e74c3c">${timeString}</span></p>
                         <div class="info-text">✅ Điểm đã được gửi về cho thầy cô!</div>
                     `;
