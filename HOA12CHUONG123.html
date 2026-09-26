@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Hóa Học 12</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12 (Anti-Cheat)</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -13,6 +13,7 @@
         .login-box { background: white; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f; width: 85%; max-width: 400px; }
         .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
         .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+        .warning-text { color: #e74c3c; font-weight: bold; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: block; }
         
         .login-box input, .login-box select { 
             width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; 
@@ -27,7 +28,6 @@
         .login-box button:hover { background: #c0392b; }
         .login-box button:active { transform: scale(0.98); }
 
-        /* Giao diện khi bị khóa */
         #locked-msg { display: none; color: #e74c3c; font-size: 18px; font-weight: bold; margin: 20px 0; border: 2px dashed #e74c3c; padding: 15px; border-radius: 8px; background: #fadbd8; }
         #btn-unlock { display: none; background: #7f8c8d; font-size: 16px; margin-top: 10px;}
         #btn-unlock:hover { background: #95a5a6; }
@@ -74,9 +74,10 @@
     <div id="toast-msg"></div>
 
     <div id="login-screen">
-        <form class="login-box" id="login-form" onsubmit="startGame(); return false;">
+        <form class="login-box" id="login-form">
             <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
+            <span class="warning-text" id="warning-msg">⚠️ Chú ý: Tuyệt đối không thoát hoặc chuyển thẻ (tab) khi đang thi. Vi phạm sẽ bị thu bài ngay lập tức!</span>
             
             <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
 
@@ -95,7 +96,7 @@
             </div>
 
             <button type="submit" id="btn-start">BẮT ĐẦU CHƠI</button>
-            <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
+            <button type="button" id="btn-unlock">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
         </form>
     </div>
 
@@ -103,8 +104,7 @@
         <div class="result-box">
             <h2 id="result-title"></h2>
             <div id="result-details"></div>
-            <!-- Bỏ nút "Chơi lại từ đầu" để tránh hs tự bấm chơi lại -->
-            <button onclick="location.reload()" style="background:#7f8c8d">THOÁT</button>
+            <button id="btn-exit" type="button" style="background:#7f8c8d">THOÁT</button>
         </div>
     </div>
 
@@ -119,7 +119,7 @@
         <p>Điều khiển phím ảo để đi.</p>
     </div>
     
-    <div id="audio-control" onclick="toggleAudio()">🔊 Bật Nhạc</div>
+    <div id="audio-control">🔊 Bật Nhạc</div>
 
     <div id="dpad">
         <div class="dpad-btn" id="btn-up">▲</div>
@@ -136,33 +136,90 @@
     </div>
 
     <script>
+    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
+    (function() {
+        
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwBVHosNSuy3mbYP2exh88S8kmjTnPjcdmjbB6UaURAls_JIFZw3hq1B9gNJaOnc_C6Rw/exec";
 
         function sendScoreToSheet(name, id, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
+            
+            let safeScore = parseInt(score);
+            if (safeScore > 10 || safeScore < 0) {
+                safeScore = 0; 
+            }
+
             fetch(GOOGLE_SHEET_URL, {
                 method: "POST", mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name, id: id, score: score, time: seconds })
+                body: JSON.stringify({ name: name, id: id, score: safeScore, time: seconds })
             }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
         }
 
-        // KIỂM TRA MÃ KHÓA KHI TẢI TRANG
-        window.onload = function() {
-            if(localStorage.getItem('daThiHoa12') === 'true') {
-                document.getElementById('input-group').style.display = 'none';
-                document.getElementById('btn-start').style.display = 'none';
-                document.getElementById('login-desc').style.display = 'none';
-                document.getElementById('locked-msg').style.display = 'block';
-                document.getElementById('btn-unlock').style.display = 'block';
-            }
+        // ==========================================
+        // HỆ THỐNG GIÁM SÁT MÀN HÌNH (ANTI-CHEAT)
+        // ==========================================
+        function triggerAntiCheat() {
+            if (!gameStarted || gameEnded) return; // Chỉ phạt khi đang trong thời gian làm bài
+
+            isPaused = true; 
+            gameEnded = true;
+            uiPanel.classList.remove('active'); // Tắt khung câu hỏi nếu đang mở
+            
+            bgMusic.pause();
+            if(!isMuted) sfxWrong.play();
+
+            let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+            
+            // Ép nộp điểm hiện tại
+            sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
+            localStorage.setItem('daThiHoa12', 'true');
+
+            // Hiển thị màn hình Vi Phạm
+            document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
+            document.getElementById('result-title').style.color = "#e74c3c";
+            document.getElementById('result-details').innerHTML = `
+                <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
+                <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 10</span></p>
+                <div class="info-text" style="color:#e74c3c; font-size: 15px;">Hệ thống phát hiện thiết bị đã thoát màn hình hoặc mở thẻ (tab) khác.<br>Bài thi đã bị khóa và tự động nộp!</div>
+            `;
+            document.getElementById('result-screen').style.display = 'flex';
         }
 
-        // HÀM NHẬP MÃ PIN GIÁO VIÊN
+        // Bắt sự kiện người dùng thu nhỏ trình duyệt, vuốt sang app khác hoặc đổi tab
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) { triggerAntiCheat(); }
+        });
+
+        // Bắt sự kiện người dùng bấm ra ngoài cửa sổ game (mất tiêu điểm)
+        window.addEventListener("blur", function() {
+            triggerAntiCheat();
+        });
+        // ==========================================
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            startGame();
+        });
+
+        document.getElementById('btn-unlock').addEventListener('click', unlockGame);
+        document.getElementById('btn-exit').addEventListener('click', function() { location.reload(); });
+        document.getElementById('audio-control').addEventListener('click', toggleAudio);
+
+        if(localStorage.getItem('daThiHoa12') === 'true') {
+            document.getElementById('input-group').style.display = 'none';
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('login-desc').style.display = 'none';
+            document.getElementById('warning-msg').style.display = 'none';
+            document.getElementById('locked-msg').style.display = 'block';
+            document.getElementById('btn-unlock').style.display = 'block';
+        }
+
         function unlockGame() {
             let pin = prompt("Vui lòng nhập MÃ BẢO MẬT của Giáo Viên:");
-            if (pin === "123456") { // Đổi mã số bảo mật ở đây nếu muốn
+            if (pin === "123456") { 
                 localStorage.removeItem('daThiHoa12');
                 alert("Mở khóa thành công! Học sinh có thể làm lại bài.");
                 location.reload();
@@ -430,10 +487,16 @@
             isPaused = true; keys.w = keys.a = keys.s = keys.d = false; 
             const q = obstacles[index].data; questionText.innerText = `Câu ${index + 1}: ${q.q}`; answersContainer.innerHTML = '';
             
+            let isAnswered = false; 
+
             q.a.forEach((ans, i) => {
                 const btn = document.createElement('button'); btn.className = 'btn-answer'; btn.innerText = ans;
                 const submitAnswer = (e) => {
                     if(e) e.preventDefault();
+                    
+                    if(isAnswered) return; 
+                    isAnswered = true;
+
                     uiPanel.classList.remove('active'); 
                     
                     let obsPos = obstacles[index].mesh.position;
@@ -477,7 +540,7 @@
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
                     document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 5 phút.</div>`;
                     
-                    localStorage.setItem('daThiHoa12', 'true'); // Đánh dấu đã hết giờ
+                    localStorage.setItem('daThiHoa12', 'true'); 
                     document.getElementById('result-screen').style.display = 'flex';
                 } else { let m = Math.floor(remaining / 60); let s = remaining % 60; timerUI.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); }
             }
@@ -485,15 +548,22 @@
             if (!isPaused && !gameEnded) {
                 let isMoving = false; let targetRotation = playerGroup.rotation.y; let nextZ = playerGroup.position.z; let nextX = playerGroup.position.x;
                 if (keys.w) { nextZ -= speed; targetRotation = Math.PI; isMoving = true; } if (keys.s) { nextZ += speed; targetRotation = 0; isMoving = true; } if (keys.a) { nextX -= speed; targetRotation = -Math.PI / 2; isMoving = true; } if (keys.d) { nextX += speed; targetRotation = Math.PI / 2; isMoving = true; }
-                if (nextZ > 9.5) { if (nextX > 3.5) nextX = 3.5; if (nextX < -3.5) nextX = -3.5; } else { if (nextX > 25) nextX = 25; if (nextX < -25) nextX = -25; }
+                
+                if (nextZ > 9.5) { 
+                    if (nextX > 3.5) nextX = 3.5; 
+                    if (nextX < -3.5) nextX = -3.5; 
+                    if (nextZ > 18) nextZ = 18; 
+                } else { 
+                    if (nextX > 16) nextX = 16; 
+                    if (nextX < -16) nextX = -16; 
+                }
 
                 let currentGateIndex = obstacles.findIndex(o => o.active === true);
                 if (currentGateIndex !== -1) { 
                     let gateZ = obstacles[currentGateIndex].mesh.position.z; 
                     if (nextZ < gateZ + 1.5) { nextZ = gateZ + 1.5; } 
                 } else {
-                    // KHÓA CHẶT CỔNG ĐÍCH, KHÔNG CHO VƯỢT QUÁ CỔNG
-                    if (nextZ < gate.position.z + 1.5) { nextZ = gate.position.z + 1.5; }
+                    if (nextZ < gate.position.z + 1.5) { nextZ = gate.position.z + 1.5; } 
                 }
 
                 playerGroup.position.z = nextZ; playerGroup.position.x = nextX; playerGroup.rotation.y = targetRotation;
@@ -513,8 +583,6 @@
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
                     
                     sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
-                    
-                    // GHI NHẬN ĐÃ THI VÀO TRÌNH DUYỆT IPAD
                     localStorage.setItem('daThiHoa12', 'true');
                     
                     bgMusic.pause();
@@ -536,7 +604,10 @@
         }
         function resizeGame() { const width = window.innerWidth; const height = window.innerHeight; camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height); }
         window.addEventListener('resize', resizeGame); window.addEventListener('orientationchange', function() { setTimeout(resizeGame, 300); });
+        
         animate();
+        
+    })(); 
     </script>
 </body>
 </html>
