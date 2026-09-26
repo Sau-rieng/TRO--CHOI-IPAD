@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - HÓA HỌC 12</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -43,6 +43,9 @@
         #instructions h2 { margin: 0 0 5px 0; font-size: 18px; color: #ffcc00;}
         #instructions p { margin: 0; font-size: 14px; }
 
+        #audio-control { position: absolute; top: 15px; left: 240px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid #3498db; }
+        #audio-control:active { transform: scale(0.95); }
+
         #timer-box { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5; font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none; text-align: center;}
         
         #score-box { position: absolute; top: 65px; right: 15px; color: white; background: rgba(39, 174, 96, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 20px; font-weight: bold; border: 2px solid #2ecc71; display: none; pointer-events: none;}
@@ -62,7 +65,7 @@
 
     <div id="login-screen">
         <form class="login-box" onsubmit="startGame(); return false;">
-            <h2>HÓA HỌC 12: Ôn Tập Tổng Hợp</h2>
+            <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p>Vui lòng điền thông tin để bắt đầu</p>
             <input type="text" id="input-name" placeholder="Tên Học Sinh / Tên Nhóm" autocomplete="off" required>
             <input type="text" id="input-id" placeholder="Lớp / Số Báo Danh" autocomplete="off" required>
@@ -85,9 +88,11 @@
     <div id="score-box">⭐ Điểm: 0</div>
 
     <div id="instructions">
-        <h2>HÓA HỌC 12: Ôn Tập Tổng Hợp</h2>
+        <h2>Hóa Học 12: Ôn Tập</h2>
         <p>Điều khiển phím ảo để đi.</p>
     </div>
+    
+    <div id="audio-control" onclick="toggleAudio()">🔊 Bật Nhạc</div>
 
     <div id="dpad">
         <div class="dpad-btn" id="btn-up">▲</div>
@@ -105,7 +110,7 @@
 
     <script>
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyegy6zt71-9IM2V4CtNlf0924MqRSDew832vaZXXrwN6VoVN_Tts2hs5iq64c3M_mGpg/exec";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxgWGY9pTxlvAdGVp9-CeClCTfc3HM5ECkT0C2JD-tf8VAGXGM4aJNG2_22cIuthvuFqg/exec";
 
         function sendScoreToSheet(name, id, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
@@ -114,6 +119,20 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: name, id: id, score: score, time: seconds })
             }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
+        }
+
+        const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3");
+        bgMusic.loop = true; bgMusic.volume = 0.2; 
+        const sfxCorrect = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
+        const sfxWrong = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
+        const sfxWin = new Audio("https://assets.mixkit.co/active_storage/sfx/2002/2002-preview.mp3");
+        const sfxExplode = new Audio("https://assets.mixkit.co/active_storage/sfx/170/170-preview.mp3");
+
+        let isMuted = false;
+        function toggleAudio() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted; sfxCorrect.muted = isMuted; sfxWrong.muted = isMuted; sfxWin.muted = isMuted; sfxExplode.muted = isMuted;
+            document.getElementById('audio-control').innerText = isMuted ? "🔇 Tắt Nhạc" : "🔊 Bật Nhạc";
         }
 
         let toastTimeout;
@@ -194,23 +213,20 @@
             { q: "Lysine có đặc điểm cấu tạo chứa mấy nhóm amino (-NH2) và mấy nhóm carboxyl (-COOH)?", a: ["1 nhóm -NH2 và 1 nhóm -COOH", "2 nhóm -NH2 và 1 nhóm -COOH", "1 nhóm -NH2 và 2 nhóm -COOH", "2 nhóm -NH2 và 2 nhóm -COOH"], c: 1 }
         ];
 
-        // Khai báo mảng chứa tất cả 5 bộ đề
         const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5];
+
         let activeQuestions = []; 
         let playerName = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
 
         function generateRandomizedQuestions() {
-            // Lấy ngẫu nhiên 1 trong 3 bộ đề
             let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
             let cloned = JSON.parse(JSON.stringify(selectedBank));
             
-            // Xáo trộn câu hỏi
             for (let i = cloned.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
             }
-            // Xáo trộn đáp án
             cloned.forEach(item => {
                 let correctAnswerText = item.a[item.c]; 
                 for (let i = item.a.length - 1; i > 0; i--) {
@@ -239,6 +255,8 @@
             document.getElementById('player-info').innerText = `${playerName} - Lớp/SBD: ${playerId}`;
             updateScoreUI();
             
+            if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
+
             gameStartTime = Date.now(); gameStarted = true; return false;
         }
 
@@ -285,7 +303,7 @@
         const startGate = new THREE.Group(); const woodMat = new THREE.MeshLambertMaterial({ color: 0x6e4321 }); 
         const p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), woodMat); p1.position.set(-4.5, 4, 0); const p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), woodMat); p2.position.set(4.5, 4, 0); startGate.add(p1, p2);
         const beam = new THREE.Mesh(new THREE.BoxGeometry(11, 1, 1), woodMat); beam.position.set(0, 7.5, 0); startGate.add(beam);
-        const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("KHU RỪNG TOÁN HỌC") }), woodMat ]); sign.position.set(0, 7.5, 0); startGate.add(sign);
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("KHU RỪNG HÓA HỌC") }), woodMat ]); sign.position.set(0, 7.5, 0); startGate.add(sign);
         startGate.position.set(0, 0, 10); scene.add(startGate);
 
         const gate = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 2), new THREE.MeshLambertMaterial({ color: 0xffd700 }));
@@ -366,6 +384,7 @@
         function resetGame() {
             playerGroup.position.set(0, 0, 18); playerGroup.rotation.y = Math.PI;
             currentScore = 0; updateScoreUI(); gameStartTime = Date.now(); gameEnded = false; isPaused = false; uiPanel.classList.remove('active');
+            if(!isMuted) bgMusic.play();
             activeQuestions = generateRandomizedQuestions();
             obstacles.forEach((obs, idx) => { obs.active = true; obs.data = activeQuestions[idx]; scene.add(obs.mesh); });
         }
@@ -383,10 +402,13 @@
                     let obsPos = obstacles[index].mesh.position;
 
                     if (i === q.c) {
-                        currentScore += 1; updateScoreUI(); showToast("✅ Chính xác! +1 Điểm", "rgba(46, 204, 113, 0.95)");
+                        currentScore += 1; updateScoreUI(); 
+                        showToast("✅ Chính xác! +1 Điểm", "rgba(46, 204, 113, 0.95)");
+                        if(!isMuted) { sfxCorrect.play(); sfxExplode.play(); }
                         createExplosion(obsPos.x, obsPos.y, obsPos.z); showFloatingScore(obsPos.x, obsPos.y, obsPos.z);
                     } else {
                         showToast("❌ Tiếc quá sai mất rồi!", "rgba(231, 76, 60, 0.95)");
+                        if(!isMuted) sfxWrong.play();
                     }
                     
                     scene.remove(obstacles[index].mesh); obstacles[index].active = false;
@@ -414,6 +436,7 @@
                 let elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000); let remaining = gameTimeLimit - elapsedSeconds;
                 if (remaining <= 0) {
                     remaining = 0; gameEnded = true; isPaused = true; uiPanel.classList.remove('active');
+                    bgMusic.pause(); 
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
                     document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 5 phút.</div>`;
                     document.getElementById('result-screen').style.display = 'flex';
@@ -442,7 +465,12 @@
                 if (playerGroup.position.z <= gate.position.z + 5 && !gameEnded) {
                     isPaused = true; gameEnded = true;
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
+                    
                     sendScoreToSheet(playerName, playerId, currentScore, timeTaken);
+                    
+                    bgMusic.pause();
+                    if(!isMuted) sfxWin.play();
+
                     document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG EM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
                     document.getElementById('result-details').innerHTML = `
                         <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
