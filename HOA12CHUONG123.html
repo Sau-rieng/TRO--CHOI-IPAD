@@ -13,8 +13,17 @@
         .login-box { background: white; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f; width: 85%; max-width: 400px; }
         .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
         .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
-        .login-box input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; transition: border 0.3s; user-select: auto; -webkit-user-select: auto;}
-        .login-box input:focus { border-color: #3498db; }
+        
+        /* Cập nhật style cho cả input và select */
+        .login-box input, .login-box select { 
+            width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; 
+            border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; 
+            transition: border 0.3s; user-select: auto; -webkit-user-select: auto;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .login-box select { cursor: pointer; background-color: #fcfcfc; }
+        .login-box input:focus, .login-box select:focus { border-color: #3498db; }
+        
         .login-box button { background: #e74c3c; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s;}
         .login-box button:hover { background: #c0392b; }
         .login-box button:active { transform: scale(0.98); }
@@ -30,7 +39,6 @@
         #toast-msg { position: fixed; top: 30%; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 5000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; text-align: center; border: 2px solid #fff; }
 
         #player-info { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(52, 152, 219, 0.95); color: white; padding: 10px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; text-align: center; line-height: 1.5; }
-        .score-highlight { color: #f1c40f; font-size: 20px; }
 
         #ui-panel { position: absolute; bottom: -400px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 700px; background: rgba(40, 50, 60, 0.95); color: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.6); transition: bottom 0.3s ease-out; display: flex; flex-direction: column; align-items: center; padding: 15px 20px 25px 20px; z-index: 20; border-radius: 20px 20px 0 0; border-top: 5px solid #ffcc00; }
         #ui-panel.active { bottom: 0; }
@@ -67,8 +75,20 @@
         <form class="login-box" onsubmit="startGame(); return false;">
             <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p>Vui lòng điền thông tin để bắt đầu</p>
-            <input type="text" id="input-name" placeholder="Tên Học Sinh / Tên Nhóm" autocomplete="off" required>
-            <input type="text" id="input-id" placeholder="Lớp / Số Báo Danh" autocomplete="off" required>
+            <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off" required>
+            
+            <!-- THÊM DANH SÁCH CHỌN LỚP CỐ ĐỊNH -->
+            <select id="input-class" required>
+                <option value="" disabled selected>-- Chọn Lớp --</option>
+                <option value="10E1">Lớp 10E1</option>
+                <option value="12G1">Lớp 12G1</option>
+                <option value="12G2">Lớp 12G2</option>
+                <option value="12G5">Lớp 12G5</option>
+                <option value="9D1">Lớp 9D1</option>
+                <option value="9D3">Lớp 9D3</option>
+            </select>
+
+            <input type="text" id="input-id" placeholder="Số Báo Danh (Ví dụ: 01)" autocomplete="off" required>
             <button type="submit" id="btn-start">BẮT ĐẦU CHƠI</button>
         </form>
     </div>
@@ -110,7 +130,7 @@
 
     <script>
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxgWGY9pTxlvAdGVp9-CeClCTfc3HM5ECkT0C2JD-tf8VAGXGM4aJNG2_22cIuthvuFqg/exec";
+        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
 
         function sendScoreToSheet(name, id, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
@@ -244,15 +264,18 @@
 
         function startGame() {
             const nameInput = document.getElementById('input-name').value.trim();
+            const classInput = document.getElementById('input-class').value;
             const idInput = document.getElementById('input-id').value.trim();
             
-            if(nameInput === "" || idInput === "") { showToast("Vui lòng điền đủ Tên và Lớp/SBD!"); return false; }
-            playerName = nameInput; playerId = idInput; currentScore = 0;
+            if(nameInput === "" || classInput === "" || idInput === "") { showToast("Vui lòng điền đủ Tên, Lớp và SBD!"); return false; }
+            playerName = nameInput; 
+            playerId = classInput + " - " + idInput; // Gộp Lớp và SBD lại để gửi về Google Sheet
+            currentScore = 0;
             
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('player-info').style.display = 'block';
             document.getElementById('score-box').style.display = 'block';
-            document.getElementById('player-info').innerText = `${playerName} - Lớp/SBD: ${playerId}`;
+            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | SBD: ${idInput}`;
             updateScoreUI();
             
             if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
@@ -449,7 +472,14 @@
                 if (nextZ > 9.5) { if (nextX > 3.5) nextX = 3.5; if (nextX < -3.5) nextX = -3.5; } else { if (nextX > 25) nextX = 25; if (nextX < -25) nextX = -25; }
 
                 let currentGateIndex = obstacles.findIndex(o => o.active === true);
-                if (currentGateIndex !== -1) { let gateZ = obstacles[currentGateIndex].mesh.position.z; if (nextZ < gateZ + 1.5) { nextZ = gateZ + 1.5; } }
+                if (currentGateIndex !== -1) { 
+                    let gateZ = obstacles[currentGateIndex].mesh.position.z; 
+                    if (nextZ < gateZ + 1.5) { nextZ = gateZ + 1.5; } 
+                } else {
+                    // SỬA LỖI 1: KHÓA CHẶT CỔNG ĐÍCH, KHÔNG CHO ĐI VƯỢT RA SAU
+                    if (nextZ < gate.position.z + 1.5) { nextZ = gate.position.z + 1.5; }
+                }
+
                 playerGroup.position.z = nextZ; playerGroup.position.x = nextX; playerGroup.rotation.y = targetRotation;
 
                 if (isMoving) { walkTime += 0.25; leftArm.rotation.x = Math.sin(walkTime) * 0.8; rightArm.rotation.x = -Math.sin(walkTime) * 0.8; leftLeg.rotation.x = -Math.sin(walkTime) * 0.8; rightLeg.rotation.x = Math.sin(walkTime) * 0.8; } else { leftArm.rotation.x = 0; rightArm.rotation.x = 0; leftLeg.rotation.x = 0; rightLeg.rotation.x = 0; }
@@ -462,7 +492,8 @@
                     }
                 });
 
-                if (playerGroup.position.z <= gate.position.z + 5 && !gameEnded) {
+                // KÍCH HOẠT KẾT QUẢ KHI CHẠM VÀO CỔNG ĐÍCH
+                if (playerGroup.position.z <= gate.position.z + 2.5 && !gameEnded) {
                     isPaused = true; gameEnded = true;
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
                     
@@ -474,6 +505,7 @@
                     document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG EM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
                     document.getElementById('result-details').innerHTML = `
                         <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                        <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
                         <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 10</span></p>
                         <p>Thời gian: <span style="color:#e74c3c">${timeString}</span></p>
                         <div class="info-text">✅ Điểm đã được gửi về cho thầy cô!</div>
