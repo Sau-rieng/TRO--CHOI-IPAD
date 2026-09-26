@@ -10,7 +10,6 @@
         #game-container canvas { width: 100% !important; height: 100% !important; display: block; outline: none;}
         
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        /* Đổi .login-box áp dụng cho div */
         .login-box { background: white; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f; width: 85%; max-width: 400px; }
         .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
         .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
@@ -65,6 +64,9 @@
         
         #score-box { position: absolute; top: 65px; right: 15px; color: white; background: rgba(39, 174, 96, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 20px; font-weight: bold; border: 2px solid #2ecc71; display: none; pointer-events: none;}
 
+        /* Thêm CSS cho bảng Tiến độ (Nằm dưới bảng điểm) */
+        #progress-box { position: absolute; top: 110px; right: 15px; color: white; background: rgba(142, 68, 173, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 18px; font-weight: bold; border: 2px solid #9b59b6; display: none; pointer-events: none;}
+
         .floating-score { position: absolute; color: #2ecc71; font-size: 36px; font-weight: bold; text-shadow: 0 0 10px white, 0 0 5px green; pointer-events: none; animation: floatUp 1.5s ease-out forwards; z-index: 100; transform: translate(-50%, -50%);}
         @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -150px) scale(1.5); } }
 
@@ -79,7 +81,6 @@
     <div id="toast-msg"></div>
 
     <div id="login-screen">
-        <!-- Đã đổi thẻ form thành thẻ div tĩnh để chống load lại trang web -->
         <div class="login-box" id="login-form">
             <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
@@ -99,7 +100,6 @@
                 <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
             </div>
 
-            <!-- Nút bấm gọi hàm trực tiếp, không dùng submit -->
             <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
             <div id="form-error-msg">❌ SBD không có trong DS</div>
             <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
@@ -119,6 +119,9 @@
 
     <div id="timer-box">07:00</div>
     <div id="score-box">⭐ Điểm: 0</div>
+    
+    <!-- Hộp tiến độ câu hỏi -->
+    <div id="progress-box">📝 Câu: 0/20</div>
 
     <div id="instructions">
         <h2>Hóa Học 12: KNTT</h2>
@@ -176,10 +179,6 @@
             ]
         };
 
-        // ==========================================
-        // NGÂN HÀNG CÂU HỎI KNTT HÓA 12 MỚI NHẤT
-        // ==========================================
-        
         const bank1 = [
             { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
             { q: "Tên thay thế của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl ethanoate", "Ethyl formate"], c: 0 },
@@ -323,6 +322,7 @@
         let activeQuestions = []; 
         let playerName = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
+        let answeredQuestions = 0;
 
         function generateRandomizedQuestions() {
             let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
@@ -371,20 +371,17 @@
             if(!isMuted) sfxWrong.play();
         }
 
-        // HÀM KHỞI ĐỘNG GAME (Được gọi trực tiếp từ nút bấm)
         window.startGame = function() {
             const nameInput = document.getElementById('input-name').value.trim();
             const classSelect = document.getElementById('input-class');
-            const classInput = classSelect.value; // Lấy giá trị của Lớp
+            const classInput = classSelect.value; 
             const idInput = document.getElementById('input-id').value.trim();
             
-            // 1. Kiểm tra để trống
             if(nameInput === "" || classInput === "" || idInput === "") { 
                 showFormError("⚠️ Vui lòng điền đủ Tên, Lớp và SBD!");
                 return; 
             }
 
-            // 2. KIỂM TRA SBD (Nếu nhập 9999 thì cho qua luôn)
             if (idInput !== "9999") {
                 let allowedIDs = validStudentIDs[classInput];
                 if (!allowedIDs || !allowedIDs.includes(idInput)) {
@@ -396,11 +393,17 @@
             playerName = nameInput; 
             playerId = classInput + " - " + idInput; 
             currentScore = 0;
+            answeredQuestions = 0;
             loginTimeString = getFormattedTime();
 
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('player-info').style.display = 'block';
             document.getElementById('score-box').style.display = 'block';
+            
+            // Hiện bảng tiến độ câu hỏi
+            document.getElementById('progress-box').style.display = 'block';
+            document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
+            
             document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | SBD: ${idInput}`;
             updateScoreUI();
             
@@ -409,7 +412,6 @@
             gameStartTime = Date.now(); gameStarted = true;
         }
 
-        // Thoát game và load lại
         document.getElementById('btn-exit').addEventListener('click', function() { 
             location.reload(); 
         });
@@ -440,7 +442,7 @@
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
             
             let safeScore = parseInt(score);
-            if (safeScore > 20 || safeScore < 0) { // Điểm tối đa giờ là 20
+            if (safeScore > 20 || safeScore < 0) {
                 safeScore = 0; 
             }
 
@@ -657,6 +659,10 @@
                     
                     let obsPos = obstacles[index].mesh.position;
 
+                    // Cập nhật tiến độ câu hỏi
+                    answeredQuestions++;
+                    document.getElementById('progress-box').innerText = `📝 Câu: ${answeredQuestions}/20`;
+
                     if (i === q.c) {
                         currentScore += 1; updateScoreUI(); 
                         showToast("✅ Chính xác! +1 Điểm", "rgba(46, 204, 113, 0.95)");
@@ -695,6 +701,9 @@
                     bgMusic.pause(); 
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
                     document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>`;
+                    
+                    document.removeEventListener("visibilitychange", triggerAntiCheat);
+                    window.removeEventListener("blur", triggerAntiCheat);
                     
                     sendScoreToSheet(playerName, playerId, currentScore, elapsedSeconds);
                     localStorage.setItem('daThiHoa12', 'true'); 
@@ -739,7 +748,6 @@
                     isPaused = true; gameEnded = true;
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
                     
-                    // NẾU TỚI ĐÍCH, KHÔNG CHẠY ANTICHEAT NỮA
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
                     window.removeEventListener("blur", triggerAntiCheat);
                     
