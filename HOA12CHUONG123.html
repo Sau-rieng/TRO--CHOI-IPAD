@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Toán Lớp 6</title>
+    <title>Escape the Cartoon Forest - HÓA HỌC 12</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -62,7 +62,7 @@
 
     <div id="login-screen">
         <form class="login-box" onsubmit="startGame(); return false;">
-            <h2>Toán Lớp 6: Ôn Tập Tổng Hợp</h2>
+            <h2>HÓA HỌC 12: Ôn Tập Tổng Hợp</h2>
             <p>Vui lòng điền thông tin để bắt đầu</p>
             <input type="text" id="input-name" placeholder="Tên Học Sinh / Tên Nhóm" autocomplete="off" required>
             <input type="text" id="input-id" placeholder="Lớp / Số Báo Danh" autocomplete="off" required>
@@ -85,7 +85,7 @@
     <div id="score-box">⭐ Điểm: 0</div>
 
     <div id="instructions">
-        <h2>Toán Lớp 6: Ôn Tập Tổng Hợp</h2>
+        <h2>HÓA HỌC 12: Ôn Tập Tổng Hợp</h2>
         <p>Điều khiển phím ảo để đi.</p>
     </div>
 
@@ -105,7 +105,7 @@
 
     <script>
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyegy6zt71-9IM2V4CtNlf0924MqRSDew832vaZXXrwN6VoVN_Tts2hs5iq64c3M_mGpg/exec";
 
         function sendScoreToSheet(name, id, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
