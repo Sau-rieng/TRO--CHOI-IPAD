@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Hóa Học 12 (20 Câu - 7 Phút)</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12 (KNTT Chuẩn)</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -78,7 +78,8 @@
     <div id="toast-msg"></div>
 
     <div id="login-screen">
-        <form class="login-box" id="login-form">
+        <!-- Đã sửa lại onsubmit trực tiếp tại đây để tránh lỗi trên một số trình duyệt iPad -->
+        <form class="login-box" id="login-form" onsubmit="startGame(); return false;">
             <h2>Hóa Học 12: Chương 1-2-3</h2>
             <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
             <span class="warning-text" id="warning-msg">⚠️ Chú ý: Tuyệt đối không thoát hoặc chuyển thẻ (tab) khi đang thi. Vi phạm sẽ bị thu bài ngay lập tức!</span>
@@ -86,15 +87,16 @@
             <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
 
             <div id="input-group">
-                <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off" required>
-                <select id="input-class" required>
+                <!-- Bỏ thuộc tính required mặc định của HTML để dùng thông báo lỗi rung lắc riêng -->
+                <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off">
+                <select id="input-class">
                     <option value="" disabled selected>-- Chọn Lớp --</option>
                     <option value="12G1">Lớp 12G1</option>
                     <option value="12G2">Lớp 12G2</option>
                     <option value="12G5">Lớp 12G5</option>
                     <option value="12G6">Lớp 12G6</option>
                 </select>
-                <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off" required>
+                <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
             </div>
 
             <button type="submit" id="btn-start">BẮT ĐẦU CHƠI</button>
@@ -139,6 +141,7 @@
     </div>
 
     <script>
+    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
     (function() {
         
         // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
@@ -249,7 +252,7 @@
         const bank4 = [
             { q: "Disaccharide khi thủy phân hoàn toàn tạo ra bao nhiêu phân tử monosaccharide?", a: ["2", "3", "4", "Nhiều phân tử"], c: 0 },
             { q: "Saccharose (đường kính, đường mía) có công thức phân tử là?", a: ["C12H22O11", "C6H12O6", "(C6H10O5)n", "C12H24O12"], c: 0 },
-            { q: "Saccharose được cấu tạo từ các đơn vị nào?", a: ["1 đơn vị α-glucose và 1 đơn vị β-fructose", "2 đơn vị α-glucose", "2 đơn vị β-fructose", "1 đơn vị glucose và 1 galactose"], c: 0 },
+            { q: "Phân tử saccharose được cấu tạo từ các đơn vị nào?", a: ["1 đơn vị α-glucose và 1 đơn vị β-fructose", "2 đơn vị α-glucose", "2 đơn vị β-fructose", "1 đơn vị glucose và 1 galactose"], c: 0 },
             { q: "Liên kết giữa hai đơn vị monosaccharide trong saccharose là liên kết gì?", a: ["Glycosidic", "Peptide", "Ester", "Hydrogen"], c: 0 },
             { q: "Saccharose KHÔNG có tính chất hóa học nào sau đây?", a: ["Phản ứng tráng bạc", "Hòa tan Cu(OH)2", "Thủy phân", "Bị nung cháy"], c: 0 },
             { q: "Thủy phân hoàn toàn saccharose trong môi trường acid đun nóng thu được?", a: ["Glucose và fructose", "Chỉ có glucose", "Chỉ có fructose", "Maltose"], c: 0 },
@@ -321,21 +324,19 @@
         let playerName = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
 
-        // Lấy NGẪU NHIÊN ĐÚNG 20 CÂU cho đường chạy
+        // Lấy TOÀN BỘ 20 CÂU cho đường chạy dài
         function generateRandomizedQuestions() {
             let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
             let cloned = JSON.parse(JSON.stringify(selectedBank));
             
-            // Xáo trộn 20 câu trong bộ
+            // Xáo trộn vị trí 20 câu
             for (let i = cloned.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
             }
             
-            // Lấy 20 câu
-            let selected20 = cloned.slice(0, 20);
-            
-            selected20.forEach(item => {
+            // Xáo trộn vị trí đáp án của từng câu
+            cloned.forEach(item => {
                 let correctAnswerText = item.a[item.c]; 
                 for (let i = item.a.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -343,7 +344,7 @@
                 }
                 item.c = item.a.indexOf(correctAnswerText);
             });
-            return selected20;
+            return cloned; // Trả về đủ 20 câu
         }
 
         let loginTimeString = "";
@@ -362,22 +363,39 @@
         function updateScoreUI() {
             document.getElementById('score-box').innerText = `⭐ Điểm: ${currentScore}`;
         }
+        
+        function showFormError(msg) {
+            const msgObj = document.getElementById('form-error-msg');
+            msgObj.innerText = msg;
+            msgObj.style.display = 'block';
+            msgObj.classList.remove('shake');
+            void msgObj.offsetWidth; 
+            msgObj.classList.add('shake');
+            if(!isMuted) sfxWrong.play();
+        }
 
-        function startGame() {
+        // Khởi động game
+        window.startGame = function() {
             const nameInput = document.getElementById('input-name').value.trim();
-            const classInput = document.getElementById('input-class').value;
+            const classSelect = document.getElementById('input-class');
+            const classInput = classSelect.options[classSelect.selectedIndex].value; 
             const idInput = document.getElementById('input-id').value.trim();
             
+            // Cảnh báo nếu để trống
             if(nameInput === "" || classInput === "" || idInput === "") { 
                 showToast("Vui lòng điền đủ Tên, Lớp và SBD!"); 
+                showFormError("⚠️ Vui lòng điền đủ thông tin!");
                 return false; 
             }
 
-            let allowedIDs = validStudentIDs[classInput];
-            if (!allowedIDs || !allowedIDs.includes(idInput)) {
-                showToast("❌ SBD không có trong DS");
-                showFormError(); 
-                return false;
+            // KIỂM TRA MÃ SỐ BÁO DANH (TRỪ MÃ ĐẶC CÁCH 9999 CHO GIÁO VIÊN)
+            if (idInput !== "9999") {
+                let allowedIDs = validStudentIDs[classInput];
+                if (!allowedIDs || !allowedIDs.includes(idInput)) {
+                    showToast("❌ SBD không có trong DS");
+                    showFormError("❌ SBD không có trong DS"); 
+                    return false;
+                }
             }
 
             playerName = nameInput; 
@@ -404,17 +422,14 @@
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         const dirLight = new THREE.DirectionalLight(0xfff5b6, 0.6); dirLight.position.set(20, 50, 20); scene.add(dirLight);
 
-        // Kéo dài mặt đất ra 2000 đơn vị
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 2000), new THREE.MeshLambertMaterial({ color: 0x82d844 }));
         ground.rotation.x = -Math.PI / 2; 
         ground.position.z = -300; 
         scene.add(ground);
 
-        // Dời mặt trời ra xa
         const sun = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0xffe666, side: THREE.DoubleSide }));
         sun.position.set(120, 90, -800); scene.add(sun);
 
-        // Dời núi non ra xa
         function createDistantMountain(x, z, r, color) {
             const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.MeshBasicMaterial({ color: color }));
             mesh.scale.set(r, r * 0.35, r * 0.2); mesh.position.set(x, -r * 0.25, z); scene.add(mesh);
@@ -445,14 +460,12 @@
         const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("KHU RỪNG HÓA HỌC") }), woodMat ]); sign.position.set(0, 7.5, 0); startGate.add(sign);
         startGate.position.set(0, 0, 10); scene.add(startGate);
 
-        // Dời cổng đích về mốc -600
         const gate = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 2), new THREE.MeshLambertMaterial({ color: 0xffd700 }));
         gate.position.set(0, 5, -600); scene.add(gate);
 
         activeQuestions = generateRandomizedQuestions();
         const obsGeo = new THREE.BoxGeometry(1.8, 1.8, 1.8); const obsMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
         let obstacles = []; 
-        // Lộ trình rải 20 vật cản
         const zigzagX = [0, -12, 10, -14, 12, -10, 14, -8, 10, -12, 14, -10, 12, -14, 10, -12, 14, -10, 12, 0]; 
         for (let i = 0; i < activeQuestions.length; i++) {
             const obs = new THREE.Mesh(obsGeo, obsMat); obs.position.set(zigzagX[i], 1.2, -i * 28 - 15); scene.add(obs);
@@ -481,7 +494,6 @@
             tg.scale.set(scale, scale, scale); tg.position.set(x, 0, z); scene.add(tg);
         }
         
-        // Trồng rừng gấp đôi độ dày
         let treesPlanted = 0; let attempts = 0;
         while(treesPlanted < 350 && attempts < 3000) {
             attempts++; let x = (Math.random() - 0.5) * 80; let z = 15 - Math.random() * 650; let tooClose = false;
@@ -497,8 +509,6 @@
         playerGroup.rotation.y = Math.PI; playerGroup.position.set(0, 0, 18); scene.add(playerGroup);
 
         const keys = { w: false, a: false, s: false, d: false }; let isPaused = false; let walkTime = 0; 
-        
-        // THỜI GIAN LÀM BÀI 7 PHÚT (420 GIÂY)
         let gameTimeLimit = 420; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
 
         window.addEventListener('keydown', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = true; if(key === 's' || key === 'arrowdown') keys.s = true; if(key === 'a' || key === 'arrowleft') keys.a = true; if(key === 'd' || key === 'arrowright') keys.d = true; });
