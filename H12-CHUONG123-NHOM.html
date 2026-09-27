@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Escape the Cartoon Forest - Hóa Học 12 (Bản Thi Đua Nhóm)</title>
+    <title>Escape the Cartoon Forest - Hóa Học 12 (Thi Đua Nhóm)</title>
     <style>
         html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
         #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
@@ -81,13 +81,13 @@
     <div id="login-screen">
         <div class="login-box" id="login-form">
             <h2>Hóa Học 12: Đua Theo Nhóm</h2>
-            <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
+            <p id="login-desc">Vui lòng chọn thông tin để bắt đầu</p>
             <span class="warning-text" id="warning-msg">⚠️ Chú ý: Tuyệt đối không thoát hoặc chuyển thẻ (tab) khi đang thi. Vi phạm sẽ bị thu bài ngay lập tức!</span>
             
             <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
 
             <div id="input-group">
-                <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off">
+                <!-- Chỉ còn 2 lựa chọn Lớp và Nhóm -->
                 <select id="input-class">
                     <option value="" disabled selected>-- Chọn Lớp --</option>
                     <option value="12G1">Lớp 12G1</option>
@@ -95,7 +95,6 @@
                     <option value="12G5">Lớp 12G5</option>
                     <option value="12G6">Lớp 12G6</option>
                 </select>
-                <!-- Đã loại bỏ ô SBD, chỉ còn lại ô chọn Nhóm -->
                 <select id="input-group-num">
                     <option value="" disabled selected>-- Chọn Nhóm --</option>
                     <option value="Nhóm 1">Nhóm 1</option>
@@ -110,7 +109,7 @@
             </div>
 
             <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
-            <div id="form-error-msg">❌ Vui lòng điền đủ Tên, Lớp và Nhóm</div>
+            <div id="form-error-msg">❌ Vui lòng chọn Lớp và Nhóm!</div>
             <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
         </div>
     </div>
@@ -154,7 +153,7 @@
     <script>
     (function() {
         
-        // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
+        // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
         const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
 
         // ==========================================
@@ -353,24 +352,24 @@
         }
 
         window.startGame = function() {
-            const nameInput = document.getElementById('input-name').value.trim();
             const classSelect = document.getElementById('input-class');
             const classInput = classSelect.value; 
             const groupSelect = document.getElementById('input-group-num');
             const groupInput = groupSelect.value;
             
-            // Chỉ yêu cầu 3 trường: Tên, Lớp, Nhóm
-            if(nameInput === "" || classInput === "" || groupInput === "") { 
-                showFormError("⚠️ Vui lòng điền đủ Tên, Lớp và Nhóm!");
+            // Chỉ yêu cầu chọn Lớp và Nhóm
+            if(classInput === "" || groupInput === "") { 
+                showFormError("⚠️ Vui lòng chọn Lớp và Nhóm!");
                 return; 
             }
 
-            playerName = nameInput; 
+            // Gán tên hiển thị chung là tên nhóm
+            playerName = groupInput; 
             playerClass = classInput;
             playerGroupNum = groupInput;
             
-            // Để trống SBD để Apps Script tự hiểu và xếp đúng cột
-            playerId = classInput + " - Không SBD"; 
+            // Để trống SBD để Apps Script tự hiểu và xếp đúng cột (Dữ liệu Lớp - Thành viên)
+            playerId = classInput + " - Thành viên"; 
             
             currentScore = 0;
             answeredQuestions = 0;
@@ -383,7 +382,8 @@
             document.getElementById('progress-box').style.display = 'block';
             document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
             
-            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | ${groupInput}`;
+            // Rút gọn bảng thông tin hiển thị trên cùng
+            document.getElementById('player-info').innerText = `Lớp: ${classInput} | ${groupInput}`;
             updateScoreUI();
             
             if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
@@ -459,8 +459,9 @@
 
             document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
             document.getElementById('result-title').style.color = "#e74c3c";
+            
+            // Xóa SBD khỏi thông báo kết quả
             document.getElementById('result-details').innerHTML = `
-                <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
                 <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                 <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
                 <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
@@ -680,7 +681,13 @@
                     remaining = 0; gameEnded = true; isPaused = true; uiPanel.classList.remove('active');
                     bgMusic.pause(); 
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
-                    document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>`;
+                    
+                    // Rút gọn thông tin hiển thị khi hết giờ
+                    document.getElementById('result-details').innerHTML = `
+                        <p>Lớp: <span style="color:#3498db">${playerClass}</span></p>
+                        <p>Nhóm: <span style="color:#3498db">${playerGroupNum}</span></p>
+                        <div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>
+                    `;
                     
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
                     window.removeEventListener("blur", triggerAntiCheat);
@@ -737,9 +744,10 @@
                     bgMusic.pause();
                     if(!isMuted) sfxWin.play();
 
-                    document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG EM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
+                    document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG NHÓM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
+                    
+                    // Rút gọn bảng kết quả khi Win
                     document.getElementById('result-details').innerHTML = `
-                        <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
                         <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                         <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
                         <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
