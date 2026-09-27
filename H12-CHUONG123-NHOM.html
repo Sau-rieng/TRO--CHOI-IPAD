@@ -95,7 +95,7 @@
                     <option value="12G5">Lớp 12G5</option>
                     <option value="12G6">Lớp 12G6</option>
                 </select>
-                <!-- THÊM Ô CHỌN NHÓM -->
+                <!-- Đã loại bỏ ô SBD, chỉ còn lại ô chọn Nhóm -->
                 <select id="input-group-num">
                     <option value="" disabled selected>-- Chọn Nhóm --</option>
                     <option value="Nhóm 1">Nhóm 1</option>
@@ -107,11 +107,10 @@
                     <option value="Nhóm 7">Nhóm 7</option>
                     <option value="Nhóm 8">Nhóm 8</option>
                 </select>
-                <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
             </div>
 
             <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
-            <div id="form-error-msg">❌ SBD không có trong DS</div>
+            <div id="form-error-msg">❌ Vui lòng điền đủ Tên, Lớp và Nhóm</div>
             <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
         </div>
     </div>
@@ -155,38 +154,12 @@
     <script>
     (function() {
         
-        // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwVuHIbkHbTn7Fj06U82DiayIaldGtkQo7XNncirEQ5AaHKVSyBYdbP3A_3Ae6l1DPt7Q/exec";
+        // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
+        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
 
-        // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
-        const validStudentIDs = {
-            "12G1": [
-                "26120101", "26120102", "26120103", "26120104", "26120105", "26120106", "26120107", "26120108", "26120109", "26120110",
-                "26120111", "26120112", "26120113", "26120114", "26120115", "26120116", "26120117", "26120118", "26120119", "26120120",
-                "26120121", "26120122", "26120123", "26120124", "26120125", "26120126", "26120127", "26120128", "26120129", "26120130",
-                "26120131", "26120132", "26120133", "26120134", "26120135", "26120136", "26120137", "26120138", "26120139", "26120140"
-            ],
-            "12G2": [
-                "26120201", "26120202", "26120203", "26120204", "26120205", "26120206", "26120207", "26120208", "26120209", "26120210",
-                "26120211", "26120212", "26120213", "26120214", "26120215", "26120216", "26120217", "26120218", "26120219", "26120220",
-                "26120221", "26120222", "26120223", "26120224", "26120225", "26120226", "26120227", "26120228", "26120229", "26120230",
-                "26120231", "26120232", "26120233", "26120234", "26120235", "26120236", "26120237", "26120238", "26120239", "26120240",
-                "26120241", "26120242", "26120243"
-            ],
-            "12G5": [
-                "26120501", "26120502", "26120503", "26120504", "26120505", "26120506", "26120507", "26120508", "26120509", "26120510",
-                "26120511", "26120512", "26120513", "26120514", "26120515", "26120516", "26120517", "26120518", "26120519", "26120520",
-                "26120521", "26120522", "26120523", "26120524", "26120525", "26120526", "26120527", "26120528", "26120529", "26120530",
-                "26120531", "26120532", "26120533", "26120534", "26120535", "26120536", "26120537"
-            ],
-            "12G6": [
-                "26120601", "26120602", "26120603", "26120604", "26120605", "26120606", "26120607", "26120608", "26120609", "26120610",
-                "26120611", "26120612", "26120613", "26120614", "26120615", "26120616", "26120617", "26120618", "26120619", "26120620",
-                "26120621", "26120622", "26120623", "26120624", "26120625", "26120626", "26120627", "26120628", "26120629", "26120630",
-                "26120631", "26120632", "26120633", "26120634", "26120635", "26120636"
-            ]
-        };
-
+        // ==========================================
+        // NGÂN HÀNG CÂU HỎI KNTT HÓA 12 (120 Câu - Không trùng lặp)
+        // ==========================================
         const bank1 = [
             { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
             { q: "Tên thay thế của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl ethanoate", "Ethyl formate"], c: 0 },
@@ -328,7 +301,7 @@
         const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5, bank6];
 
         let activeQuestions = []; 
-        let playerName = ""; let playerId = ""; let playerGroupNum = ""; let gameStarted = false; 
+        let playerName = ""; let playerClass = ""; let playerGroupNum = ""; let playerId = ""; let gameStarted = false; 
         let currentScore = 0; 
         let answeredQuestions = 0;
 
@@ -385,24 +358,20 @@
             const classInput = classSelect.value; 
             const groupSelect = document.getElementById('input-group-num');
             const groupInput = groupSelect.value;
-            const idInput = document.getElementById('input-id').value.trim();
             
-            if(nameInput === "" || classInput === "" || groupInput === "" || idInput === "") { 
-                showFormError("⚠️ Vui lòng điền đủ Tên, Lớp, Nhóm và SBD!");
+            // Chỉ yêu cầu 3 trường: Tên, Lớp, Nhóm
+            if(nameInput === "" || classInput === "" || groupInput === "") { 
+                showFormError("⚠️ Vui lòng điền đủ Tên, Lớp và Nhóm!");
                 return; 
             }
 
-            if (idInput !== "9999") {
-                let allowedIDs = validStudentIDs[classInput];
-                if (!allowedIDs || !allowedIDs.includes(idInput)) {
-                    showFormError("❌ SBD không hợp lệ hoặc sai Lớp!"); 
-                    return;
-                }
-            }
-
             playerName = nameInput; 
+            playerClass = classInput;
             playerGroupNum = groupInput;
-            playerId = classInput + " - " + idInput; 
+            
+            // Để trống SBD để Apps Script tự hiểu và xếp đúng cột
+            playerId = classInput + " - Không SBD"; 
+            
             currentScore = 0;
             answeredQuestions = 0;
             loginTimeString = getFormattedTime();
@@ -414,8 +383,7 @@
             document.getElementById('progress-box').style.display = 'block';
             document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
             
-            // Gắn thêm Nhóm vào bảng thông tin hiển thị trên cùng
-            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | ${groupInput} | SBD: ${idInput}`;
+            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | ${groupInput}`;
             updateScoreUI();
             
             if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
@@ -465,7 +433,7 @@
                 body: JSON.stringify({ 
                     name: name, 
                     id: id, 
-                    group: group,   // GỬI KÈM BIẾN NHÓM
+                    group: group,
                     score: safeScore, 
                     time: seconds,
                     loginTime: loginTimeString,
@@ -493,8 +461,8 @@
             document.getElementById('result-title').style.color = "#e74c3c";
             document.getElementById('result-details').innerHTML = `
                 <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                 <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
-                <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
                 <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
                 <div class="info-text" style="color:#e74c3c; font-size: 15px;">Hệ thống phát hiện thiết bị đã thoát màn hình hoặc mở thẻ (tab) khác.<br>Bài thi đã bị khóa và tự động nộp!</div>
             `;
@@ -772,8 +740,8 @@
                     document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG EM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
                     document.getElementById('result-details').innerHTML = `
                         <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                        <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                         <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
-                        <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
                         <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
                         <p>Thời gian: <span style="color:#e74c3c">${timeString}</span></p>
                         <div class="info-text">✅ Điểm đã được gửi về cho thầy cô!</div>
