@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Escape the Cartoon Forest - Hóa Học 12 (Bản Thi Đua Nhóm)</title>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #9bd4e4; -webkit-user-select: none; user-select: none; touch-action: none;}
+        #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #game-container canvas { width: 100% !important; height: 100% !important; display: block; outline: none;}
+        
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 6px solid #f1c40f; width: 85%; max-width: 400px; }
+        .login-box h2 { color: #2c3e50; margin-top: 0; font-size: 24px; text-transform: uppercase; }
+        .login-box p { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+        .warning-text { color: #e74c3c; font-weight: bold; font-size: 13px; margin-top: -10px; margin-bottom: 15px; display: block; }
+        
+        .login-box input, .login-box select { 
+            width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; 
+            border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; 
+            transition: border 0.3s; user-select: auto; -webkit-user-select: auto;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .login-box select { cursor: pointer; background-color: #fcfcfc; }
+        .login-box input:focus, .login-box select:focus { border-color: #3498db; }
+        
+        .login-box button { background: #e74c3c; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s;}
+        .login-box button:hover { background: #c0392b; }
+        .login-box button:active { transform: scale(0.98); }
+
+        #form-error-msg { color: #c0392b; font-weight: bold; font-size: 14px; margin-top: 10px; display: none; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        #locked-msg { display: none; color: #e74c3c; font-size: 18px; font-weight: bold; margin: 20px 0; border: 2px dashed #e74c3c; padding: 15px; border-radius: 8px; background: #fadbd8; }
+        #btn-unlock { display: none; background: #7f8c8d; font-size: 16px; margin-top: 10px;}
+        #btn-unlock:hover { background: #95a5a6; }
+
+        #result-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; justify-content: center; align-items: center; }
+        .result-box { background: white; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 6px solid #f1c40f; width: 85%; max-width: 450px;}
+        #result-title { margin-top: 0; font-size: 32px; font-weight: bold; }
+        .result-box p { color: #2c3e50; font-size: 20px; margin: 12px 0; font-weight: bold; }
+        .result-box .info-text { font-size: 16px; color: #27ae60; margin-top: 20px; margin-bottom: 10px; font-weight: bold;}
+
+        #toast-msg { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.95); color: white; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 100000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; text-align: center; border: 2px solid #fff; }
+
+        #player-info { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(52, 152, 219, 0.95); color: white; padding: 10px 20px; border-radius: 10px; font-size: 16px; font-weight: bold; z-index: 5; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; text-align: center; line-height: 1.5; }
+
+        #ui-panel { position: absolute; top: -500px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 800px; background: rgba(30, 40, 50, 0.98); color: white; box-shadow: 0 5px 25px rgba(0,0,0,0.8); transition: top 0.3s ease-out; display: flex; flex-direction: column; align-items: center; padding: 25px 20px 30px 20px; z-index: 9999; border-radius: 0 0 25px 25px; border-bottom: 6px solid #ffcc00; }
+        #ui-panel.active { top: 0; }
+        #question-text { font-size: 18px; margin-bottom: 20px; text-align: center; color: #ffcc00; font-weight: bold; }
+        #answers-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+        .btn-answer { background: #4CAF50; color: white; border: 2px solid #388E3C; padding: 15px; font-size: 16px; border-radius: 10px; cursor: pointer; font-weight: bold;}
+        .btn-answer:active { background: #45a049; transform: scale(0.98); }
+        
+        #instructions { position: absolute; top: 15px; left: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; pointer-events: none; }
+        #instructions h2 { margin: 0 0 5px 0; font-size: 18px; color: #ffcc00;}
+        #instructions p { margin: 0; font-size: 14px; }
+
+        #audio-control { position: absolute; top: 15px; left: 240px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid #3498db; }
+        #audio-control:active { transform: scale(0.95); }
+
+        #timer-box { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5; font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none; text-align: center;}
+        
+        #score-box { position: absolute; top: 65px; right: 15px; color: white; background: rgba(39, 174, 96, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 20px; font-weight: bold; border: 2px solid #2ecc71; display: none; pointer-events: none;}
+        #progress-box { position: absolute; top: 110px; right: 15px; color: white; background: rgba(142, 68, 173, 0.85); padding: 5px 15px; border-radius: 10px; z-index: 5; font-size: 18px; font-weight: bold; border: 2px solid #9b59b6; display: none; pointer-events: none;}
+
+        .floating-score { position: absolute; color: #2ecc71; font-size: 36px; font-weight: bold; text-shadow: 0 0 10px white, 0 0 5px green; pointer-events: none; animation: floatUp 1.5s ease-out forwards; z-index: 100; transform: translate(-50%, -50%);}
+        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -150px) scale(1.5); } }
+
+        #dpad { position: absolute; bottom: 30px; left: 30px; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .dpad-row { display: flex; gap: 5px; }
+        .dpad-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); border: 3px solid rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-size: 24px; color: #333; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; -webkit-user-select: none; touch-action: none; }
+        .dpad-btn:active { background: rgba(255, 204, 0, 0.8); transform: scale(0.95); }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="toast-msg"></div>
+
+    <div id="login-screen">
+        <div class="login-box" id="login-form">
+            <h2>Hóa Học 12: Đua Theo Nhóm</h2>
+            <p id="login-desc">Vui lòng điền thông tin để bắt đầu</p>
+            <span class="warning-text" id="warning-msg">⚠️ Chú ý: Tuyệt đối không thoát hoặc chuyển thẻ (tab) khi đang thi. Vi phạm sẽ bị thu bài ngay lập tức!</span>
+            
+            <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
+
+            <div id="input-group">
+                <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off">
+                <select id="input-class">
+                    <option value="" disabled selected>-- Chọn Lớp --</option>
+                    <option value="12G1">Lớp 12G1</option>
+                    <option value="12G2">Lớp 12G2</option>
+                    <option value="12G5">Lớp 12G5</option>
+                    <option value="12G6">Lớp 12G6</option>
+                </select>
+                <!-- THÊM Ô CHỌN NHÓM -->
+                <select id="input-group-num">
+                    <option value="" disabled selected>-- Chọn Nhóm --</option>
+                    <option value="Nhóm 1">Nhóm 1</option>
+                    <option value="Nhóm 2">Nhóm 2</option>
+                    <option value="Nhóm 3">Nhóm 3</option>
+                    <option value="Nhóm 4">Nhóm 4</option>
+                    <option value="Nhóm 5">Nhóm 5</option>
+                    <option value="Nhóm 6">Nhóm 6</option>
+                    <option value="Nhóm 7">Nhóm 7</option>
+                    <option value="Nhóm 8">Nhóm 8</option>
+                </select>
+                <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
+            </div>
+
+            <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
+            <div id="form-error-msg">❌ SBD không có trong DS</div>
+            <button type="button" id="btn-unlock" onclick="unlockGame()">🔓 MỞ KHÓA (GIÁO VIÊN)</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <div class="result-box">
+            <h2 id="result-title"></h2>
+            <div id="result-details"></div>
+            <button id="btn-exit" type="button" style="background:#7f8c8d">THOÁT</button>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+    <div id="player-info">Người chơi: Đang tải...</div>
+
+    <div id="timer-box">07:00</div>
+    <div id="score-box">⭐ Điểm: 0</div>
+    <div id="progress-box">📝 Câu: 0/20</div>
+
+    <div id="instructions">
+        <h2>Hóa Học 12: KNTT</h2>
+        <p>Điều khiển phím ảo để đi.</p>
+    </div>
+    
+    <div id="audio-control" onclick="toggleAudio()">🔊 Bật Nhạc</div>
+
+    <div id="dpad">
+        <div class="dpad-btn" id="btn-up">▲</div>
+        <div class="dpad-row">
+            <div class="dpad-btn" id="btn-left">◀</div>
+            <div class="dpad-btn" id="btn-down">▼</div>
+            <div class="dpad-btn" id="btn-right">▶</div>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <div id="question-text">Câu hỏi?</div>
+        <div id="answers-container"></div>
+    </div>
+
+    <script>
+    (function() {
+        
+        // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwVuHIbkHbTn7Fj06U82DiayIaldGtkQo7XNncirEQ5AaHKVSyBYdbP3A_3Ae6l1DPt7Q/exec";
+
+        // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
+        const validStudentIDs = {
+            "12G1": [
+                "26120101", "26120102", "26120103", "26120104", "26120105", "26120106", "26120107", "26120108", "26120109", "26120110",
+                "26120111", "26120112", "26120113", "26120114", "26120115", "26120116", "26120117", "26120118", "26120119", "26120120",
+                "26120121", "26120122", "26120123", "26120124", "26120125", "26120126", "26120127", "26120128", "26120129", "26120130",
+                "26120131", "26120132", "26120133", "26120134", "26120135", "26120136", "26120137", "26120138", "26120139", "26120140"
+            ],
+            "12G2": [
+                "26120201", "26120202", "26120203", "26120204", "26120205", "26120206", "26120207", "26120208", "26120209", "26120210",
+                "26120211", "26120212", "26120213", "26120214", "26120215", "26120216", "26120217", "26120218", "26120219", "26120220",
+                "26120221", "26120222", "26120223", "26120224", "26120225", "26120226", "26120227", "26120228", "26120229", "26120230",
+                "26120231", "26120232", "26120233", "26120234", "26120235", "26120236", "26120237", "26120238", "26120239", "26120240",
+                "26120241", "26120242", "26120243"
+            ],
+            "12G5": [
+                "26120501", "26120502", "26120503", "26120504", "26120505", "26120506", "26120507", "26120508", "26120509", "26120510",
+                "26120511", "26120512", "26120513", "26120514", "26120515", "26120516", "26120517", "26120518", "26120519", "26120520",
+                "26120521", "26120522", "26120523", "26120524", "26120525", "26120526", "26120527", "26120528", "26120529", "26120530",
+                "26120531", "26120532", "26120533", "26120534", "26120535", "26120536", "26120537"
+            ],
+            "12G6": [
+                "26120601", "26120602", "26120603", "26120604", "26120605", "26120606", "26120607", "26120608", "26120609", "26120610",
+                "26120611", "26120612", "26120613", "26120614", "26120615", "26120616", "26120617", "26120618", "26120619", "26120620",
+                "26120621", "26120622", "26120623", "26120624", "26120625", "26120626", "26120627", "26120628", "26120629", "26120630",
+                "26120631", "26120632", "26120633", "26120634", "26120635", "26120636"
+            ]
+        };
+
+        const bank1 = [
+            { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
+            { q: "Tên thay thế của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl ethanoate", "Ethyl formate"], c: 0 },
+            { q: "Ester HCOOCH3 có tên gọi là gì?", a: ["Methyl formate", "Ethyl formate", "Methyl acetate", "Propyl formate"], c: 0 },
+            { q: "Hợp chất CH2=CHCOOCH3 có tên gọi là gì?", a: ["Methyl acrylate", "Ethyl acrylate", "Vinyl acetate", "Methyl methacrylate"], c: 0 },
+            { q: "Mùi hương của isoamyl acetate giống với mùi của loại quả nào?", a: ["Chuối chín", "Dứa chín", "Hoa nhài", "Táo xanh"], c: 0 },
+            { q: "Benzyl acetate là ester có mùi đặc trưng của hoa gì?", a: ["Hoa nhài", "Hoa hồng", "Hoa cúc", "Hoa lan"], c: 0 },
+            { q: "Nhiệt độ sôi của ester so với carboxylic acid và alcohol có cùng phân tử khối thường?", a: ["Thấp hơn", "Cao hơn", "Bằng nhau", "Không xác định"], c: 0 },
+            { q: "Tính tan trong nước của các ester ở điều kiện thường như thế nào?", a: ["Ít tan hoặc không tan", "Tan rất tốt", "Tan vô hạn", "Tạo dung dịch keo"], c: 0 },
+            { q: "Lipid là những hợp chất hữu cơ có trong tế bào sống, KHÔNG bao gồm nhóm nào?", a: ["Protein", "Chất béo", "Sáp", "Steroid"], c: 0 },
+            { q: "Chất béo là triester của glycerol với các acid nào?", a: ["Acid béo", "Acid vô cơ", "Amino acid", "Acid thơm"], c: 0 },
+            { q: "Acid béo có đặc điểm cấu tạo chung là gì?", a: ["Mạch carbon dài, không phân nhánh", "Mạch carbon ngắn", "Mạch vòng thơm", "Chứa nhiều nhóm -COOH"], c: 0 },
+            { q: "Công thức của palmitic acid là gì?", a: ["C15H31COOH", "C17H35COOH", "C17H33COOH", "CH3COOH"], c: 0 },
+            { q: "Stearic acid (acid béo no) có công thức là gì?", a: ["C17H35COOH", "C15H31COOH", "C17H33COOH", "C17H31COOH"], c: 0 },
+            { q: "Oleic acid (acid béo không no) có công thức phân tử là?", a: ["C17H33COOH", "C17H35COOH", "C15H31COOH", "C17H31COOH"], c: 0 },
+            { q: "Công thức cấu tạo của tristearin là?", a: ["(C17H35COO)3C3H5", "(C17H33COO)3C3H5", "(C15H31COO)3C3H5", "(C17H31COO)3C3H5"], c: 0 },
+            { q: "Triolein ở điều kiện thường tồn tại ở trạng thái nào?", a: ["Lỏng", "Rắn", "Khí", "Plasma"], c: 0 },
+            { q: "Chất béo động vật (mỡ) chủ yếu chứa gốc acid béo loại nào?", a: ["No", "Không no", "Chứa liên kết ba", "Mạch vòng"], c: 0 },
+            { q: "Dầu thực vật chủ yếu chứa gốc acid béo loại nào?", a: ["Không no", "No", "Chứa vòng benzen", "Phân nhánh"], c: 0 },
+            { q: "Tripalmitin ở điều kiện thường tồn tại ở trạng thái nào?", a: ["Rắn", "Lỏng", "Khí", "Tinh thể lỏng"], c: 0 },
+            { q: "Ester no, đơn chức, mạch hở có công thức chung là?", a: ["CnH2nO2 (n≥2)", "CnH2nO (n≥1)", "CnH2n+2O2", "CnH2n-2O2"], c: 0 }
+        ];
+
+        const bank2 = [
+            { q: "Phản ứng đặc trưng nhất của este là phản ứng gì?", a: ["Thủy phân", "Cộng H2", "Trùng hợp", "Tráng bạc"], c: 0 },
+            { q: "Phản ứng thủy phân este trong môi trường acid có đặc điểm gì?", a: ["Là phản ứng thuận nghịch", "Là phản ứng một chiều", "Tạo ra kết tủa", "Giải phóng khí H2"], c: 0 },
+            { q: "Phản ứng xà phòng hóa este được thực hiện trong môi trường nào?", a: ["Môi trường base/kiềm", "Môi trường acid", "Môi trường trung tính", "Không cần xúc tác"], c: 0 },
+            { q: "Thủy phân ethyl acetate trong dung dịch NaOH đun nóng thu được sản phẩm là?", a: ["Sodium acetate và ethyl alcohol", "Sodium formate và methyl alcohol", "Acetic acid và ethyl alcohol", "Sodium propanoate và nước"], c: 0 },
+            { q: "Phản ứng điều chế ester từ alcohol và carboxylic acid gọi là phản ứng gì?", a: ["Phản ứng ester hóa", "Phản ứng xà phòng hóa", "Phản ứng trùng hợp", "Phản ứng thế"], c: 0 },
+            { q: "Chất xúc tác thường dùng trong phản ứng ester hóa là gì?", a: ["H2SO4 đặc", "NaOH loãng", "KMnO4", "NaCl bão hòa"], c: 0 },
+            { q: "Thủy phân chất béo trong môi trường kiềm luôn thu được sản phẩm nào sau đây?", a: ["Glycerol", "Ethylene glycol", "Ethanol", "Methanol"], c: 0 },
+            { q: "Quá trình biến dầu thực vật (lỏng) thành bơ nhân tạo (rắn) sử dụng phản ứng nào?", a: ["Cộng hydrogen (H2)", "Xà phòng hóa", "Oxi hóa", "Thủy phân"], c: 0 },
+            { q: "Dầu mỡ để lâu bị ôi thiu nguyên nhân chính là do đâu?", a: ["Liên kết C=C bị oxi hóa chậm", "Bị thủy phân bởi nước", "Tác dụng với CO2", "Do nhiệt độ phòng quá nóng"], c: 0 },
+            { q: "Xà phòng là hỗn hợp muối sodium hoặc potassium của hợp chất nào?", a: ["Acid béo", "Acid vô cơ", "Amino acid", "Alcolhol đa chức"], c: 0 },
+            { q: "Cấu trúc của phân tử xà phòng và chất giặt rửa tổng hợp gồm những phần nào?", a: ["Phần ưa nước và phần kị nước", "Hai phần kị nước", "Hai phần ưa nước", "Chỉ có gốc hydrocarbon"], c: 0 },
+            { q: "Ưu điểm nổi bật của chất giặt rửa tổng hợp so với xà phòng là gì?", a: ["Có thể giặt rửa trong nước cứng", "Rẻ tiền hơn", "Làm từ mỡ động vật", "Dễ phân hủy sinh học hơn"], c: 0 },
+            { q: "Methyl methacrylate được trùng hợp để sản xuất loại vật liệu nào?", a: ["Thủy tinh hữu cơ (Plexiglas)", "Nhựa PVC", "Cao su thiên nhiên", "Tơ tằm"], c: 0 },
+            { q: "Trong thí nghiệm xà phòng hóa chất béo, việc thêm dung dịch NaCl bão hòa vào cuối phản ứng nhằm mục đích gì?", a: ["Làm muối của acid béo tách ra nổi lên trên", "Tăng tốc độ phản ứng", "Tạo mùi thơm cho xà phòng", "Hòa tan xà phòng"], c: 0 },
+            { q: "Thủy phân este X (C4H8O2) thu được ethyl alcohol. X là chất nào?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl formate", "Butyl acetate"], c: 0 },
+            { q: "Ester tạo bởi methyl alcohol và acetic acid có công thức là?", a: ["CH3COOCH3", "CH3COOC2H5", "HCOOCH3", "C2H5COOCH3"], c: 0 },
+            { q: "Chất béo lỏng dễ bị oxi hóa bởi oxygen không khí hơn chất béo rắn vì sao?", a: ["Chứa nhiều liên kết đôi C=C", "Có khối lượng nhẹ hơn", "Dễ bay hơi hơn", "Tan tốt trong nước hơn"], c: 0 },
+            { q: "Ester nào sau đây có khả năng tham gia phản ứng tráng bạc?", a: ["HCOOCH3", "CH3COOCH3", "CH3COOC2H5", "C2H5COOC2H5"], c: 0 },
+            { q: "Để tẩy vết mỡ bôi trơn xe máy dính trên quần áo, ta nên dùng chất nào?", a: ["Xăng", "Nước chanh", "Giấm ăn", "Nước cất"], c: 0 },
+            { q: "Glycerol có khả năng hòa tan Cu(OH)2 tạo dung dịch màu gì?", a: ["Xanh lam", "Đỏ gạch", "Tím", "Mất màu"], c: 0 }
+        ];
+
+        const bank3 = [
+            { q: "Carbohydrate (saccharide) là hợp chất hữu cơ tạp chức thường có công thức chung là?", a: ["Cn(H2O)m", "CnH2nO2", "CnH2n+2O", "CnH2nO"], c: 0 },
+            { q: "Monosaccharide là nhóm carbohydrate có đặc điểm gì?", a: ["Không bị thủy phân", "Bị thủy phân thành 2 phân tử", "Bị thủy phân thành nhiều phân tử", "Chứa liên kết peptide"], c: 0 },
+            { q: "Glucose và fructose đều có công thức phân tử là gì?", a: ["C6H12O6", "C12H22O11", "(C6H10O5)n", "C6H12O5"], c: 0 },
+            { q: "Trong máu người bình thường (lúc đói), nồng độ glucose duy trì ở mức khoảng bao nhiêu?", a: ["0,1%", "1%", "0,01%", "5%"], c: 0 },
+            { q: "Glucose tồn tại chủ yếu ở dạng mạch nào trong dung dịch?", a: ["Mạch vòng (α và β)", "Mạch hở", "Dạng phân nhánh", "Dạng khí"], c: 0 },
+            { q: "Phân tử mạch hở của glucose chứa mấy nhóm hydroxyl (-OH)?", a: ["5 nhóm", "4 nhóm", "6 nhóm", "Không có nhóm nào"], c: 0 },
+            { q: "Nhóm chức nào có trong phân tử glucose mạch hở giúp nó có phản ứng tráng bạc?", a: ["Aldehyde (-CHO)", "Ketone (>C=O)", "Carboxyl (-COOH)", "Hydroxyl (-OH)"], c: 0 },
+            { q: "Hiện tượng xảy ra khi đun nóng glucose với dung dịch AgNO3/NH3 (thuốc thử Tollens) là?", a: ["Xuất hiện lớp bạc bám vào thành ống nghiệm", "Kết tủa đỏ gạch", "Dung dịch màu xanh lam", "Sủi bọt khí"], c: 0 },
+            { q: "Dung dịch glucose hòa tan Cu(OH)2 ở nhiệt độ thường tạo thành dung dịch màu gì?", a: ["Màu xanh lam", "Màu tím đặc trưng", "Màu đỏ máu", "Màu vàng"], c: 0 },
+            { q: "Đun nóng dung dịch glucose với Cu(OH)2 trong môi trường NaOH sẽ xuất hiện hiện tượng gì?", a: ["Kết tủa đỏ gạch Cu2O", "Lớp bạc sáng bóng", "Mất màu dung dịch", "Kết tủa trắng"], c: 0 },
+            { q: "Lên men glucose (xúc tác enzyme) thu được khí CO2 và hợp chất nào?", a: ["Ethanol (C2H5OH)", "Methanol (CH3OH)", "Lactic acid", "Acetic acid"], c: 0 },
+            { q: "Dẫn khí H2 vào dung dịch glucose đun nóng (xúc tác Ni) thu được sản phẩm polyalcohol là gì?", a: ["Sorbitol", "Glycerol", "Mannitol", "Xylitol"], c: 0 },
+            { q: "Loại đường nào có nhiều trong mật ong (khoảng 40%) làm mật ong có vị ngọt gắt?", a: ["Fructose", "Saccharose", "Glucose", "Maltose"], c: 0 },
+            { q: "Phân tử mạch hở của fructose KHÔNG chứa nhóm chức nào?", a: ["Aldehyde (-CHO)", "Ketone (>C=O)", "Hydroxyl (-OH)", "Gốc hydrocarbon"], c: 0 },
+            { q: "Điểm khác biệt về phản ứng hóa học giữa glucose và fructose là gì?", a: ["Glucose làm mất màu nước bromine, fructose thì không", "Fructose tráng bạc được còn glucose thì không", "Chỉ glucose tan trong nước", "Fructose tạo kết tủa với I2"], c: 0 },
+            { q: "Cả glucose và fructose đều thuộc loại đồng phân gì của nhau?", a: ["Đồng phân cấu tạo", "Đồng phân hình học", "Đồng đẳng", "Đồng vị"], c: 0 },
+            { q: "Hiện tượng thực tiễn: Quả nho chín chứa nhiều loại đường nào nhất?", a: ["Glucose", "Fructose", "Saccharose", "Tinh bột"], c: 0 },
+            { q: "Sản phẩm quang hợp của cây xanh tạo ra chất nào đầu tiên để chuyển hóa thành carbohydrate?", a: ["Glucose", "Fructose", "Cellulose", "Maltose"], c: 0 },
+            { q: "Fructose có phản ứng tráng bạc không?", a: ["Có, vì trong môi trường kiềm nó chuyển thành glucose", "Không, vì nó là ketone", "Chỉ ở nhiệt độ cực cao", "Có, vì nó chứa nhóm -CHO"], c: 0 },
+            { q: "Dịch truyền glucose 5% (huyết thanh ngọt) dùng để làm gì trong y tế?", a: ["Cung cấp năng lượng cho bệnh nhân", "Làm thuốc tê", "Tẩy trùng vết thương", "Cầm máu"], c: 0 }
+        ];
+
+        const bank4 = [
+            { q: "Disaccharide khi thủy phân hoàn toàn tạo ra bao nhiêu phân tử monosaccharide?", a: ["2", "3", "4", "Nhiều phân tử"], c: 0 },
+            { q: "Saccharose (đường kính, đường mía) có công thức phân tử là?", a: ["C12H22O11", "C6H12O6", "(C6H10O5)n", "C12H24O12"], c: 0 },
+            { q: "Phân tử saccharose được cấu tạo từ các đơn vị nào?", a: ["1 đơn vị α-glucose và 1 đơn vị β-fructose", "2 đơn vị α-glucose", "2 đơn vị β-fructose", "1 đơn vị glucose và 1 galactose"], c: 0 },
+            { q: "Liên kết giữa hai đơn vị monosaccharide trong saccharose là liên kết gì?", a: ["Glycosidic", "Peptide", "Ester", "Hydrogen"], c: 0 },
+            { q: "Saccharose KHÔNG có tính chất hóa học nào sau đây?", a: ["Phản ứng tráng bạc", "Hòa tan Cu(OH)2", "Thủy phân", "Bị nung cháy"], c: 0 },
+            { q: "Thủy phân hoàn toàn saccharose trong môi trường acid đun nóng thu được?", a: ["Glucose và fructose", "Chỉ có glucose", "Chỉ có fructose", "Maltose"], c: 0 },
+            { q: "Maltose (đường mạch nha) được cấu tạo từ những đơn vị nào?", a: ["2 đơn vị glucose", "2 đơn vị fructose", "1 glucose và 1 fructose", "2 đơn vị saccharose"], c: 0 },
+            { q: "Maltose có phản ứng tráng bạc không?", a: ["Có", "Không", "Chỉ khi thêm xúc tác Ni", "Chỉ phản ứng trong bóng tối"], c: 0 },
+            { q: "Tinh bột và cellulose là các polymer thiên nhiên thuộc nhóm nào?", a: ["Polysaccharide", "Monosaccharide", "Disaccharide", "Lipid"], c: 0 },
+            { q: "Công thức chung của tinh bột và cellulose thường được viết là gì?", a: ["(C6H10O5)n", "C12H22O11", "C6H12O6", "(C5H8O4)n"], c: 0 },
+            { q: "Tinh bột gồm 2 thành phần chính là gì?", a: ["Amylose và amylopectin", "Glucose và fructose", "Cellulose và glycogen", "Amylose và maltose"], c: 0 },
+            { q: "Thành phần nào của tinh bột có cấu trúc mạch phân nhánh?", a: ["Amylopectin", "Amylose", "Cả hai thành phần", "Không có thành phần nào"], c: 0 },
+            { q: "Thuốc thử dùng để nhận biết hồ tinh bột là gì?", a: ["Dung dịch I2", "Dung dịch AgNO3/NH3", "Cu(OH)2", "Nước bromine"], c: 0 },
+            { q: "Khi cho vài giọt dung dịch I2 vào hồ tinh bột, dung dịch chuyển sang màu gì?", a: ["Xanh tím đặc trưng", "Đỏ gạch", "Vàng nhạt", "Mất màu"], c: 0 },
+            { q: "Cellulose cấu tạo bởi các đơn vị nào liên kết với nhau?", a: ["Các đơn vị β-glucose", "Các đơn vị α-glucose", "Các đơn vị fructose", "Các gốc acid béo"], c: 0 },
+            { q: "Hình thái cấu trúc mạch của cellulose là gì?", a: ["Mạch dài, không phân nhánh", "Mạch phân nhánh phức tạp", "Mạch xoắn ốc", "Dạng mạng không gian"], c: 0 },
+            { q: "Sự tiêu hóa tinh bột trong cơ thể người bắt đầu ở đâu và nhờ enzyme gì?", a: ["Ở khoang miệng, nhờ enzyme amylase", "Ở dạ dày, nhờ pepsin", "Ở ruột non, nhờ lipase", "Ở gan, nhờ dịch mật"], c: 0 },
+            { q: "Thủy phân hoàn toàn cellulose thu được monosaccharide duy nhất nào?", a: ["Glucose", "Fructose", "Ribose", "Galactose"], c: 0 },
+            { q: "Dung dịch nào sau đây có khả năng hòa tan được cellulose?", a: ["Nước Schweizer", "Nước sôi", "Dung dịch NaOH loãng", "Dung dịch HCl đặc"], c: 0 },
+            { q: "Cellulose trinitrate được ứng dụng phổ biến để làm gì?", a: ["Sản xuất thuốc súng không khói", "Làm màng bọc thực phẩm", "Sản xuất tơ visco", "Làm nhựa PVC"], c: 0 }
+        ];
+
+        const bank5 = [
+            { q: "Amine là hợp chất thu được khi thay thế nguyên tử H trong phân tử nào bằng gốc hydrocarbon?", a: ["Ammonia (NH3)", "Nước (H2O)", "Methane (CH4)", "Nitric acid (HNO3)"], c: 0 },
+            { q: "Bậc của amine được xác định dựa trên yếu tố nào?", a: ["Số gốc hydrocarbon liên kết với nguyên tử N", "Bậc của nguyên tử carbon chứa nhóm -NH2", "Số nguyên tử N trong phân tử", "Số liên kết đôi"], c: 0 },
+            { q: "Amine bậc 2 có dạng công thức chung là gì?", a: ["R-NH-R'", "R-NH2", "R-N(R')-R''", "R-NO2"], c: 0 },
+            { q: "Tên gốc-chức của amine CH3-CH2-NH2 là gì?", a: ["Ethylamine", "Methylamine", "Propylamine", "Ethanamine"], c: 0 },
+            { q: "Tên thay thế theo IUPAC của amine CH3NH2 là gì?", a: ["Methanamine", "Aminomethane", "Methylamine", "Dimethylamine"], c: 0 },
+            { q: "Aniline có công thức phân tử là gì?", a: ["C6H5NH2", "C6H5CH3", "C6H5OH", "CH3NH2"], c: 0 },
+            { q: "Ở điều kiện thường, methylamine và ethylamine tồn tại ở trạng thái nào?", a: ["Chất khí, mùi khai", "Chất lỏng, mùi thơm", "Chất rắn, không mùi", "Chất khí, không mùi"], c: 0 },
+            { q: "Dung dịch methylamine trong nước làm quỳ tím chuyển sang màu gì?", a: ["Màu xanh", "Màu đỏ", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Aniline có làm đổi màu quỳ tím ẩm không?", a: ["Không, vì tính base rất yếu", "Có, chuyển sang màu xanh", "Có, chuyển sang màu đỏ", "Làm mất màu quỳ tím"], c: 0 },
+            { q: "Phản ứng nhận biết aniline là tác dụng với dung dịch nào tạo kết tủa trắng?", a: ["Nước bromine", "AgNO3/NH3", "Cu(OH)2", "NaCl"], c: 0 },
+            { q: "Amino acid là hợp chất hữu cơ tạp chức chứa đồng thời những nhóm chức nào?", a: ["Nhóm -NH2 và nhóm -COOH", "Nhóm -OH và nhóm -CHO", "Nhóm -NH2 và nhóm -OH", "Hai nhóm -COOH"], c: 0 },
+            { q: "Cấu tạo của phân tử Glycine (amino acid đơn giản nhất) là?", a: ["H2N-CH2-COOH", "CH3-CH(NH2)-COOH", "H2N-CH2-CH2-COOH", "CH3-CH2-COOH"], c: 0 },
+            { q: "Alanine có công thức cấu tạo thu gọn là gì?", a: ["CH3-CH(NH2)-COOH", "H2N-CH2-COOH", "C6H5-NH2", "HOOC-CH2-CH(NH2)-COOH"], c: 0 },
+            { q: "Ở điều kiện thường, các amino acid tồn tại chủ yếu ở dạng nào?", a: ["Ion lưỡng cực", "Phân tử không phân cực", "Dạng khí", "Tinh thể lỏng"], c: 0 },
+            { q: "Nhiệt độ nóng chảy của các amino acid thường như thế nào?", a: ["Rất cao, là chất rắn kết tinh", "Rất thấp, dễ bay hơi", "Nóng chảy ở nhiệt độ phòng", "Không xác định"], c: 0 },
+            { q: "Tính chất hóa học đặc trưng nhất của amino acid là gì?", a: ["Tính lưỡng tính", "Tính acid cực mạnh", "Tính base cực mạnh", "Tính trơ hóa học"], c: 0 },
+            { q: "Dung dịch Valine (1 nhóm -NH2, 1 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Không đổi màu", "Màu xanh", "Màu đỏ", "Màu vàng"], c: 0 },
+            { q: "Dung dịch Lysine (2 nhóm -NH2, 1 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Màu xanh", "Màu đỏ", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Dung dịch Glutamic acid (1 nhóm -NH2, 2 nhóm -COOH) làm quỳ tím chuyển màu gì?", a: ["Màu đỏ", "Màu xanh", "Không đổi màu", "Mất màu"], c: 0 },
+            { q: "Bột ngọt (mì chính) được sản xuất từ muối monosodium của chất nào?", a: ["Glutamic acid", "Glycine", "Alanine", "Valine"], c: 0 }
+        ];
+
+        const bank6 = [
+            { q: "Peptide là hợp chất được hình thành từ 2 đến 50 đơn vị nào?", a: ["α-amino acid", "β-amino acid", "Carboxylic acid", "Amine bậc 1"], c: 0 },
+            { q: "Liên kết peptide là liên kết amide (-CO-NH-) tạo thành giữa hai đơn vị nào?", a: ["Giữa 2 gốc α-amino acid", "Giữa acid và alcohol", "Giữa 2 nhóm -OH", "Giữa aldehyde và ketone"], c: 0 },
+            { q: "Phân tử peptide chứa 2 liên kết peptide (3 gốc α-amino acid) được gọi là gì?", a: ["Tripeptide", "Dipeptide", "Tetrapeptide", "Polypeptide"], c: 0 },
+            { q: "Số liên kết peptide có trong một tetrapeptide mạch hở là bao nhiêu?", a: ["3", "4", "2", "5"], c: 0 },
+            { q: "Tên gọi của dipeptide cấu tạo từ Glycine (đầu N) và Alanine (đầu C) được viết tắt là gì?", a: ["Gly-Ala", "Ala-Gly", "Gly-Gly", "Ala-Ala"], c: 0 },
+            { q: "Protein là những hợp chất polypeptide cao phân tử có khối lượng mol khoảng bao nhiêu?", a: ["Từ vài chục nghìn đến vài triệu", "Rất nhỏ, dưới 1000", "Bằng với tinh bột", "Chỉ khoảng 100"], c: 0 },
+            { q: "Cấu trúc bậc 1 của protein là dạng cấu trúc như thế nào?", a: ["Trình tự sắp xếp các gốc α-amino acid trong mạch", "Dạng xoắn lò xo", "Dạng gấp nếp", "Dạng cuộn không gian 3D"], c: 0 },
+            { q: "Hiện tượng protein bị kết tủa thành mảng khi đun nóng hoặc thêm acid/base gọi là gì?", a: ["Sự đông tụ protein", "Sự thăng hoa", "Sự kết tinh", "Sự nóng chảy"], c: 0 },
+            { q: "Khi luộc cua, gạch cua nổi lên trên là do hiện tượng gì?", a: ["Đông tụ protein do nhiệt độ", "Đông tụ do hóa chất", "Sự bay hơi của nước", "Chất béo nổi lên"], c: 0 },
+            { q: "Vắt chanh vào sữa bò tươi thấy sữa bị vón cục là do hiện tượng gì?", a: ["Đông tụ protein do môi trường acid", "Sữa bị thiu", "Sự phản ứng của vitamin C", "Sữa kết tinh"], c: 0 },
+            { q: "Phản ứng đặc trưng để nhận biết các peptide (từ tripeptide trở lên) và protein là phản ứng gì?", a: ["Phản ứng màu biuret", "Phản ứng tráng bạc", "Phản ứng este hóa", "Phản ứng trùng ngưng"], c: 0 },
+            { q: "Thuốc thử của phản ứng màu biuret là gì?", a: ["Cu(OH)2 trong môi trường kiềm", "Dung dịch AgNO3/NH3", "Nước bromine", "Quỳ tím"], c: 0 },
+            { q: "Hiện tượng của phản ứng màu biuret giữa lòng trắng trứng và Cu(OH)2/NaOH là gì?", a: ["Xuất hiện màu tím đặc trưng", "Kết tủa đỏ gạch", "Dung dịch hóa xanh lam", "Sủi bọt khí"], c: 0 },
+            { q: "Chất nào sau đây KHÔNG có phản ứng màu biuret?", a: ["Dipeptide Gly-Gly", "Tripeptide Gly-Ala-Val", "Protein (Albumin)", "Lòng trắng trứng"], c: 0 },
+            { q: "Thủy phân hoàn toàn protein nhờ xúc tác acid/base đun nóng sẽ thu được hỗn hợp các chất nào?", a: ["α-amino acid", "Glucose", "Acid béo", "Glycerol"], c: 0 },
+            { q: "Đặc tính của các protein hình sợi (keratin trong tóc, móng; fibroin trong tơ tằm) đối với nước là gì?", a: ["Không tan trong nước", "Tan tốt trong nước lạnh", "Tan trong nước sôi", "Bay hơi cùng nước"], c: 0 },
+            { q: "Albumin (protein lòng trắng trứng) có khả năng hòa tan trong nước tạo thành dung dịch gì?", a: ["Dung dịch keo", "Dung dịch bão hòa", "Hỗn dịch đục", "Chất lỏng siêu tới hạn"], c: 0 },
+            { q: "Enzyme trong cơ thể sinh vật có bản chất là hợp chất nào?", a: ["Protein", "Carbohydrate", "Lipid", "Khoáng chất"], c: 0 },
+            { q: "Đặc điểm nổi bật của xúc tác enzyme trong các phản ứng hóa sinh là gì?", a: ["Tính chọn lọc rất cao và điều kiện êm dịu", "Xúc tác được mọi phản ứng", "Chịu được nhiệt độ hàng ngàn độ", "Cần xúc tác kim loại"], c: 0 },
+            { q: "Khi đốt cháy tóc, sừng hoặc lông cừu sẽ có hiện tượng gì đặc trưng?", a: ["Có mùi khét đặc trưng của protein", "Nổ lách tách", "Cháy sáng chói", "Không sinh ra khói"], c: 0 }
+        ];
+
+        const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5, bank6];
+
+        let activeQuestions = []; 
+        let playerName = ""; let playerId = ""; let playerGroupNum = ""; let gameStarted = false; 
+        let currentScore = 0; 
+        let answeredQuestions = 0;
+
+        function generateRandomizedQuestions() {
+            let selectedBank = allQuestionBanks[Math.floor(Math.random() * allQuestionBanks.length)];
+            let cloned = JSON.parse(JSON.stringify(selectedBank));
+            
+            for (let i = cloned.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
+            }
+            
+            cloned.forEach(item => {
+                let correctAnswerText = item.a[item.c]; 
+                for (let i = item.a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [item.a[i], item.a[j]] = [item.a[j], item.a[i]];
+                }
+                item.c = item.a.indexOf(correctAnswerText);
+            });
+            return cloned; 
+        }
+
+        let loginTimeString = "";
+
+        function getFormattedTime() {
+            let now = new Date();
+            let hours = String(now.getHours()).padStart(2, '0');
+            let minutes = String(now.getMinutes()).padStart(2, '0');
+            let seconds = String(now.getSeconds()).padStart(2, '0');
+            let day = String(now.getDate()).padStart(2, '0');
+            let month = String(now.getMonth() + 1).padStart(2, '0');
+            let year = now.getFullYear();
+            return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-box').innerText = `⭐ Điểm: ${currentScore}`;
+        }
+        
+        function showFormError(msg) {
+            const msgObj = document.getElementById('form-error-msg');
+            msgObj.innerText = msg;
+            msgObj.style.display = 'block';
+            msgObj.classList.remove('shake');
+            void msgObj.offsetWidth; 
+            msgObj.classList.add('shake');
+            if(!isMuted) sfxWrong.play();
+        }
+
+        window.startGame = function() {
+            const nameInput = document.getElementById('input-name').value.trim();
+            const classSelect = document.getElementById('input-class');
+            const classInput = classSelect.value; 
+            const groupSelect = document.getElementById('input-group-num');
+            const groupInput = groupSelect.value;
+            const idInput = document.getElementById('input-id').value.trim();
+            
+            if(nameInput === "" || classInput === "" || groupInput === "" || idInput === "") { 
+                showFormError("⚠️ Vui lòng điền đủ Tên, Lớp, Nhóm và SBD!");
+                return; 
+            }
+
+            if (idInput !== "9999") {
+                let allowedIDs = validStudentIDs[classInput];
+                if (!allowedIDs || !allowedIDs.includes(idInput)) {
+                    showFormError("❌ SBD không hợp lệ hoặc sai Lớp!"); 
+                    return;
+                }
+            }
+
+            playerName = nameInput; 
+            playerGroupNum = groupInput;
+            playerId = classInput + " - " + idInput; 
+            currentScore = 0;
+            answeredQuestions = 0;
+            loginTimeString = getFormattedTime();
+
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('player-info').style.display = 'block';
+            document.getElementById('score-box').style.display = 'block';
+            
+            document.getElementById('progress-box').style.display = 'block';
+            document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
+            
+            // Gắn thêm Nhóm vào bảng thông tin hiển thị trên cùng
+            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | ${groupInput} | SBD: ${idInput}`;
+            updateScoreUI();
+            
+            if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
+
+            gameStartTime = Date.now(); gameStarted = true;
+        }
+
+        document.getElementById('btn-exit').addEventListener('click', function() { 
+            location.reload(); 
+        });
+
+        document.getElementById('btn-unlock').addEventListener('click', unlockGame);
+
+        if(localStorage.getItem('daThiHoa12') === 'true') {
+            document.getElementById('input-group').style.display = 'none';
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('login-desc').style.display = 'none';
+            document.getElementById('warning-msg').style.display = 'none';
+            document.getElementById('locked-msg').style.display = 'block';
+            document.getElementById('btn-unlock').style.display = 'block';
+        }
+
+        function unlockGame() {
+            let pin = prompt("Vui lòng nhập MÃ BẢO MẬT của Giáo Viên:");
+            if (pin === "123456") { 
+                localStorage.removeItem('daThiHoa12');
+                alert("Mở khóa thành công! Học sinh có thể làm lại bài.");
+                location.reload();
+            } else if (pin !== null) {
+                alert("Mã bảo mật không chính xác!");
+            }
+        }
+
+        function sendScoreToSheet(name, id, group, score, seconds) {
+            if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
+            
+            let safeScore = parseInt(score);
+            if (safeScore > 20 || safeScore < 0) {
+                safeScore = 0; 
+            }
+
+            let completeTimeString = getFormattedTime();
+
+            fetch(GOOGLE_SHEET_URL, {
+                method: "POST", mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    name: name, 
+                    id: id, 
+                    group: group,   // GỬI KÈM BIẾN NHÓM
+                    score: safeScore, 
+                    time: seconds,
+                    loginTime: loginTimeString,
+                    completeTime: completeTimeString
+                })
+            }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
+        }
+
+        function triggerAntiCheat() {
+            if (!gameStarted || gameEnded) return; 
+
+            isPaused = true; 
+            gameEnded = true;
+            uiPanel.classList.remove('active'); 
+            
+            bgMusic.pause();
+            if(!isMuted) sfxWrong.play();
+
+            let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
+            
+            sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, timeTaken);
+            localStorage.setItem('daThiHoa12', 'true');
+
+            document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
+            document.getElementById('result-title').style.color = "#e74c3c";
+            document.getElementById('result-details').innerHTML = `
+                <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
+                <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
+                <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
+                <div class="info-text" style="color:#e74c3c; font-size: 15px;">Hệ thống phát hiện thiết bị đã thoát màn hình hoặc mở thẻ (tab) khác.<br>Bài thi đã bị khóa và tự động nộp!</div>
+            `;
+            document.getElementById('result-screen').style.display = 'flex';
+        }
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) { triggerAntiCheat(); }
+        });
+
+        window.addEventListener("blur", function() {
+            triggerAntiCheat();
+        });
+
+        const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3");
+        bgMusic.loop = true; bgMusic.volume = 0.2; 
+        const sfxCorrect = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
+        const sfxWrong = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
+        const sfxWin = new Audio("https://assets.mixkit.co/active_storage/sfx/2002/2002-preview.mp3");
+        const sfxExplode = new Audio("https://assets.mixkit.co/active_storage/sfx/170/170-preview.mp3");
+
+        let isMuted = false;
+        function toggleAudio() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted; sfxCorrect.muted = isMuted; sfxWrong.muted = isMuted; sfxWin.muted = isMuted; sfxExplode.muted = isMuted;
+            document.getElementById('audio-control').innerText = isMuted ? "🔇 Tắt Nhạc" : "🔊 Bật Nhạc";
+        }
+
+        let toastTimeout;
+        function showToast(msg, bgColor = "rgba(231, 76, 60, 0.95)") {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9bd4e4); 
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1500);
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xfff5b6, 0.6); dirLight.position.set(20, 50, 20); scene.add(dirLight);
+
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(800, 2000), new THREE.MeshLambertMaterial({ color: 0x82d844 }));
+        ground.rotation.x = -Math.PI / 2; 
+        ground.position.z = -300; 
+        scene.add(ground);
+
+        const sun = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0xffe666, side: THREE.DoubleSide }));
+        sun.position.set(120, 90, -800); scene.add(sun);
+
+        function createDistantMountain(x, z, r, color) {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.MeshBasicMaterial({ color: color }));
+            mesh.scale.set(r, r * 0.35, r * 0.2); mesh.position.set(x, -r * 0.25, z); scene.add(mesh);
+        }
+        createDistantMountain(-250, -850, 300, 0x82c8e5); createDistantMountain(200, -800, 250, 0x6bb5d8);
+        createDistantMountain(0, -900, 400, 0x9bd4e4); createDistantMountain(-100, -750, 200, 0x5aa4c7); 
+
+        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        function createCloud(x, y, z, scale) {
+            const group = new THREE.Group();
+            group.add(new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), cloudMat)); 
+            const c2 = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 16), cloudMat); c2.position.set(-4, -1, 0); group.add(c2);
+            const c3 = new THREE.Mesh(new THREE.SphereGeometry(2.5, 16, 16), cloudMat); c3.position.set(4, -1.5, 0); group.add(c3);
+            group.position.set(x, y, z); group.scale.set(scale, scale * 0.7, scale); scene.add(group);
+        }
+        for (let i = 0; i < 25; i++) createCloud((Math.random() - 0.5) * 600, 50 + Math.random() * 50, -100 - Math.random() * 800, 0.8 + Math.random() * 1.5);
+
+        function createSignTexture(text) {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#6e4321'; ctx.fillRect(0, 0, 512, 128); ctx.strokeStyle = '#4a2c15'; ctx.lineWidth = 15; ctx.strokeRect(0, 0, 512, 128);
+            ctx.fillStyle = '#FFD700'; ctx.font = 'bold 42px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 256, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const startGate = new THREE.Group(); const woodMat = new THREE.MeshLambertMaterial({ color: 0x6e4321 }); 
+        const p1 = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), woodMat); p1.position.set(-4.5, 4, 0); const p2 = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), woodMat); p2.position.set(4.5, 4, 0); startGate.add(p1, p2);
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(11, 1, 1), woodMat); beam.position.set(0, 7.5, 0); startGate.add(beam);
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(7, 1.8, 1.1), [ woodMat, woodMat, woodMat, woodMat, new THREE.MeshBasicMaterial({ map: createSignTexture("KHU RỪNG HÓA HỌC") }), woodMat ]); sign.position.set(0, 7.5, 0); startGate.add(sign);
+        startGate.position.set(0, 0, 10); scene.add(startGate);
+
+        const gate = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 2), new THREE.MeshLambertMaterial({ color: 0xffd700 }));
+        gate.position.set(0, 5, -600); scene.add(gate);
+
+        activeQuestions = generateRandomizedQuestions();
+        const obsGeo = new THREE.BoxGeometry(1.8, 1.8, 1.8); const obsMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+        let obstacles = []; 
+        const zigzagX = [0, -12, 10, -14, 12, -10, 14, -8, 10, -12, 14, -10, 12, -14, 10, -12, 14, -10, 12, 0]; 
+        for (let i = 0; i < activeQuestions.length; i++) {
+            const obs = new THREE.Mesh(obsGeo, obsMat); obs.position.set(zigzagX[i], 1.2, -i * 28 - 15); scene.add(obs);
+            obstacles.push({ mesh: obs, data: activeQuestions[i], active: true });
+        }
+
+        const stoneGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 8); const stoneMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); 
+        let pathPoints = [{x: 0, z: 10}]; obstacles.forEach(o => pathPoints.push({x: o.mesh.position.x, z: o.mesh.position.z})); pathPoints.push({x: 0, z: gate.position.z}); 
+        let pathStones = []; 
+        for(let i=0; i<pathPoints.length - 1; i++) {
+            let p1 = pathPoints[i]; let p2 = pathPoints[i+1]; let dist = Math.sqrt(Math.pow(p2.x-p1.x, 2) + Math.pow(p2.z-p1.z, 2)); let steps = Math.floor(dist / 2.5); 
+            for(let j=1; j<steps; j++) {
+                let sx = p1.x + (p2.x - p1.x) * (j / steps); let sz = p1.z + (p2.z - p1.z) * (j / steps);
+                let actualX = sx + (Math.random()-0.5)*0.8; let actualZ = sz + (Math.random()-0.5)*0.8;
+                let stone = new THREE.Mesh(stoneGeo, stoneMat); stone.position.set(actualX, 0.05, actualZ); scene.add(stone);
+                pathStones.push({x: actualX, z: actualZ}); 
+            }
+        }
+        obstacles.forEach(o => pathStones.push({x: o.mesh.position.x, z: o.mesh.position.z}));
+
+        function createTree(x, z, scale) {
+            const tg = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), new THREE.MeshLambertMaterial({ color: 0x6e4321 })); trunk.position.y = 1.5; tg.add(trunk);
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x3cb371 }); const lPos = [[0, 3.5, 0], [1.2, 3, 0.5], [-1.2, 3, 0.5], [0, 3, -1.2], [0, 4.8, 0]];
+            lPos.forEach(p => { const leaf = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 12), leafMat); leaf.position.set(p[0], p[1], p[2]); tg.add(leaf); });
+            tg.scale.set(scale, scale, scale); tg.position.set(x, 0, z); scene.add(tg);
+        }
+        
+        let treesPlanted = 0; let attempts = 0;
+        while(treesPlanted < 350 && attempts < 3000) {
+            attempts++; let x = (Math.random() - 0.5) * 80; let z = 15 - Math.random() * 650; let tooClose = false;
+            for(let i=0; i<pathStones.length; i++) { if(Math.sqrt(Math.pow(x-pathStones[i].x, 2) + Math.pow(z-pathStones[i].z, 2)) < 4.5) { tooClose = true; break; } }
+            if(!tooClose) { createTree(x, z, 0.7 + Math.random() * 0.6); treesPlanted++; }
+        }
+
+        const playerGroup = new THREE.Group(); const matY = new THREE.MeshLambertMaterial({ color: 0xffd700 }); const matB = new THREE.MeshLambertMaterial({ color: 0x2980b9 }); const matK = new THREE.MeshLambertMaterial({ color: 0x222222 }); const matW = new THREE.MeshLambertMaterial({ color: 0xffffff });  
+        function addPart(geo, mat, x, y, z) { const mesh = new THREE.Mesh(geo, mat); mesh.position.set(x, y, z); playerGroup.add(mesh); return mesh; }
+        addPart(new THREE.CylinderGeometry(0.6, 0.6, 1.2, 16), matY, 0, 1.6, 0); addPart(new THREE.SphereGeometry(0.6, 16, 16), matY, 0, 2.2, 0); addPart(new THREE.CylinderGeometry(0.61, 0.61, 0.6, 16), matB, 0, 1.3, 0); addPart(new THREE.SphereGeometry(0.61, 16, 16), matB, 0, 1.0, 0); addPart(new THREE.CylinderGeometry(0.62, 0.62, 0.15, 16), matK, 0, 2.1, 0); addPart(new THREE.CylinderGeometry(0.25, 0.25, 0.1, 16).rotateX(Math.PI/2), matK, 0, 2.1, 0.55); addPart(new THREE.SphereGeometry(0.22, 16, 16), matW, 0, 2.1, 0.52); addPart(new THREE.SphereGeometry(0.08, 16, 16), matK, 0, 2.1, 0.68); 
+        const leftArm = addPart(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 8).translate(0, -0.3, 0), matY, 0.7, 1.7, 0); const rightArm = addPart(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 8).translate(0, -0.3, 0), matY, -0.7, 1.7, 0);
+        const leftLeg = addPart(new THREE.CylinderGeometry(0.15, 0.15, 0.4, 8).translate(0, -0.2, 0), matB, 0.25, 0.7, 0); const rightLeg = addPart(new THREE.CylinderGeometry(0.15, 0.15, 0.4, 8).translate(0, -0.2, 0), matB, -0.25, 0.7, 0);
+        playerGroup.rotation.y = Math.PI; playerGroup.position.set(0, 0, 18); scene.add(playerGroup);
+
+        const keys = { w: false, a: false, s: false, d: false }; let isPaused = false; let walkTime = 0; 
+        let gameTimeLimit = 420; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
+
+        window.addEventListener('keydown', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = true; if(key === 's' || key === 'arrowdown') keys.s = true; if(key === 'a' || key === 'arrowleft') keys.a = true; if(key === 'd' || key === 'arrowright') keys.d = true; });
+        window.addEventListener('keyup', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = false; if(key === 's' || key === 'arrowdown') keys.s = false; if(key === 'a' || key === 'arrowleft') keys.a = false; if(key === 'd' || key === 'arrowright') keys.d = false; });
+        function bindTouchButton(btnId, targetKey) { const btn = document.getElementById(btnId); const press = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = true; } }; const release = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = false; } }; btn.addEventListener('touchstart', press, {passive: false}); btn.addEventListener('touchend', release, {passive: false}); btn.addEventListener('mousedown', press); btn.addEventListener('mouseup', release); btn.addEventListener('mouseleave', release); }
+        bindTouchButton('btn-up', 'w'); bindTouchButton('btn-down', 's'); bindTouchButton('btn-left', 'a'); bindTouchButton('btn-right', 'd');
+
+        const uiPanel = document.getElementById('ui-panel'); const questionText = document.getElementById('question-text'); const answersContainer = document.getElementById('answers-container');
+
+        let explosionParticles = [];
+        function createExplosion(x, y, z) {
+            const pGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const pMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+            for(let i=0; i<25; i++) {
+                let p = new THREE.Mesh(pGeo, pMat); p.position.set(x, y, z);
+                p.userData.velocity = new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.6 + 0.2, (Math.random()-0.5)*0.8);
+                p.userData.life = 1.0; scene.add(p); explosionParticles.push(p);
+            }
+        }
+
+        function showFloatingScore(x, y, z) {
+            let pos = new THREE.Vector3(x, y + 2, z); pos.project(camera);
+            let screenX = (pos.x * .5 + .5) * window.innerWidth; let screenY = (pos.y * -.5 + .5) * window.innerHeight;
+            let el = document.createElement('div'); el.className = 'floating-score'; el.innerText = '+1 Điểm';
+            el.style.left = screenX + 'px'; el.style.top = screenY + 'px'; document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500); 
+        }
+
+        function showQuestion(index) {
+            isPaused = true; keys.w = keys.a = keys.s = keys.d = false; 
+            const q = obstacles[index].data; questionText.innerText = `Câu ${index + 1}: ${q.q}`; answersContainer.innerHTML = '';
+            
+            let isAnswered = false; 
+
+            q.a.forEach((ans, i) => {
+                const btn = document.createElement('button'); btn.className = 'btn-answer'; btn.innerText = ans;
+                const submitAnswer = (e) => {
+                    if(e) e.preventDefault();
+                    
+                    if(isAnswered) return; 
+                    isAnswered = true;
+
+                    uiPanel.classList.remove('active'); 
+                    
+                    let obsPos = obstacles[index].mesh.position;
+
+                    answeredQuestions++;
+                    document.getElementById('progress-box').innerText = `📝 Câu: ${answeredQuestions}/20`;
+
+                    if (i === q.c) {
+                        currentScore += 1; updateScoreUI(); 
+                        showToast("✅ Chính xác! +1 Điểm", "rgba(46, 204, 113, 0.95)");
+                        if(!isMuted) { sfxCorrect.play(); sfxExplode.play(); }
+                        createExplosion(obsPos.x, obsPos.y, obsPos.z); showFloatingScore(obsPos.x, obsPos.y, obsPos.z);
+                    } else {
+                        showToast("❌ Tiếc quá sai mất rồi!", "rgba(231, 76, 60, 0.95)");
+                        if(!isMuted) sfxWrong.play();
+                    }
+                    
+                    scene.remove(obstacles[index].mesh); obstacles[index].active = false;
+                    setTimeout(() => { if(!gameEnded) isPaused = false; }, 300);
+                };
+                btn.addEventListener('click', submitAnswer); btn.addEventListener('touchstart', submitAnswer, {passive: false});
+                answersContainer.appendChild(btn);
+            });
+            uiPanel.classList.add('active'); 
+        }
+
+        const speed = 0.35;
+        function animate() {
+            requestAnimationFrame(animate);
+
+            for(let i = explosionParticles.length - 1; i >= 0; i--) {
+                let p = explosionParticles[i]; p.position.add(p.userData.velocity); p.userData.velocity.y -= 0.03; 
+                p.scale.multiplyScalar(0.92); p.rotation.x += 0.1; p.rotation.y += 0.1; p.userData.life -= 0.02;
+                if(p.userData.life <= 0) { scene.remove(p); explosionParticles.splice(i, 1); }
+            }
+
+            if (!gameStarted) { camera.position.x += (playerGroup.position.x - camera.position.x) * 0.1; camera.position.y = playerGroup.position.y + 7; camera.position.z += (playerGroup.position.z + 16 - camera.position.z) * 0.1; camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z); renderer.render(scene, camera); return; }
+
+            if (!gameEnded) {
+                let elapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000); let remaining = gameTimeLimit - elapsedSeconds;
+                if (remaining <= 0) {
+                    remaining = 0; gameEnded = true; isPaused = true; uiPanel.classList.remove('active');
+                    bgMusic.pause(); 
+                    document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
+                    document.getElementById('result-details').innerHTML = `<p>Đáng tiếc quá <span style="color:#3498db">${playerName}</span>,</p><div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>`;
+                    
+                    document.removeEventListener("visibilitychange", triggerAntiCheat);
+                    window.removeEventListener("blur", triggerAntiCheat);
+                    
+                    sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, elapsedSeconds);
+                    localStorage.setItem('daThiHoa12', 'true'); 
+                    document.getElementById('result-screen').style.display = 'flex';
+                } else { let m = Math.floor(remaining / 60); let s = remaining % 60; timerUI.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); }
+            }
+
+            if (!isPaused && !gameEnded) {
+                let isMoving = false; let targetRotation = playerGroup.rotation.y; let nextZ = playerGroup.position.z; let nextX = playerGroup.position.x;
+                if (keys.w) { nextZ -= speed; targetRotation = Math.PI; isMoving = true; } if (keys.s) { nextZ += speed; targetRotation = 0; isMoving = true; } if (keys.a) { nextX -= speed; targetRotation = -Math.PI / 2; isMoving = true; } if (keys.d) { nextX += speed; targetRotation = Math.PI / 2; isMoving = true; }
+                
+                if (nextZ > 9.5) { 
+                    if (nextX > 3.5) nextX = 3.5; 
+                    if (nextX < -3.5) nextX = -3.5; 
+                    if (nextZ > 18) nextZ = 18; 
+                } else { 
+                    if (nextX > 16) nextX = 16; 
+                    if (nextX < -16) nextX = -16; 
+                }
+
+                let currentGateIndex = obstacles.findIndex(o => o.active === true);
+                if (currentGateIndex !== -1) { 
+                    let gateZ = obstacles[currentGateIndex].mesh.position.z; 
+                    if (nextZ < gateZ + 1.5) { nextZ = gateZ + 1.5; } 
+                } else {
+                    if (nextZ < gate.position.z + 1.5) { nextZ = gate.position.z + 1.5; } 
+                }
+
+                playerGroup.position.z = nextZ; playerGroup.position.x = nextX; playerGroup.rotation.y = targetRotation;
+
+                if (isMoving) { walkTime += 0.25; leftArm.rotation.x = Math.sin(walkTime) * 0.8; rightArm.rotation.x = -Math.sin(walkTime) * 0.8; leftLeg.rotation.x = -Math.sin(walkTime) * 0.8; rightLeg.rotation.x = Math.sin(walkTime) * 0.8; } else { leftArm.rotation.x = 0; rightArm.rotation.x = 0; leftLeg.rotation.x = 0; rightLeg.rotation.x = 0; }
+
+                obstacles.forEach((obs, idx) => {
+                    if (obs.active) {
+                        obs.mesh.rotation.x += 0.02; obs.mesh.rotation.y += 0.03;
+                        let dx = playerGroup.position.x - obs.mesh.position.x; let dz = playerGroup.position.z - obs.mesh.position.z;
+                        if (Math.sqrt(dx*dx + dz*dz) < 1.8 && !isPaused) { showQuestion(idx); }
+                    }
+                });
+
+                if (playerGroup.position.z <= gate.position.z + 2.5 && !gameEnded) {
+                    isPaused = true; gameEnded = true;
+                    let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
+                    
+                    document.removeEventListener("visibilitychange", triggerAntiCheat);
+                    window.removeEventListener("blur", triggerAntiCheat);
+                    
+                    sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, timeTaken);
+                    localStorage.setItem('daThiHoa12', 'true');
+                    
+                    bgMusic.pause();
+                    if(!isMuted) sfxWin.play();
+
+                    document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG EM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
+                    document.getElementById('result-details').innerHTML = `
+                        <p>Học sinh: <span style="color:#e74c3c">${playerName}</span></p>
+                        <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
+                        <p>Số báo danh: <span style="color:#e74c3c">${playerId}</span></p>
+                        <p>Tổng điểm: <span style="font-size:26px; color:#f1c40f;">${currentScore} / 20</span></p>
+                        <p>Thời gian: <span style="color:#e74c3c">${timeString}</span></p>
+                        <div class="info-text">✅ Điểm đã được gửi về cho thầy cô!</div>
+                    `;
+                    document.getElementById('result-screen').style.display = 'flex';
+                }
+            }
+
+            camera.position.x += (playerGroup.position.x - camera.position.x) * 0.1; camera.position.y = playerGroup.position.y + 7; camera.position.z += (playerGroup.position.z + 16 - camera.position.z) * 0.1; camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1, playerGroup.position.z); renderer.render(scene, camera);
+        }
+        function resizeGame() { const width = window.innerWidth; const height = window.innerHeight; camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height); }
+        window.addEventListener('resize', resizeGame); window.addEventListener('orientationchange', function() { setTimeout(resizeGame, 300); });
+        
+        animate();
+        
+    })(); 
+    </script>
+</body>
+</html>
