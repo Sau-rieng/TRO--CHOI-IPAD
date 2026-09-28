@@ -87,7 +87,6 @@
             <div id="locked-msg">🔒 Thiết bị này đã nộp bài.<br>Không thể thi lại lần 2.</div>
 
             <div id="input-group">
-                <!-- Chỉ còn 2 lựa chọn Lớp và Nhóm -->
                 <select id="input-class">
                     <option value="" disabled selected>-- Chọn Lớp --</option>
                     <option value="12G1">Lớp 12G1</option>
@@ -151,10 +150,32 @@
     </div>
 
     <script>
+    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
     (function() {
         
-        // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "DÁN_URL_CỦA_BẠN_VÀO_ĐÂY";
+        // ==========================================
+        // HÀNG RÀO BẢO VỆ MÃ NGUỒN (ANTI-HACK / ANTI-F12)
+        // ==========================================
+        
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's' || e.key === 'P' || e.key === 'p')) { e.preventDefault(); return false; }
+        });
+
+        document.addEventListener('selectstart', event => event.preventDefault());
+        document.addEventListener('dragstart', event => event.preventDefault());
+
+        setInterval(function() {
+            (function() { return false; }["constructor"]("debugger")());
+        }, 100);
+
+        // ==========================================
+
+        // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzjJ99hRn9kyy3TwK3W6uEZ7Sy1bib0qZsDguf5k69eObqMgi1loztQDIAaNirpWv-gFg/exec";
 
         // ==========================================
         // NGÂN HÀNG CÂU HỎI KNTT HÓA 12 (120 Câu - Không trùng lặp)
@@ -357,18 +378,14 @@
             const groupSelect = document.getElementById('input-group-num');
             const groupInput = groupSelect.value;
             
-            // Chỉ yêu cầu chọn Lớp và Nhóm
             if(classInput === "" || groupInput === "") { 
                 showFormError("⚠️ Vui lòng chọn Lớp và Nhóm!");
                 return; 
             }
 
-            // Gán tên hiển thị chung là tên nhóm
             playerName = groupInput; 
             playerClass = classInput;
             playerGroupNum = groupInput;
-            
-            // Để trống SBD để Apps Script tự hiểu và xếp đúng cột (Dữ liệu Lớp - Thành viên)
             playerId = classInput + " - Thành viên"; 
             
             currentScore = 0;
@@ -382,7 +399,6 @@
             document.getElementById('progress-box').style.display = 'block';
             document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
             
-            // Rút gọn bảng thông tin hiển thị trên cùng
             document.getElementById('player-info').innerText = `Lớp: ${classInput} | ${groupInput}`;
             updateScoreUI();
             
@@ -460,7 +476,6 @@
             document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
             document.getElementById('result-title').style.color = "#e74c3c";
             
-            // Xóa SBD khỏi thông báo kết quả
             document.getElementById('result-details').innerHTML = `
                 <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                 <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
@@ -498,6 +513,22 @@
             toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // ==========================================
+        // HÀM GỌI FULLSCREEN
+        // ==========================================
+        function enterFullScreen() {
+            try {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    let docElm = document.documentElement;
+                    if (docElm.requestFullscreen) {
+                        docElm.requestFullscreen().catch(err => console.log("Fullscreen blocked"));
+                    } else if (docElm.webkitRequestFullscreen) {
+                        docElm.webkitRequestFullscreen();
+                    }
+                }
+            } catch (e) {}
         }
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9bd4e4); 
@@ -597,9 +628,50 @@
         const keys = { w: false, a: false, s: false, d: false }; let isPaused = false; let walkTime = 0; 
         let gameTimeLimit = 420; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
 
-        window.addEventListener('keydown', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = true; if(key === 's' || key === 'arrowdown') keys.s = true; if(key === 'a' || key === 'arrowleft') keys.a = true; if(key === 'd' || key === 'arrowright') keys.d = true; });
-        window.addEventListener('keyup', (e) => { if(!gameStarted) return; let key = e.key.toLowerCase(); if(key === 'w' || key === 'arrowup') keys.w = false; if(key === 's' || key === 'arrowdown') keys.s = false; if(key === 'a' || key === 'arrowleft') keys.a = false; if(key === 'd' || key === 'arrowright') keys.d = false; });
-        function bindTouchButton(btnId, targetKey) { const btn = document.getElementById(btnId); const press = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = true; } }; const release = (e) => { if(gameStarted){ e.preventDefault(); keys[targetKey] = false; } }; btn.addEventListener('touchstart', press, {passive: false}); btn.addEventListener('touchend', release, {passive: false}); btn.addEventListener('mousedown', press); btn.addEventListener('mouseup', release); btn.addEventListener('mouseleave', release); }
+        window.addEventListener('keydown', (e) => { 
+            if(!gameStarted) return; 
+            let key = e.key.toLowerCase(); 
+            // Kích hoạt Fullscreen khi bấm phím di chuyển
+            if(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                enterFullScreen();
+            }
+            if(key === 'w' || key === 'arrowup') keys.w = true; 
+            if(key === 's' || key === 'arrowdown') keys.s = true; 
+            if(key === 'a' || key === 'arrowleft') keys.a = true; 
+            if(key === 'd' || key === 'arrowright') keys.d = true; 
+        });
+        
+        window.addEventListener('keyup', (e) => { 
+            if(!gameStarted) return; 
+            let key = e.key.toLowerCase(); 
+            if(key === 'w' || key === 'arrowup') keys.w = false; 
+            if(key === 's' || key === 'arrowdown') keys.s = false; 
+            if(key === 'a' || key === 'arrowleft') keys.a = false; 
+            if(key === 'd' || key === 'arrowright') keys.d = false; 
+        });
+        
+        function bindTouchButton(btnId, targetKey) { 
+            const btn = document.getElementById(btnId); 
+            const press = (e) => { 
+                if(gameStarted){ 
+                    e.preventDefault(); 
+                    keys[targetKey] = true; 
+                    // Kích hoạt Fullscreen khi chạm phím ảo
+                    enterFullScreen();
+                } 
+            }; 
+            const release = (e) => { 
+                if(gameStarted){ 
+                    e.preventDefault(); 
+                    keys[targetKey] = false; 
+                } 
+            }; 
+            btn.addEventListener('touchstart', press, {passive: false}); 
+            btn.addEventListener('touchend', release, {passive: false}); 
+            btn.addEventListener('mousedown', press); 
+            btn.addEventListener('mouseup', release); 
+            btn.addEventListener('mouseleave', release); 
+        }
         bindTouchButton('btn-up', 'w'); bindTouchButton('btn-down', 's'); bindTouchButton('btn-left', 'a'); bindTouchButton('btn-right', 'd');
 
         const uiPanel = document.getElementById('ui-panel'); const questionText = document.getElementById('question-text'); const answersContainer = document.getElementById('answers-container');
@@ -682,11 +754,10 @@
                     bgMusic.pause(); 
                     document.getElementById('result-title').innerText = "⏳ HẾT GIỜ! ⏳"; document.getElementById('result-title').style.color = "#e74c3c";
                     
-                    // Rút gọn thông tin hiển thị khi hết giờ
                     document.getElementById('result-details').innerHTML = `
                         <p>Lớp: <span style="color:#3498db">${playerClass}</span></p>
                         <p>Nhóm: <span style="color:#3498db">${playerGroupNum}</span></p>
-                        <div class="info-text">Em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>
+                        <div class="info-text">Các em chưa kịp thoát khỏi khu rừng trong 7 phút.</div>
                     `;
                     
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
@@ -746,7 +817,6 @@
 
                     document.getElementById('result-title').innerText = "🎉 CHÚC MỪNG NHÓM! 🎉"; document.getElementById('result-title').style.color = "#27ae60";
                     
-                    // Rút gọn bảng kết quả khi Win
                     document.getElementById('result-details').innerHTML = `
                         <p>Lớp: <span style="color:#e74c3c">${playerClass}</span></p>
                         <p>Nhóm: <span style="color:#e74c3c">${playerGroupNum}</span></p>
