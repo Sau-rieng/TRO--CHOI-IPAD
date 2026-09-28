@@ -59,6 +59,10 @@
 
         #audio-control { position: absolute; top: 15px; left: 240px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid #3498db; }
         #audio-control:active { transform: scale(0.95); }
+        
+        /* CSS cho nút Toàn màn hình mới */
+        #fullscreen-btn { position: absolute; top: 15px; left: 350px; color: white; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; z-index: 5; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid #9b59b6; }
+        #fullscreen-btn:active { transform: scale(0.95); }
 
         #timer-box { position: absolute; top: 15px; right: 15px; color: white; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; z-index: 5; font-size: 24px; font-weight: bold; border: 2px solid #ffcc00; font-family: monospace; pointer-events: none; text-align: center;}
         
@@ -134,6 +138,9 @@
     </div>
     
     <div id="audio-control" onclick="toggleAudio()">🔊 Bật Nhạc</div>
+    
+    <!-- Nút Toàn màn hình thủ công -->
+    <div id="fullscreen-btn" onclick="toggleFullScreen()">🔲 Toàn Màn Hình</div>
 
     <div id="dpad">
         <div class="dpad-btn" id="btn-up">▲</div>
@@ -150,7 +157,9 @@
     </div>
 
     <script>
+    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
     (function() {
+        
         // ==========================================
         // HÀNG RÀO BẢO VỆ MÃ NGUỒN (ANTI-HACK)
         // ==========================================
@@ -172,7 +181,7 @@
         // ==========================================
 
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzjJ99hRn9kyy3TwK3W6uEZ7Sy1bib0qZsDguf5k69eObqMgi1loztQDIAaNirpWv-gFg/exec";
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzM_kGyXFRLsem5KyKZn7mskh9Giy94ppB-pUCWfWcl6uwXrawpljBj80h0Ponc2bnTyA/exec";
 
         // NGÂN HÀNG CÂU HỎI KNTT HÓA 12
         const bank1 = [
@@ -367,17 +376,24 @@
             if(!isMuted) sfxWrong.play();
         }
 
-        function enterFullScreen() {
-            try {
-                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                    let docElm = document.documentElement;
-                    if (docElm.requestFullscreen) {
-                        docElm.requestFullscreen().catch(err => console.log("Fullscreen blocked"));
-                    } else if (docElm.webkitRequestFullscreen) {
-                        docElm.webkitRequestFullscreen();
-                    }
+        // HÀM FULLSCREEN ĐƯỢC TÁCH RA ĐỂ GỌI BẰNG NÚT BẤM
+        window.toggleFullScreen = function() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                let docElm = document.documentElement;
+                if (docElm.requestFullscreen) {
+                    docElm.requestFullscreen().catch(err => console.log(err));
+                } else if (docElm.webkitRequestFullscreen) {
+                    docElm.webkitRequestFullscreen();
                 }
-            } catch (e) {}
+                document.getElementById('fullscreen-btn').innerText = "🔲 Thu Nhỏ";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                document.getElementById('fullscreen-btn').innerText = "🔲 Toàn Màn Hình";
+            }
         }
 
         window.startGame = function() {
@@ -463,6 +479,7 @@
             }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
         }
 
+        // ĐÃ TẮT BẪY BLUR, CHỈ CÒN VISIBILITYCHANGE ĐỂ TRÁNH LỖI TRÊN IPAD
         function triggerAntiCheat() {
             if (!gameStarted || gameEnded) return; 
 
@@ -494,9 +511,8 @@
             if (document.hidden) { triggerAntiCheat(); }
         });
 
-        window.addEventListener("blur", function() {
-            triggerAntiCheat();
-        });
+        // BỎ EVENT BLUR ĐỂ TRÁNH LỖI KHI BẤM NÚT TOÀN MÀN HÌNH TRÊN IPAD
+        // window.addEventListener("blur", function() { triggerAntiCheat(); });
 
         const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3");
         bgMusic.loop = true; bgMusic.volume = 0.2; 
@@ -506,7 +522,7 @@
         const sfxExplode = new Audio("https://assets.mixkit.co/active_storage/sfx/170/170-preview.mp3");
 
         let isMuted = false;
-        function toggleAudio() {
+        window.toggleAudio = function() {
             isMuted = !isMuted;
             bgMusic.muted = isMuted; sfxCorrect.muted = isMuted; sfxWrong.muted = isMuted; sfxWin.muted = isMuted; sfxExplode.muted = isMuted;
             document.getElementById('audio-control').innerText = isMuted ? "🔇 Tắt Nhạc" : "🔊 Bật Nhạc";
@@ -617,12 +633,10 @@
         const keys = { w: false, a: false, s: false, d: false }; let isPaused = false; let walkTime = 0; 
         let gameTimeLimit = 420; let gameStartTime; let gameEnded = false; const timerUI = document.getElementById('timer-box');
 
+        // BỎ ENTER FULLSCREEN TỪ PHÍM VÀ NÚT DI CHUYỂN
         window.addEventListener('keydown', (e) => { 
             if(!gameStarted) return; 
             let key = e.key.toLowerCase(); 
-            if(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-                enterFullScreen();
-            }
             if(key === 'w' || key === 'arrowup') keys.w = true; 
             if(key === 's' || key === 'arrowdown') keys.s = true; 
             if(key === 'a' || key === 'arrowleft') keys.a = true; 
@@ -644,7 +658,6 @@
                 if(gameStarted){ 
                     e.preventDefault(); 
                     keys[targetKey] = true; 
-                    enterFullScreen();
                 } 
             }; 
             const release = (e) => { 
@@ -748,7 +761,6 @@
                     `;
                     
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
-                    window.removeEventListener("blur", triggerAntiCheat);
                     
                     sendScoreToSheet(playerClass, playerGroupNum, currentScore, elapsedSeconds);
                     localStorage.setItem('daThiHoa12', 'true'); 
@@ -794,7 +806,6 @@
                     let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000); let m = Math.floor(timeTaken / 60); let s = timeTaken % 60; let timeString = (m > 0 ? m + " phút " : "") + s + " giây";
                     
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
-                    window.removeEventListener("blur", triggerAntiCheat);
                     
                     sendScoreToSheet(playerClass, playerGroupNum, currentScore, timeTaken);
                     localStorage.setItem('daThiHoa12', 'true');
