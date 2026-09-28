@@ -150,13 +150,10 @@
     </div>
 
     <script>
-    // BỌC KÍN TOÀN BỘ CODE ĐỂ CHỐNG HACK
     (function() {
-        
         // ==========================================
-        // HÀNG RÀO BẢO VỆ MÃ NGUỒN (ANTI-HACK / ANTI-F12)
+        // HÀNG RÀO BẢO VỆ MÃ NGUỒN (ANTI-HACK)
         // ==========================================
-        
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', function(e) {
@@ -177,9 +174,7 @@
         // === DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
         const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzjJ99hRn9kyy3TwK3W6uEZ7Sy1bib0qZsDguf5k69eObqMgi1loztQDIAaNirpWv-gFg/exec";
 
-        // ==========================================
-        // NGÂN HÀNG CÂU HỎI KNTT HÓA 12 (120 Câu - Không trùng lặp)
-        // ==========================================
+        // NGÂN HÀNG CÂU HỎI KNTT HÓA 12
         const bank1 = [
             { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
             { q: "Tên thay thế của ester CH3COOC2H5 là?", a: ["Ethyl acetate", "Methyl propanoate", "Propyl ethanoate", "Ethyl formate"], c: 0 },
@@ -321,7 +316,7 @@
         const allQuestionBanks = [bank1, bank2, bank3, bank4, bank5, bank6];
 
         let activeQuestions = []; 
-        let playerName = ""; let playerClass = ""; let playerGroupNum = ""; let playerId = ""; let gameStarted = false; 
+        let playerClass = ""; let playerGroupNum = ""; let gameStarted = false; 
         let currentScore = 0; 
         let answeredQuestions = 0;
 
@@ -372,6 +367,19 @@
             if(!isMuted) sfxWrong.play();
         }
 
+        function enterFullScreen() {
+            try {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    let docElm = document.documentElement;
+                    if (docElm.requestFullscreen) {
+                        docElm.requestFullscreen().catch(err => console.log("Fullscreen blocked"));
+                    } else if (docElm.webkitRequestFullscreen) {
+                        docElm.webkitRequestFullscreen();
+                    }
+                }
+            } catch (e) {}
+        }
+
         window.startGame = function() {
             const classSelect = document.getElementById('input-class');
             const classInput = classSelect.value; 
@@ -383,10 +391,8 @@
                 return; 
             }
 
-            playerName = groupInput; 
             playerClass = classInput;
             playerGroupNum = groupInput;
-            playerId = classInput + " - Thành viên"; 
             
             currentScore = 0;
             answeredQuestions = 0;
@@ -433,7 +439,7 @@
             }
         }
 
-        function sendScoreToSheet(name, id, group, score, seconds) {
+        function sendScoreToSheet(className, group, score, seconds) {
             if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
             
             let safeScore = parseInt(score);
@@ -447,8 +453,7 @@
                 method: "POST", mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
-                    name: name, 
-                    id: id, 
+                    className: className, 
                     group: group,
                     score: safeScore, 
                     time: seconds,
@@ -470,7 +475,7 @@
 
             let timeTaken = Math.floor((Date.now() - gameStartTime) / 1000);
             
-            sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, timeTaken);
+            sendScoreToSheet(playerClass, playerGroupNum, currentScore, timeTaken);
             localStorage.setItem('daThiHoa12', 'true');
 
             document.getElementById('result-title').innerText = "❌ VI PHẠM QUY CHẾ ❌"; 
@@ -513,22 +518,6 @@
             toast.innerText = msg; toast.style.background = bgColor; toast.style.display = 'block';
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-
-        // ==========================================
-        // HÀM GỌI FULLSCREEN
-        // ==========================================
-        function enterFullScreen() {
-            try {
-                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                    let docElm = document.documentElement;
-                    if (docElm.requestFullscreen) {
-                        docElm.requestFullscreen().catch(err => console.log("Fullscreen blocked"));
-                    } else if (docElm.webkitRequestFullscreen) {
-                        docElm.webkitRequestFullscreen();
-                    }
-                }
-            } catch (e) {}
         }
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9bd4e4); 
@@ -631,7 +620,6 @@
         window.addEventListener('keydown', (e) => { 
             if(!gameStarted) return; 
             let key = e.key.toLowerCase(); 
-            // Kích hoạt Fullscreen khi bấm phím di chuyển
             if(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
                 enterFullScreen();
             }
@@ -656,7 +644,6 @@
                 if(gameStarted){ 
                     e.preventDefault(); 
                     keys[targetKey] = true; 
-                    // Kích hoạt Fullscreen khi chạm phím ảo
                     enterFullScreen();
                 } 
             }; 
@@ -763,7 +750,7 @@
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
                     window.removeEventListener("blur", triggerAntiCheat);
                     
-                    sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, elapsedSeconds);
+                    sendScoreToSheet(playerClass, playerGroupNum, currentScore, elapsedSeconds);
                     localStorage.setItem('daThiHoa12', 'true'); 
                     document.getElementById('result-screen').style.display = 'flex';
                 } else { let m = Math.floor(remaining / 60); let s = remaining % 60; timerUI.innerText = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); }
@@ -809,7 +796,7 @@
                     document.removeEventListener("visibilitychange", triggerAntiCheat);
                     window.removeEventListener("blur", triggerAntiCheat);
                     
-                    sendScoreToSheet(playerName, playerId, playerGroupNum, currentScore, timeTaken);
+                    sendScoreToSheet(playerClass, playerGroupNum, currentScore, timeTaken);
                     localStorage.setItem('daThiHoa12', 'true');
                     
                     bgMusic.pause();
