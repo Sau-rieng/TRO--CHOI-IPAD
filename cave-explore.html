@@ -53,7 +53,7 @@
 (function(){
   // ===== CẤU HÌNH GOOGLE SHEET =====
   // Dán link Web App của Google Apps Script vào đây (hoặc thêm ?sheet=LINK vào địa chỉ trang).
-  const SHEET_URL = new URLSearchParams(location.search).get('sheet') || 'https://script.google.com/macros/s/AKfycbx-HO4-x2AwWacdZGqen_5aiIuXgsWCAh9gJjmNj_hiK4GoaacYfGdp-EZ2WjegixN7/exec';
+  const SHEET_URL = new URLSearchParams(location.search).get('sheet') || 'https://script.google.com/macros/s/AKfycbx-HO4-x2AwWacdZGqen_5aiIuXgsWCAh9gJjmNj_hiK4GoaacYfGdp-EZ2WjegixN7/exec;
 
   const canvas = document.getElementById('c');
   const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
@@ -318,6 +318,7 @@
   const results=[];
   const TOTAL=10;
   let sid='', pendingSid='', busy=false, optCount=0;
+  let cachedQ=null; // 10 câu hỏi tải sẵn một lần lúc đăng nhập, không gọi mạng mỗi lần mở khối
   const sendStatus=document.getElementById('send-status');
   async function api(payload){
     payload.sid=sid;
@@ -333,20 +334,16 @@
   function applyProgress(r){ solvedCount=r.answered; score=r.score; progressEl.textContent='💎 Đã trả lời '+r.answered+'/'+TOTAL+' • Điểm: '+r.score; }
   function hideBlock(b){ b.solved=true; b.mesh.visible=false; b.sprite.visible=false; }
 
-  // Câu hỏi và đáp án nằm trên máy chủ (Google Apps Script), trang này không chứa đáp án
-  async function openQuiz(block){
+  // Câu hỏi (không kèm đáp án đúng) được tải sẵn một lần lúc đăng nhập nên mở khối là hiện ngay, không phải chờ mạng.
+  // Việc chấm điểm vẫn luôn do máy chủ thực hiện khi nộp câu trả lời.
+  function openQuiz(block){
     quizOpen=true; activeBlock=block;
     quizNum.textContent='CÂU HỎI '+(block.index+1)+' / '+TOTAL+' • 1 ĐIỂM';
     quizOverlay.style.display='flex';
-    quizMessage('Đang tải câu hỏi...');
-    try{
-      const r=await api({action:'question', index:block.index});
-      if(!r.ok){ if(r.error==='answered'){ await syncAnswered(block); return; } throw new Error(r.error||'Lỗi máy chủ'); }
-      quizQ.textContent=r.q; quizOptions.innerHTML=''; optCount=r.o.length;
-      r.o.forEach((opt,oi)=>{ const btn=document.createElement('button'); btn.className='quiz-opt'; btn.textContent=opt; btn.onclick=()=>answerQuiz(oi); quizOptions.appendChild(btn); });
-    }catch(err){
-      quizMessage(errText(err)+'.', [['Thử lại',()=>openQuiz(block)],['Đóng',()=>{ block.cool=Date.now()+5000; closeQuiz(); }]]);
-    }
+    const cq = cachedQ && cachedQ[block.index];
+    if(!cq){ quizMessage('Không tải được câu hỏi này.', [['Đóng',()=>{ block.cool=Date.now()+5000; closeQuiz(); }]]); return; }
+    quizQ.textContent=cq.q; quizOptions.innerHTML=''; quizFeedback.textContent=''; optCount=cq.o.length;
+    cq.o.forEach((opt,oi)=>{ const btn=document.createElement('button'); btn.className='quiz-opt'; btn.textContent=opt; btn.onclick=()=>answerQuiz(oi); quizOptions.appendChild(btn); });
   }
   async function syncAnswered(block){
     try{ const r=await api({action:'status'}); if(r.ok){ applyProgress(r); hideBlock(block); closeQuiz(); if(r.done) finishGame(); return; } }catch(e){}
@@ -426,7 +423,7 @@
         }
         err.textContent=r.error||'Không bắt đầu được.'; btn.disabled=false; return;
       }
-      sid=r.sid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
+      sid=r.sid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true; cachedQ=r.questions;
       document.getElementById('start-overlay').style.display='none';
       quizOpen=false; ensureAudio();
     }catch(e){ err.textContent='Không kết nối được máy chủ. Kiểm tra mạng và link Apps Script.'; btn.disabled=false; }
@@ -441,7 +438,7 @@
     try{
       const r=await api({action:'resume', sid:pendingSid, code});
       if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
-      sid=pendingSid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
+      sid=pendingSid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true; cachedQ=r.questions;
       applyProgress(r);
       (r.answers||[]).forEach((ans,i)=>{ if(ans && questionBlocks[i]) hideBlock(questionBlocks[i]); });
       document.getElementById('start-overlay').style.display='none';
