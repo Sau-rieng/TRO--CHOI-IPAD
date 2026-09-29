@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khám Phá Hang Động</title>
+<style>
+  :root{ --ui-bg:rgba(15,12,28,0.6); --ui-fg:#eae6ff; }
+  html,body{height:100%;margin:0;overflow:hidden;background:#000;font-family:system-ui,sans-serif;}
+  #c{display:block;width:100%;height:100%;}
+  #title{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;text-align:center;color:#e3d9ff;text-shadow:0 1px 8px rgba(0,0,0,0.7);padding:14px 0 0;font-weight:600;letter-spacing:0.5px;pointer-events:none;}
+  #progress{position:fixed;top:calc(env(safe-area-inset-top,0px) + 46px);left:50%;transform:translateX(-50%);background:var(--ui-bg);color:var(--ui-fg);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;pointer-events:none;backdrop-filter:blur(4px);}
+  #hud{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ui-bg);color:var(--ui-fg);padding:10px 16px;border-radius:12px;font-size:13px;backdrop-filter:blur(4px);padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));text-align:center;pointer-events:none;}
+  #mm{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 46px);border-radius:10px;border:1px solid #4a3f7a;pointer-events:none;}
+  #lock-overlay{position:fixed;inset:0;background:rgba(4,2,10,0.96);display:none;align-items:center;justify-content:center;z-index:40;padding:16px;}
+  #lock-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:360px;width:100%;padding:24px 22px;border:1px solid #ff6a6a;box-shadow:0 10px 40px rgba(0,0,0,0.6);text-align:center;}
+  #lock-box h2{margin:0 0 8px;font-size:19px;color:#ff9a9a;} #lock-box p{font-size:13px;line-height:1.5;color:#c9c2f0;margin:0 0 12px;}
+  #lock-box input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px 12px;border-radius:10px;border:1px solid #4a3f7a;background:#2b2450;color:#eae6ff;font-size:16px;text-align:center;letter-spacing:2px;}
+  #lock-err{min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0;}
+  #start-overlay,#end-overlay{position:fixed;inset:0;background:rgba(6,4,16,0.88);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px;}
+  #start-box,#end-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:380px;width:100%;padding:24px 22px;border:1px solid #4a3f7a;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+  #start-box h2,#end-box h2{margin:0 0 8px;font-size:20px;} #start-box p{font-size:13px;line-height:1.5;color:#c9c2f0;margin:0 0 12px;}
+  #start-box input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px 12px;border-radius:10px;border:1px solid #4a3f7a;background:#2b2450;color:#eae6ff;font-size:15px;}
+  #start-err{min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0;}
+  #complete-banner button{margin:8px 4px 0;text-align:center;}
+  #quiz-overlay{position:fixed;inset:0;background:rgba(6,4,16,0.6);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:20;padding:16px;}
+  #quiz-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:420px;width:100%;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid #4a3f7a;}
+  #quiz-num{font-size:12px;color:#b7a8ff;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+  #quiz-q{font-size:16px;line-height:1.5;margin-bottom:16px;}
+  #quiz-options{display:flex;flex-direction:column;gap:8px;}
+  .quiz-opt{text-align:left;background:#2b2450;color:#eae6ff;border:1px solid #4a3f7a;border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;}
+  .quiz-opt:hover{background:#3a3170;}
+  .quiz-opt.correct{background:#2f6a4a;border-color:#4fae7a;}
+  .quiz-opt.wrong{background:#7a2f3f;border-color:#ae4f5f;}
+  #quiz-feedback{min-height:20px;font-size:13px;margin-top:10px;color:#ffd27a;}
+  #complete-banner{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);background:rgba(24,18,45,0.92);color:#eae6ff;padding:22px 26px;border-radius:16px;text-align:center;font-size:16px;display:none;z-index:25;max-width:340px;border:1px solid #7a5fff;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title">🦇 Khám Phá Hang Động</div>
+<div id="progress">💎 Đã trả lời 0/10 • Điểm: 0</div>
+<canvas id="mm" width="136" height="152"></canvas>
+<div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><input id="in-class" placeholder="Lớp" autocomplete="off"><input id="in-sbd" placeholder="Số báo danh" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để tiếp tục làm bài.</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Tiếp tục làm bài</button></div></div></div>
+<div id="end-overlay" style="display:none"><div id="end-box"><h2>🏁 Kết thúc</h2><div id="end-text" style="white-space:pre-line;line-height:1.7;font-size:15px"></div></div></div>
+<div id="lock-overlay"><div id="lock-box"><h2>🔒 Màn hình đã bị khóa</h2><p>Bạn đã thoát khỏi chế độ toàn màn hình khi đang làm bài. Nhờ giáo viên nhập mã để tiếp tục.</p><input id="in-code" placeholder="Mã giáo viên" autocomplete="off"><div id="lock-err"></div><button class="quiz-opt" id="unlock-btn" style="text-align:center;width:100%">Mở khóa</button></div></div>
+<div id="quiz-overlay"><div id="quiz-box"><div id="quiz-num">CÂU HỎI</div><div id="quiz-q"></div><div id="quiz-options"></div><div id="quiz-feedback"></div></div></div>
+<div id="complete-banner"><div id="result-title" style="font-size:19px;font-weight:700;margin-bottom:6px"></div><div id="result-sub" style="font-size:14px;line-height:1.5"></div><div id="send-status" style="font-size:13px;color:#ffd27a;margin-top:8px"></div><button class="quiz-opt" id="close-btn">Đóng</button></div>
+<div id="hud">↑ tiến • ↓ lùi • ←/→ xoay người — trả lời 10 khối pha lê (mỗi câu 1 điểm, chỉ 1 lần) rồi về cổng ở đích</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  // ===== CẤU HÌNH GOOGLE SHEET =====
+  // Dán link Web App của Google Apps Script vào đây (hoặc thêm ?sheet=LINK vào địa chỉ trang).
+  const SHEET_URL = new URLSearchParams(location.search).get('sheet') || 'https://script.google.com/macros/s/AKfycbx-HO4-x2AwWacdZGqen_5aiIuXgsWCAh9gJjmNj_hiK4GoaacYfGdp-EZ2WjegixN7/exec';
+
+  const canvas = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x33465c);
+  scene.fog = new THREE.Fog(0x33465c, 18, 80);
+  const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 300);
+  function resize(){ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize); resize();
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.26));
+  scene.add(new THREE.HemisphereLight(0xdff2ff, 0xb07a4a, 0.3));
+  const sunL = new THREE.DirectionalLight(0xfff0d0, 0.15); sunL.position.set(10,30,25); scene.add(sunL);
+  const torch = new THREE.PointLight(0xffc870, 1.5, 20); scene.add(torch);
+  const lanternLights = [new THREE.PointLight(0xffa040,1.2,16), new THREE.PointLight(0xffa040,1.2,16)];
+  lanternLights.forEach(l=>scene.add(l));
+
+  const M = c => new THREE.MeshLambertMaterial({color:c});
+  const L = c => new THREE.MeshLambertMaterial({color:c, flatShading:true});
+  function heightAt(x,z){ return Math.sin(x*0.1)*0.3 + Math.cos(z*0.13)*0.25; }
+
+  const groundGeo = new THREE.PlaneGeometry(300,300,80,80);
+  const gPos = groundGeo.attributes.position;
+  for(let i=0;i<gPos.count;i++){ gPos.setZ(i, heightAt(gPos.getX(i), -gPos.getY(i))); }
+  groundGeo.computeVertexNormals();
+  const ground = new THREE.Mesh(groundGeo, M(0xc9a06a));
+  ground.rotation.x = -Math.PI/2; scene.add(ground);
+
+  // ---- Cave maze graph: nodes (junctions) and corridors (edges), with loops ----
+  const jit=()=>(Math.random()-0.5)*5;
+  const N=[[0,20],[0,10],[0,0],[0,-14],[-20+jit(),-14+jit()],[-20+jit(),-34+jit()],[0,-34],[20+jit(),-14+jit()],[20+jit(),-34+jit()],[0,-54],[-20+jit(),-54+jit()],[20+jit(),-54+jit()],[-42,-54],[42,-54],[0,-72],[0,-88]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const E=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[3,7],[7,8],[8,6],[3,6],[6,9],[5,10],[8,11],[10,9],[11,9],[10,12],[11,13],[9,14],[14,15]];
+  const segs=E.map(e=>[N[e[0]],N[e[1]]]);
+  const gp=N[14], gateForward=new THREE.Vector2(0,-1), gatePos2=gp.clone();
+  const rooms=[{c:N[12],r:9},{c:N[13],r:7.5}];
+  const poolC=N[12];
+  const R=4.0;
+  function fieldD(x,z){
+    let best=1e9;
+    for(const s of segs){ const a=s[0], b=s[1], dx=b.x-a.x, dz=b.y-a.y; let t=((x-a.x)*dx+(z-a.y)*dz)/(dx*dx+dz*dz); t=Math.max(0,Math.min(1,t)); const d=Math.hypot(x-a.x-dx*t, z-a.y-dz*t); if(d<best) best=d; }
+    for(const r of rooms) best=Math.min(best, Math.hypot(x-r.c.x,z-r.c.y)-(r.r-R));
+    return best;
+  }
+  function walkOk(x,z){ return fieldD(x,z)<=R && Math.hypot(x-poolC.x,z-poolC.y)>4.5; }
+
+  // Floor of corridors and rooms
+  const pathMat = M(0xe6c894);
+  for(const s of segs){
+    const a=s[0], b=s[1], dx=b.x-a.x, dz=b.y-a.y, len=Math.hypot(dx,dz);
+    const seg = new THREE.Mesh(new THREE.PlaneGeometry(2.8,len+0.3), pathMat);
+    seg.rotation.x=-Math.PI/2;
+    const mx=(a.x+b.x)/2, mz=(a.y+b.y)/2;
+    seg.position.set(mx, heightAt(mx,mz)+0.05, mz);
+    seg.rotation.z = -Math.atan2(dz,dx)+Math.PI/2;
+    scene.add(seg);
+  }
+  for(const r of rooms){ const f=new THREE.Mesh(new THREE.CircleGeometry(r.r,40), pathMat); f.rotation.x=-Math.PI/2; f.position.set(r.c.x,heightAt(r.c.x,r.c.y)+0.04,r.c.y); scene.add(f); }
+
+  // ---- Instanced rock mass, boulders, stalactites, gems, trees ----
+  const D = new THREE.Object3D();
+  function inst(geo,mat,n){ const m=new THREE.InstancedMesh(geo,mat,n); m.count=0; scene.add(m); return m; }
+  function put(m,x,y,z,sx,sy,sz,ry,rx){ if(m.count>=m.instanceMatrix.count) return; D.position.set(x,y,z); D.scale.set(sx,sy,sz); D.rotation.set(rx||0,ry||0,0); D.updateMatrix(); m.setMatrixAt(m.count++,D.matrix); }
+  const dode=new THREE.DodecahedronGeometry(1,0);
+  const rocks=[inst(dode,L(0xc9985e),700), inst(dode,L(0x7f9bbd),700), inst(dode,L(0x9aa0ae),700)];
+  const rk=()=>rocks[(Math.random()*3)|0];
+  const mass=inst(new THREE.BoxGeometry(1,1,1),L(0x8a6a4a),2800);
+  const ceilT=inst(new THREE.PlaneGeometry(2.6,2.6).rotateX(Math.PI/2),L(0x5f4a3a),2200);
+  const stal=inst(new THREE.ConeGeometry(1,1,6),L(0x9fb8d8),400);
+  const stag=inst(new THREE.ConeGeometry(1,1,6),L(0xb8a58a),300);
+  const bushes=inst(new THREE.IcosahedronGeometry(1,0),L(0x4f9a3d),100);
+  const trees=inst(new THREE.ConeGeometry(1,1,7),L(0x3d8a43),80);
+  const gems=inst(new THREE.OctahedronGeometry(1,0), new THREE.MeshLambertMaterial({color:0x2ec4b6, emissive:0x1a8f85}), 250);
+
+  for(let gx=-62; gx<=62; gx+=2) for(let gz=-76; gz<=1; gz+=2){
+    const x=gx+(Math.random()-0.5)*0.5, z=gz+(Math.random()-0.5)*0.5, d=fieldD(x,z), gy=heightAt(x,z);
+    if(d<7.0 && z<-1.5) put(ceilT,x,gy+6.2,z,1,1,1,0);
+    if(d<6.2 && z<-1.5 && Math.random()<0.06){ const h=1.4+Math.random()*1.6; put(stal,x,gy+6.2-h/2,z,0.35+Math.random()*0.3,h,0.35+Math.random()*0.3,0,Math.PI); }
+    if(d>=7.0){
+      const h=7.2+Math.random()*1.4;
+      put(mass,x,gy+h/2-0.3,z,2.2,h,2.2,0);
+      if(Math.random()<0.012) put(trees,x,gy+h+0.9,z,1.1,2.0,1.1,Math.random()*3);
+    } else if(d>=6.2){
+      if(Math.random()<0.9) for(let k=0;k<3;k++){ const r=0.8+Math.random()*0.3; put(rk(),x+(Math.random()-0.5)*0.6,gy+0.6+k*1.2,z+(Math.random()-0.5)*0.6,r,r*0.9,r,Math.random()*3,Math.random()*3); }
+    } else if(d>=5.75){
+      if(Math.random()<0.25){ const h=1.2+Math.random()*1.6; put(stal,x,gy+6.2-h/2,z,0.3+Math.random()*0.25,h,0.3+Math.random()*0.25,0,Math.PI); }
+    } else if(d>=4.7){
+      if(Math.random()<0.08){ const h=0.9+Math.random()*1.3; put(stag,x,gy+h/2,z,0.35,h,0.35,0); }
+      else if(Math.random()<0.05) put(gems,x,gy+0.45,z,0.25,0.45,0.25,Math.random()*3);
+    }
+  }
+  for(let z2=18; z2>1; z2-=2.2) for(const sd of [-1,1]){
+    const x=sd*(5.2+Math.random()*1.6), by=heightAt(x,z2);
+    put(bushes,x,by+0.5,z2,0.9+Math.random()*0.6,0.7,0.9+Math.random()*0.6,Math.random()*3);
+    if(Math.random()<0.5){ const r=0.7+Math.random()*0.8; put(rk(),x+sd*0.9,by+r*0.5,z2,r,r*0.8,r,Math.random()*3,Math.random()*3); }
+  }
+
+  // Pool room (left) and crystal room (right)
+  const pgy=heightAt(poolC.x,poolC.y);
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(4,32), new THREE.MeshLambertMaterial({color:0x33c7c0, emissive:0x1b8f8a}));
+  pool.rotation.x=-Math.PI/2; pool.position.set(poolC.x,pgy+0.08,poolC.y); scene.add(pool);
+  const poolLight=new THREE.PointLight(0x40e0d0,1.2,20); poolLight.position.set(poolC.x,pgy+3,poolC.y); scene.add(poolLight);
+  for(let k=0;k<12;k++){ const a=k/12*Math.PI*2, r=0.6+Math.random()*0.5; put(rk(), poolC.x+Math.cos(a)*4.4, pgy+r*0.4, poolC.y+Math.sin(a)*4.4, r,r*0.7,r, Math.random()*3, Math.random()*3); if(k%2===0) put(gems, poolC.x+Math.cos(a)*4.9, pgy+0.4, poolC.y+Math.sin(a)*4.9, 0.28,0.5,0.28, Math.random()*3); }
+  for(let k=0;k<9;k++){ const a=k/9*Math.PI*2, rr=1.5+Math.random()*3, c=N[13]; put(gems, c.x+Math.cos(a)*rr, heightAt(c.x,c.y)+0.8, c.y+Math.sin(a)*rr, 0.5,1.0+Math.random()*0.8,0.5, Math.random()*3); }
+
+  // Lantern posts along the corridors
+  const lanterns=[];
+  const lanternMat=new THREE.MeshBasicMaterial({color:0xffb14a}), postMat=new THREE.MeshBasicMaterial({color:0x3a2a1a});
+  const postGeo=new THREE.CylinderGeometry(0.07,0.09,3,5), lampGeo=new THREE.SphereGeometry(0.38,10,8);
+  let alt=1;
+  E.forEach((e,ei)=>{
+    if(ei<2||ei===18) return;
+    const a=N[e[0]], b=N[e[1]], dx=b.x-a.x, dz=b.y-a.y, len=Math.hypot(dx,dz), nx_=-dz/len, nz_=dx/len;
+    for(let t=6;t<len-3;t+=9){
+      alt=-alt; const lx=a.x+dx/len*t+nx_*alt*4.6, lz=a.y+dz/len*t+nz_*alt*4.6, gy=heightAt(lx,lz);
+      const post=new THREE.Mesh(postGeo,postMat); post.position.set(lx,gy+1.5,lz); scene.add(post);
+      const lamp=new THREE.Mesh(lampGeo,lanternMat); lamp.position.set(lx,gy+3.2,lz); scene.add(lamp);
+      lanterns.push(lamp.position);
+    }
+  });
+
+  // Entrance arch of stacked boulders with trees on top
+  for(const sx of [-1,1]) for(let k=0;k<4;k++){ const r=2.6-k*0.15; put(rk(), sx*(6.4-k*0.25), 1.3+k*2.5, (Math.random()-0.5)*1.5, r,r,r, Math.random()*3, Math.random()*3); }
+  for(let k=0;k<6;k++) put(rk(), -6+k*2.4, 10.2+Math.sin(k)*0.4, (Math.random()-0.5)*1.2, 2.5,2.1,2.8, Math.random()*3, Math.random()*3);
+  for(const tx of [-5.5,0.5,5]){
+    const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.28,2.4,6),M(0x6b4a2f)); tr.position.set(tx,12.4,0); scene.add(tr);
+    for(let k=0;k<2;k++){ const c=new THREE.Mesh(new THREE.ConeGeometry(1.5-k*0.4,1.8,7),M(0x3d8a43)); c.position.set(tx,13.8+k*1.2,0); scene.add(c); }
+  }
+
+  // Explorer character: hat, backpack, lantern, face on the front (+z)
+  const character = new THREE.Group();
+  function mk(g,c,x,y,z,basic){ const m=new THREE.Mesh(g, basic?new THREE.MeshBasicMaterial({color:c}):M(c)); m.position.set(x,y,z); character.add(m); return m; }
+  mk(new THREE.BoxGeometry(0.7,0.9,0.4),0x4c9a4f,0,1.05,0);
+  mk(new THREE.BoxGeometry(0.5,0.5,0.5),0xf1c9a0,0,1.75,0);
+  mk(new THREE.CylinderGeometry(0.42,0.42,0.06,16),0x8a9a4a,0,2.03,0);
+  mk(new THREE.CylinderGeometry(0.26,0.3,0.24,16),0x8a9a4a,0,2.17,0);
+  mk(new THREE.BoxGeometry(0.5,0.6,0.22),0x8a5a2b,0,1.1,-0.31);
+  for(const ex of [-0.12,0.12]) mk(new THREE.BoxGeometry(0.09,0.11,0.04),0x111111,ex,1.8,0.26,true);
+  mk(new THREE.BoxGeometry(0.2,0.05,0.04),0x111111,0,1.65,0.26,true);
+  mk(new THREE.SphereGeometry(0.17,10,8),0xfff2a8,0.62,1.2,0.42,true);
+  const armL=mk(new THREE.BoxGeometry(0.2,0.7,0.2),0x3f8443,-0.5,1.1,0);
+  const armR=mk(new THREE.BoxGeometry(0.2,0.7,0.2),0x3f8443,0.5,1.1,0);
+  const legL=mk(new THREE.BoxGeometry(0.25,0.7,0.25),0x7f8796,-0.2,0.35,0);
+  const legR=mk(new THREE.BoxGeometry(0.25,0.7,0.25),0x7f8796,0.2,0.35,0);
+  for(const l of [legL,legR]){ const boot=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.16,0.34),M(0x5a3a1e)); boot.position.set(0,-0.3,0.03); l.add(boot); }
+  character.position.set(0,heightAt(0,20),20);
+  scene.add(character);
+
+  // Finish gate (locked until all 10 crystals are solved) + bright opening beyond
+  const pillarMat = M(0x6a5a4a);
+  function buildGate(p, dirVec){
+    const perp=new THREE.Vector2(-dirVec.y,dirVec.x), y=heightAt(p.x,p.y), g=new THREE.Group();
+    for(const s of [-1,1]){ const pil=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.4,4.4,7),pillarMat); pil.position.set(p.x+perp.x*2.2*s,y+2.2,p.y+perp.y*2.2*s); g.add(pil); }
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.55,5),pillarMat); beam.position.set(p.x,y+4.3,p.y); beam.rotation.y=Math.atan2(perp.x,perp.y); g.add(beam);
+    const bar=new THREE.Mesh(new THREE.PlaneGeometry(4.4,3.6), new THREE.MeshStandardMaterial({color:0xff5555,emissive:0x882222,emissiveIntensity:0.7,transparent:true,opacity:0.55,side:THREE.DoubleSide}));
+    bar.position.set(p.x,y+2,p.y); bar.rotation.y=Math.atan2(dirVec.x,dirVec.y); g.add(bar);
+    scene.add(g); return bar;
+  }
+  const barrierMesh = buildGate(gp, gateForward);
+  const ex2=N[15];
+  const exitGlow=new THREE.Mesh(new THREE.PlaneGeometry(10,9), new THREE.MeshBasicMaterial({color:0xeafcff, fog:false, side:THREE.DoubleSide}));
+  exitGlow.position.set(ex2.x, heightAt(ex2.x,ex2.y)+4.5, ex2.y); scene.add(exitGlow);
+  const exitLight=new THREE.PointLight(0xcdeeff,1.4,30); exitLight.position.set(gp.x,4,gp.y-6); scene.add(exitLight);
+
+  // Hàng rào ảo: giữ nhân vật trong khu vực hang (bãi ngoài cửa hang và lối ra)
+  const fenceMat=new THREE.MeshBasicMaterial({color:0x7fe8ff, transparent:true, opacity:0.75});
+  const fRail=inst(new THREE.BoxGeometry(1,0.07,0.07),fenceMat,400), fPost=inst(new THREE.CylinderGeometry(0.08,0.08,1.6,6),fenceMat,300);
+  const fr=4.5;
+  function fenceLine(pts){
+    for(let i=0;i<pts.length;i++){
+      const a=pts[i], gy=heightAt(a[0],a[1]); put(fPost,a[0],gy+0.8,a[1],1,1,1,0);
+      if(i<pts.length-1){ const b=pts[i+1], dx=b[0]-a[0], dz=b[1]-a[1], len=Math.hypot(dx,dz), ang=Math.atan2(-dz,dx), mx=(a[0]+b[0])/2, mz=(a[1]+b[1])/2;
+        put(fRail,mx,gy+0.55,mz,len,1,1,ang); put(fRail,mx,gy+1.25,mz,len,1,1,ang); }
+    }
+  }
+  function laneFence(z0,z1,dir){
+    const sg=Math.sign(z1-z0), pts=[];
+    for(let z=z0; (z1-z)*sg>=0; z+=1.8*sg) pts.push([fr,z]);
+    for(let k=1;k<=8;k++){ const a=k/8*Math.PI; pts.push([fr*Math.cos(a), z1+dir*fr*Math.sin(a)]); }
+    for(let z=z1; (z-z0)*sg>=0; z-=1.8*sg) pts.push([-fr,z]);
+    fenceLine(pts);
+  }
+  laneFence(3,20,1);
+  laneFence(-77,-88,-1);
+
+  // Minimap
+  const mm=document.getElementById('mm'), mctx=mm.getContext('2d'), MS=1.3, MX0=-52, MZ0=-92;
+  const mp=(x,z)=>[(x-MX0)*MS,(z-MZ0)*MS];
+  const mbase=document.createElement('canvas'); mbase.width=mm.width; mbase.height=mm.height;
+  { const c=mbase.getContext('2d'); c.lineCap='round'; c.strokeStyle='#e6c894'; c.lineWidth=7;
+    for(const s of segs){ c.beginPath(); c.moveTo(...mp(s[0].x,s[0].y)); c.lineTo(...mp(s[1].x,s[1].y)); c.stroke(); }
+    c.fillStyle='#e6c894'; for(const r of rooms){ c.beginPath(); c.arc(...mp(r.c.x,r.c.y), r.r*MS, 0, 6.3); c.fill(); }
+    c.fillStyle='#33c7c0'; c.beginPath(); c.arc(...mp(poolC.x,poolC.y), 4*MS, 0, 6.3); c.fill(); }
+  function drawMap(){
+    mctx.clearRect(0,0,mm.width,mm.height); mctx.fillStyle='rgba(20,14,10,0.65)'; mctx.fillRect(0,0,mm.width,mm.height); mctx.drawImage(mbase,0,0);
+    for(const b of questionBlocks){ if(b.solved) continue; mctx.fillStyle='#9a8bff'; mctx.beginPath(); mctx.arc(...mp(b.x,b.z),3,0,6.3); mctx.fill(); }
+    const g=mp(gp.x,gp.y); mctx.fillStyle=allSolved?'#5fe36a':'#ff5555'; mctx.fillRect(g[0]-5,g[1]-2,10,4);
+    mctx.fillStyle='#ffe066'; mctx.beginPath(); mctx.arc(...mp(character.position.x,character.position.z),4,0,6.3); mctx.fill();
+    { const q=mp(character.position.x,character.position.z); mctx.strokeStyle='#ffe066'; mctx.lineWidth=2; mctx.beginPath(); mctx.moveTo(q[0],q[1]); mctx.lineTo(q[0]+Math.sin(heading)*10,q[1]+Math.cos(heading)*10); mctx.stroke(); }
+  }
+
+  function onEdge(ei,t,side){ const e=E[ei], a=N[e[0]], b=N[e[1]], dx=b.x-a.x, dz=b.y-a.y, len=Math.hypot(dx,dz); return [a.x+dx*t-dz/len*side*2.6, a.y+dz*t+dx/len*side*2.6]; }
+  const spots=[onEdge(2,0.55,1),onEdge(3,0.5,-1),onEdge(4,0.5,1),onEdge(6,0.5,1),onEdge(7,0.5,-1),onEdge(10,0.5,1),onEdge(11,0.5,-1),onEdge(12,0.5,1),[N[12].x+6.5,N[12].y],[N[13].x-2,N[13].y+3]];
+  const questionBlocks = [];
+  const critBase=0x8a7bff, critDone=0x5fe36a;
+  spots.forEach((sp,qi)=>{
+    const bx=sp[0], bz=sp[1];
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.55,0), new THREE.MeshStandardMaterial({color:critBase, emissive:0x3a2c99, emissiveIntensity:0.9, metalness:0.2, roughness:0.3}));
+    const by = heightAt(bx,bz)+1.1;
+    crystal.position.set(bx,by,bz); scene.add(crystal);
+    const cv=document.createElement('canvas'); cv.width=64;cv.height=64;
+    const ctx2=cv.getContext('2d'); ctx2.fillStyle='#ffffff'; ctx2.font='bold 40px system-ui'; ctx2.textAlign='center'; ctx2.textBaseline='middle';
+    ctx2.fillText(String(qi+1),32,34);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), transparent:true}));
+    sprite.scale.set(1.1,1.1,1); sprite.position.set(bx,by+1.0,bz); scene.add(sprite);
+    const light = {position:{y:0}, color:{setHex(){}}};
+    questionBlocks.push({index:qi, mesh:crystal, sprite, light, solved:false, x:bx, z:bz});
+  });
+
+  // Audio: footstep + faint drip
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} if(audioCtx) startDrips(); }
+    else if(audioCtx.state==='suspended') audioCtx.resume();
+  }
+  function startDrips(){
+    function drip(){
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator(); osc.type='sine';
+      osc.frequency.setValueAtTime(900+Math.random()*500, t);
+      osc.frequency.exponentialRampToValueAtTime(300, t+0.25);
+      const g = audioCtx.createGain(); g.gain.setValueAtTime(0.001,t);
+      g.gain.linearRampToValueAtTime(0.06, t+0.01); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+      osc.connect(g).connect(audioCtx.destination); osc.start(t); osc.stop(t+0.32);
+      setTimeout(drip, 2500+Math.random()*4000);
+    }
+    setTimeout(drip, 1500+Math.random()*2000);
+  }
+  function playFootstep(){
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const bufSize = Math.floor(audioCtx.sampleRate*0.07);
+    const buffer = audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufSize;i++){ data[i]=(Math.random()*2-1)*(1-i/bufSize); }
+    const noise = audioCtx.createBufferSource(); noise.buffer=buffer;
+    const filter = audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=300+Math.random()*120;
+    const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.3,t); gain.gain.exponentialRampToValueAtTime(0.001,t+0.07);
+    noise.connect(filter).connect(gain).connect(audioCtx.destination); noise.start(t); noise.stop(t+0.08);
+  }
+
+  const keys = {};
+  window.addEventListener('keydown', e=>{ if(e.target.tagName==='INPUT') return; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault(); keys[e.key]=true; ensureAudio(); });
+  window.addEventListener('keyup', e=>{ keys[e.key]=false; });
+
+  // Quiz logic
+  const quizOverlay=document.getElementById('quiz-overlay'), quizNum=document.getElementById('quiz-num'), quizQ=document.getElementById('quiz-q'), quizOptions=document.getElementById('quiz-options'), quizFeedback=document.getElementById('quiz-feedback');
+  const progressEl=document.getElementById('progress'), completeBanner=document.getElementById('complete-banner');
+  let quizOpen=true, activeBlock=null, solvedCount=0, allSolved=false, score=0, playerName='', playerClass='', startTime=Date.now(), exiting=false, ended=false, gameStarted=false, locked=false;
+  const results=[];
+  const TOTAL=10;
+  let sid='', pendingSid='', busy=false, optCount=0;
+  const sendStatus=document.getElementById('send-status');
+  async function api(payload){
+    payload.sid=sid;
+    const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    return r.json();
+  }
+  const errText=e=>(!e||!e.message||/fetch|network|json|load/i.test(e.message))?'Lỗi kết nối':e.message;
+  function quizMessage(msg, actions){
+    quizQ.textContent=msg; quizOptions.innerHTML=''; quizFeedback.textContent='';
+    (actions||[]).forEach(a=>{ const btn=document.createElement('button'); btn.className='quiz-opt'; btn.style.textAlign='center'; btn.textContent=a[0]; btn.onclick=a[1]; quizOptions.appendChild(btn); });
+  }
+  function closeQuiz(){ quizOverlay.style.display='none'; quizOpen=false; activeBlock=null; busy=false; }
+  function applyProgress(r){ solvedCount=r.answered; score=r.score; progressEl.textContent='💎 Đã trả lời '+r.answered+'/'+TOTAL+' • Điểm: '+r.score; }
+  function hideBlock(b){ b.solved=true; b.mesh.visible=false; b.sprite.visible=false; }
+
+  // Câu hỏi và đáp án nằm trên máy chủ (Google Apps Script), trang này không chứa đáp án
+  async function openQuiz(block){
+    quizOpen=true; activeBlock=block;
+    quizNum.textContent='CÂU HỎI '+(block.index+1)+' / '+TOTAL+' • 1 ĐIỂM';
+    quizOverlay.style.display='flex';
+    quizMessage('Đang tải câu hỏi...');
+    try{
+      const r=await api({action:'question', index:block.index});
+      if(!r.ok){ if(r.error==='answered'){ await syncAnswered(block); return; } throw new Error(r.error||'Lỗi máy chủ'); }
+      quizQ.textContent=r.q; quizOptions.innerHTML=''; optCount=r.o.length;
+      r.o.forEach((opt,oi)=>{ const btn=document.createElement('button'); btn.className='quiz-opt'; btn.textContent=opt; btn.onclick=()=>answerQuiz(oi); quizOptions.appendChild(btn); });
+    }catch(err){
+      quizMessage(errText(err)+'.', [['Thử lại',()=>openQuiz(block)],['Đóng',()=>{ block.cool=Date.now()+5000; closeQuiz(); }]]);
+    }
+  }
+  async function syncAnswered(block){
+    try{ const r=await api({action:'status'}); if(r.ok){ applyProgress(r); hideBlock(block); closeQuiz(); if(r.done) finishGame(); return; } }catch(e){}
+    quizMessage('Không đồng bộ được với máy chủ.', [['Thử lại',()=>syncAnswered(block)]]);
+  }
+  async function answerQuiz(oi){
+    if(!activeBlock || busy) return;
+    busy=true; const b=activeBlock;
+    [...quizOptions.children].forEach(el=>{ el.disabled=true; el.style.cursor='default'; });
+    quizFeedback.textContent='Đang chấm...';
+    try{
+      const r=await api({action:'answer', index:b.index, choice:oi});
+      if(!r.ok){ if(r.error==='answered'){ busy=false; await syncAnswered(b); return; } throw new Error(r.error||'Lỗi máy chủ'); }
+      if(quizOptions.children.length===optCount && quizOptions.children[oi]) quizOptions.children[oi].classList.add(r.correct?'correct':'wrong');
+      quizFeedback.textContent=r.correct?'✔ Chính xác! +1 điểm':'✘ Chưa đúng (0 điểm).';
+      b.solved=true; applyProgress(r); busy=false;
+      setTimeout(()=>{ hideBlock(b); closeQuiz(); if(r.done) finishGame(); }, r.correct?900:1800);
+    }catch(err){
+      busy=false;
+      quizMessage(errText(err)+' — bấm Thử lại để gửi lại đáp án.', [['Thử lại',()=>answerQuiz(oi)],['Đóng',()=>{ b.cool=Date.now()+5000; closeQuiz(); }]]);
+    }
+  }
+  function finishGame(){
+    allSolved=true; if(barrierMesh) barrierMesh.material.opacity=0;
+    document.getElementById('result-title').textContent='✅ Đã trả lời hết '+TOTAL+' câu!';
+    document.getElementById('result-sub').textContent='Điểm của bạn: '+score+'/'+TOTAL+'. Cổng đã mở — hãy đi qua cổng để ra khỏi hang.';
+    sendStatus.textContent='Điểm đã được ghi vào hệ thống.';
+    completeBanner.style.display='block';
+    setTimeout(()=>{ completeBanner.style.display='none'; },7000);
+  }
+  function showEnd(){ gameStarted=false; locked=false; document.getElementById('lock-overlay').style.display='none';
+    document.getElementById('end-text').textContent=playerName+' — lớp '+playerClass+'\nĐiểm: '+score+'/'+TOTAL+'\nBạn đã ra khỏi hang động. Cảm ơn bạn đã tham gia!';
+    document.getElementById('end-overlay').style.display='flex';
+  }
+  document.getElementById('close-btn').onclick=()=>{ completeBanner.style.display='none'; };
+  function requestFS(){
+    const el=document.documentElement;
+    const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+    if(fn) try{ fn.call(el); }catch(e){}
+  }
+  function isFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement||document.msFullscreenElement); }
+  function lockScreen(){
+    if(locked || ended || !gameStarted) return;
+    locked=true; document.getElementById('lock-overlay').style.display='flex';
+    document.getElementById('in-code').value=''; document.getElementById('lock-err').textContent='';
+  }
+  ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev=>
+    document.addEventListener(ev, ()=>{ if(gameStarted && !ended && !isFS()) lockScreen(); }));
+  document.getElementById('unlock-btn').onclick=async ()=>{
+    const codeEl=document.getElementById('in-code'), err=document.getElementById('lock-err'), btn=document.getElementById('unlock-btn');
+    const code=codeEl.value.trim();
+    if(!code){ err.textContent='Nhập mã giáo viên.'; return; }
+    btn.disabled=true; err.textContent='Đang kiểm tra...';
+    try{
+      const r=await api({action:'unlock', code:code});
+      if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
+      locked=false; document.getElementById('lock-overlay').style.display='none';
+      requestFS(); btn.disabled=false;
+    }catch(e){ err.textContent='Không kết nối được máy chủ.'; btn.disabled=false; }
+  };
+  document.getElementById('start-btn').onclick=async ()=>{
+    const n=document.getElementById('in-name').value.trim(), c=document.getElementById('in-class').value.trim();
+    const err=document.getElementById('start-err'), btn=document.getElementById('start-btn');
+    const sbd=document.getElementById('in-sbd').value.trim();
+    if(!n || !c || !sbd){ err.textContent='Vui lòng nhập đủ họ tên, lớp và số báo danh.'; return; }
+    if(!/^https:\/\/script\.google\.com\//.test(SHEET_URL)){ err.textContent='Chưa cấu hình máy chủ chấm điểm (SHEET_URL).'; return; }
+    requestFS();
+    btn.disabled=true; err.textContent='Đang kết nối...';
+    try{
+      const r=await api({action:'start', name:n, cls:c, sbd:sbd});
+      if(!r.ok){
+        if(r.error==='exists'){
+          pendingSid=r.sid;
+          err.textContent='Bạn đã bắt đầu bài này trước đó (có thể do mất kết nối hoặc thoát trang).';
+          document.getElementById('resume-section').style.display='block';
+          btn.disabled=false; return;
+        }
+        err.textContent=r.error||'Không bắt đầu được.'; btn.disabled=false; return;
+      }
+      sid=r.sid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
+      document.getElementById('start-overlay').style.display='none';
+      quizOpen=false; ensureAudio();
+    }catch(e){ err.textContent='Không kết nối được máy chủ. Kiểm tra mạng và link Apps Script.'; btn.disabled=false; }
+  };
+  document.getElementById('resume-btn').onclick=async ()=>{
+    const n=document.getElementById('in-name').value.trim(), c=document.getElementById('in-class').value.trim();
+    const codeEl=document.getElementById('in-resume-code'), err=document.getElementById('resume-err'), btn=document.getElementById('resume-btn');
+    const code=codeEl.value.trim();
+    if(!code){ err.textContent='Nhập mã giáo viên.'; return; }
+    if(!pendingSid){ err.textContent='Thiếu phiên làm bài, hãy bấm Bắt đầu lại.'; return; }
+    btn.disabled=true; err.textContent='Đang kiểm tra...';
+    try{
+      const r=await api({action:'resume', sid:pendingSid, code});
+      if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
+      sid=pendingSid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
+      applyProgress(r);
+      (r.answers||[]).forEach((ans,i)=>{ if(ans && questionBlocks[i]) hideBlock(questionBlocks[i]); });
+      document.getElementById('start-overlay').style.display='none';
+      quizOpen=false; ensureAudio(); requestFS(); btn.disabled=false;
+      if(r.done) finishGame();
+    }catch(e){ err.textContent='Không kết nối được máy chủ.'; btn.disabled=false; }
+  };
+
+  let heading=Math.PI, walkT=0, lastStep=0;
+  const speed=4.0, turnSpeed=2.2;
+  const camOffset=new THREE.Vector3(0,3.0,5.4);
+  const camPos=new THREE.Vector3().copy(character.position).add(camOffset);
+  const camLook=new THREE.Vector3();
+  let last=performance.now();
+
+  function animate(){
+    requestAnimationFrame(animate);
+    const now=performance.now(); const dt=Math.min((now-last)/1000,0.05); last=now;
+
+    { const cp=character.position; const sorted=lanterns.slice().sort((a,b)=>((a.x-cp.x)**2+(a.z-cp.z)**2)-((b.x-cp.x)**2+(b.z-cp.z)**2));
+      for(let k=0;k<2;k++){ if(sorted[k]) lanternLights[k].position.copy(sorted[k]); } }
+
+    let moving=false;
+    if(exiting && !ended){
+      const dx=0-character.position.x, dz=-88-character.position.z, dist=Math.hypot(dx,dz);
+      if(dist>0.5){ heading=Math.atan2(dx,dz); character.position.x+=dx/dist*speed*0.8*dt; character.position.z+=dz/dist*speed*0.8*dt; moving=true; }
+      else { ended=true; showEnd(); }
+    }
+    if(!quizOpen && !locked){
+      if(keys['ArrowLeft']) heading+=turnSpeed*dt;
+      if(keys['ArrowRight']) heading-=turnSpeed*dt;
+      let dir=0; if(keys['ArrowUp']) dir=1; if(keys['ArrowDown']) dir=-1;
+      if(dir!==0){
+        moving=true;
+        const nx=character.position.x+Math.sin(heading)*dir*speed*dt, nz=character.position.z+Math.cos(heading)*dir*speed*dt;
+        const beyondGate = !allSolved && (new THREE.Vector2(nx,nz).sub(gatePos2)).dot(gateForward)>0.2 && (new THREE.Vector2(nx,nz).distanceTo(gatePos2)<3);
+        if(!beyondGate){ const ox=character.position.x, oz=character.position.z;
+          if(walkOk(nx,nz)){ character.position.x=nx; character.position.z=nz; }
+          else if(walkOk(nx,oz)) character.position.x=nx;
+          else if(walkOk(ox,nz)) character.position.z=nz; }
+      }
+    }
+    character.rotation.y=heading;
+    character.position.y=heightAt(character.position.x,character.position.z);
+    torch.position.set(character.position.x, character.position.y+2.2, character.position.z);
+    if(allSolved && !exiting && (new THREE.Vector2(character.position.x,character.position.z).sub(gatePos2)).dot(gateForward)>0.8 && Math.hypot(character.position.x-gp.x, character.position.z-gp.y)<4){
+      exiting=true; quizOpen=true; completeBanner.style.display='none'; barrierMesh.material.opacity=0.55;
+    }
+
+    if(!quizOpen && !locked){
+      for(const b of questionBlocks){
+        if(b.solved || (b.cool && Date.now()<b.cool)) continue;
+        if(Math.hypot(character.position.x-b.x, character.position.z-b.z)<2.3){ openQuiz(b); break; }
+      }
+    }
+    for(const b of questionBlocks){
+      b.mesh.rotation.y += dt*0.8;
+      b.mesh.position.y = heightAt(b.x,b.z)+1.1+Math.sin(now/1000*1.6+b.index)*0.12;
+      b.sprite.position.y = b.mesh.position.y+0.85;
+      b.light.position.y = b.mesh.position.y;
+    }
+
+    if(moving){
+      walkT+=dt*8;
+      legL.rotation.x=Math.sin(walkT)*0.6; legR.rotation.x=-Math.sin(walkT)*0.6;
+      armL.rotation.x=-Math.sin(walkT)*0.5; armR.rotation.x=Math.sin(walkT)*0.5;
+      const sp=Math.floor(walkT/Math.PI);
+      if(sp!==lastStep){ lastStep=sp; playFootstep(); }
+    } else {
+      legL.rotation.x*=0.8; legR.rotation.x*=0.8; armL.rotation.x*=0.8; armR.rotation.x*=0.8;
+    }
+
+    const fx=Math.sin(heading), fz=Math.cos(heading);
+    let cd=5.4;
+    while(cd>1.6 && fieldD(character.position.x-fx*cd, character.position.z-fz*cd)>R+1.0) cd-=0.4;
+    const desiredCamPos=new THREE.Vector3(character.position.x-fx*cd, character.position.y+3.0, character.position.z-fz*cd);
+    camPos.lerp(desiredCamPos, 1-Math.pow(0.0005,dt));
+    camera.position.copy(camPos);
+    camLook.lerp(new THREE.Vector3(character.position.x+fx*2.5, character.position.y+1.4, character.position.z+fz*2.5), 1-Math.pow(0.0005,dt));
+    camera.lookAt(camLook);
+
+    drawMap();
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+</script>
+</body>
+</html>
