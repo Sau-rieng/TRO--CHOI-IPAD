@@ -17,11 +17,19 @@
   #lock-box h2{margin:0 0 8px;font-size:19px;color:#ff9a9a;} #lock-box p{font-size:13px;line-height:1.5;color:#c9c2f0;margin:0 0 12px;}
   #lock-box input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px 12px;border-radius:10px;border:1px solid #4a3f7a;background:#2b2450;color:#eae6ff;font-size:16px;text-align:center;letter-spacing:2px;}
   #lock-err{min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0;}
-  #start-overlay,#end-overlay{position:fixed;inset:0;background:rgba(6,4,16,0.88);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px;}
-  #start-box,#end-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:380px;width:100%;padding:24px 22px;border:1px solid #4a3f7a;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
-  #start-box h2,#end-box h2{margin:0 0 8px;font-size:20px;} #start-box p{font-size:13px;line-height:1.5;color:#c9c2f0;margin:0 0 12px;}
-  #start-box input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px 12px;border-radius:10px;border:1px solid #4a3f7a;background:#2b2450;color:#eae6ff;font-size:15px;}
-  #start-err{min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0;}
+  #end-overlay{position:fixed;inset:0;background:rgba(6,4,16,0.88);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px;}
+  #start-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#eaf6ff 0%,#fff3da 100%);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px;}
+  #end-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:380px;width:100%;padding:24px 22px;border:1px solid #4a3f7a;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+  #start-box{background:#fffaf0;color:#3a2f55;border-radius:16px;max-width:380px;width:100%;padding:24px 22px;border:1px solid #e3d3a0;box-shadow:0 10px 40px rgba(60,40,10,0.25);}
+  #end-box h2{margin:0 0 8px;font-size:20px;}
+  #start-box h2{margin:0 0 8px;font-size:20px;color:#3a2f55;} #start-box p{font-size:13px;line-height:1.5;color:#6a5f8a;margin:0 0 12px;}
+  #start-box input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px 12px;border-radius:10px;border:1px solid #cbb994;background:#ffffff;color:#3a2f55;font-size:15px;}
+  #start-err,#resume-err{min-height:18px;font-size:13px;color:#c23b3b;margin:4px 0;}
+  #start-btn,#resume-btn{background:#ffcf6b !important;color:#3a2a10 !important;border-color:#e0a93f !important;font-weight:600;}
+  #start-btn:hover,#resume-btn:hover{background:#ffdb8a !important;}
+  #resume-section{border-top:1px solid #e3d3a0 !important;} #resume-section p{color:#6a5f8a;}
+  #timer{position:fixed;top:calc(env(safe-area-inset-top,0px) + 84px);left:50%;transform:translateX(-50%);background:var(--ui-bg);color:var(--ui-fg);padding:5px 12px;border-radius:16px;font-size:13px;font-weight:600;pointer-events:none;backdrop-filter:blur(4px);}
+  #timer.warn{color:#ffb0b0;}
   #complete-banner button{margin:8px 4px 0;text-align:center;}
   #quiz-overlay{position:fixed;inset:0;background:rgba(6,4,16,0.6);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:20;padding:16px;}
   #quiz-box{background:#1c1830;color:#eae6ff;border-radius:16px;max-width:420px;width:100%;padding:22px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid #4a3f7a;}
@@ -40,6 +48,7 @@
 <canvas id="c"></canvas>
 <div id="title">🦇 Khám Phá Hang Động</div>
 <div id="progress">💎 Đã trả lời 0/10 • Điểm: 0</div>
+<div id="timer" style="display:none">⏱ 5:00</div>
 <canvas id="mm" width="136" height="152"></canvas>
 <div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><input id="in-class" placeholder="Lớp" autocomplete="off"><input id="in-sbd" placeholder="Số báo danh" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để tiếp tục làm bài.</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Tiếp tục làm bài</button></div></div></div>
 <div id="end-overlay" style="display:none"><div id="end-box"><h2>🏁 Kết thúc</h2><div id="end-text" style="white-space:pre-line;line-height:1.7;font-size:15px"></div></div></div>
@@ -314,7 +323,7 @@
   // Quiz logic
   const quizOverlay=document.getElementById('quiz-overlay'), quizNum=document.getElementById('quiz-num'), quizQ=document.getElementById('quiz-q'), quizOptions=document.getElementById('quiz-options'), quizFeedback=document.getElementById('quiz-feedback');
   const progressEl=document.getElementById('progress'), completeBanner=document.getElementById('complete-banner');
-  let quizOpen=true, activeBlock=null, solvedCount=0, allSolved=false, score=0, playerName='', playerClass='', startTime=Date.now(), exiting=false, ended=false, gameStarted=false, locked=false;
+  let quizOpen=true, activeBlock=null, solvedCount=0, allSolved=false, score=0, playerName='', playerClass='', startTime=Date.now(), exiting=false, ended=false, gameStarted=false, locked=false, timedOut=false, deadline=0, timerHandle=null;
   const results=[];
   const TOTAL=10;
   let sid='', pendingSid='', busy=false, optCount=0;
@@ -333,6 +342,32 @@
   function closeQuiz(){ quizOverlay.style.display='none'; quizOpen=false; activeBlock=null; busy=false; }
   function applyProgress(r){ solvedCount=r.answered; score=r.score; progressEl.textContent='💎 Đã trả lời '+r.answered+'/'+TOTAL+' • Điểm: '+r.score; }
   function hideBlock(b){ b.solved=true; b.mesh.visible=false; b.sprite.visible=false; }
+
+  const TIME_LIMIT_MS = 5*60*1000; // 5 phút
+  const timerEl=document.getElementById('timer');
+  function startTimer(startedAtIso){
+    deadline = (startedAtIso ? new Date(startedAtIso).getTime() : Date.now()) + TIME_LIMIT_MS;
+    timerEl.style.display='block';
+    if(timerHandle) clearInterval(timerHandle);
+    tickTimer(); timerHandle=setInterval(tickTimer, 1000);
+  }
+  function tickTimer(){
+    if(timedOut || ended) return;
+    const left=Math.max(0, deadline-Date.now()), m=Math.floor(left/60000), sTxt=String(Math.floor((left%60000)/1000)).padStart(2,'0');
+    timerEl.textContent='⏱ '+m+':'+sTxt;
+    timerEl.classList.toggle('warn', left<=30000);
+    if(left<=0){ clearInterval(timerHandle); timeUp(); }
+  }
+  async function timeUp(){
+    if(timedOut || ended) return;
+    timedOut=true; gameStarted=false; locked=false; quizOpen=true;
+    document.getElementById('lock-overlay').style.display='none';
+    quizOverlay.style.display='none';
+    try{ await api({action:'timeup'}); }catch(e){}
+    ended=true;
+    document.getElementById('end-text').textContent='⏰ Đã hết thời gian làm bài (5 phút).\n'+playerName+' — lớp '+playerClass+'\nĐiểm: '+score+'/'+TOTAL+' (đã trả lời '+solvedCount+'/'+TOTAL+' câu).\nCảm ơn bạn đã tham gia!';
+    document.getElementById('end-overlay').style.display='flex';
+  }
 
   // Câu hỏi (không kèm đáp án đúng) được tải sẵn một lần lúc đăng nhập nên mở khối là hiện ngay, không phải chờ mạng.
   // Việc chấm điểm vẫn luôn do máy chủ thực hiện khi nộp câu trả lời.
@@ -360,7 +395,7 @@
       if(quizOptions.children.length===optCount && quizOptions.children[oi]) quizOptions.children[oi].classList.add(r.correct?'correct':'wrong');
       quizFeedback.textContent=r.correct?'✔ Chính xác! +1 điểm':'✘ Chưa đúng (0 điểm).';
       b.solved=true; applyProgress(r); busy=false;
-      setTimeout(()=>{ hideBlock(b); closeQuiz(); if(r.done) finishGame(); }, r.correct?900:1800);
+      setTimeout(()=>{ hideBlock(b); closeQuiz(); if(r.done) finishGame(); }, r.correct?400:1000);
     }catch(err){
       busy=false;
       quizMessage(errText(err)+' — bấm Thử lại để gửi lại đáp án.', [['Thử lại',()=>answerQuiz(oi)],['Đóng',()=>{ b.cool=Date.now()+5000; closeQuiz(); }]]);
@@ -374,7 +409,7 @@
     completeBanner.style.display='block';
     setTimeout(()=>{ completeBanner.style.display='none'; },7000);
   }
-  function showEnd(){ gameStarted=false; locked=false; document.getElementById('lock-overlay').style.display='none';
+  function showEnd(){ if(timerHandle) clearInterval(timerHandle); gameStarted=false; locked=false; document.getElementById('lock-overlay').style.display='none';
     document.getElementById('end-text').textContent=playerName+' — lớp '+playerClass+'\nĐiểm: '+score+'/'+TOTAL+'\nBạn đã ra khỏi hang động. Cảm ơn bạn đã tham gia!';
     document.getElementById('end-overlay').style.display='flex';
   }
@@ -425,7 +460,7 @@
       }
       sid=r.sid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true; cachedQ=r.questions;
       document.getElementById('start-overlay').style.display='none';
-      quizOpen=false; ensureAudio();
+      quizOpen=false; ensureAudio(); startTimer(r.startedAt);
     }catch(e){ err.textContent='Không kết nối được máy chủ. Kiểm tra mạng và link Apps Script.'; btn.disabled=false; }
   };
   document.getElementById('resume-btn').onclick=async ()=>{
@@ -440,6 +475,7 @@
       if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
       sid=pendingSid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true; cachedQ=r.questions;
       applyProgress(r);
+      startTimer(r.startedAt);
       (r.answers||[]).forEach((ans,i)=>{ if(ans && questionBlocks[i]) hideBlock(questionBlocks[i]); });
       document.getElementById('start-overlay').style.display='none';
       quizOpen=false; ensureAudio(); requestFS(); btn.disabled=false;
