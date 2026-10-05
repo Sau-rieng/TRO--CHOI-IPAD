@@ -731,18 +731,21 @@ function buildPayload(){
     items:QUESTIONS.map((Q,i)=>({bai:Q.bai,q:toPlain(Q.q)+(Q.f?' '+toPlain(Q.f):''),options:Q.o.map(toPlain),
       correct:'ABCD'[Q.a],chosen:chosen[i]===undefined?'':'ABCD'[chosen[i]],ok:answers[i]===true}))};
 }
+/* Dán đường link Ứng dụng web Apps Script (kết thúc bằng /exec) vào giữa hai dấu nháy: */
+const SHEET_URL='';
 function sendResult(){
   const m=$('sendMsg'),rb=$('resendBtn');
   const show=(t,cls)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;};
   rb.hidden=true;
-  const gs=window.google&&google.script&&google.script.run;
-  if(!gs){show('Bản xem thử: kết quả chưa được gửi về Google Sheet của giáo viên.');return;}
   if(submitted){show('Đã gửi kết quả cho giáo viên.','ok');return;}
+  const gs=window.google&&google.script&&google.script.run;
+  const ok=()=>{submitted=true;save();show('Đã gửi kết quả cho giáo viên.','ok');};
+  const fail=()=>{show('Chưa gửi được kết quả. Kiểm tra mạng rồi bấm Gửi lại, hoặc báo giáo viên.','bad');rb.hidden=false;};
+  if(gs){show('Đang gửi kết quả cho giáo viên…');google.script.run.withSuccessHandler(ok).withFailureHandler(fail).submitResult(buildPayload());return;}
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(SHEET_URL)){show('Bản xem thử: kết quả chưa được gửi về Google Sheet của giáo viên.');return;}
   show('Đang gửi kết quả cho giáo viên…');
-  google.script.run
-    .withSuccessHandler(()=>{submitted=true;save();show('Đã gửi kết quả cho giáo viên.','ok');})
-    .withFailureHandler(()=>{show('Chưa gửi được kết quả. Kiểm tra mạng rồi bấm Gửi lại, hoặc báo giáo viên.','bad');rb.hidden=false;})
-    .submitResult(buildPayload());
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(buildPayload())})
+    .then(ok,fail);
 }
 $('resendBtn').onclick=sendResult;
 function resultText(){return `Họ tên: ${player.name} | Lớp: ${player.lop} | SBD: ${player.sbd} | Điểm: ${score}/10 | Thời gian: ${mmss(endedAt-startedAt)}${{timeout:' (hết giờ)',violation:' (rời màn hình 2 lần)',quit:' (tự thoát)'}[reason]||''}`;}
