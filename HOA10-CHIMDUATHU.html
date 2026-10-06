@@ -1,4 +1,7 @@
 <title>Chim Đưa Thư Hóa 10</title>
+<!-- ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Để trống '' thì trò chơi không gửi kết quả. (Đang dùng chung địa chỉ với DAINOI-HOA10.html, LANGBIANG-HOA10.html) -->
+<script>window.CAU_HINH={SHEET_URL:'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'};</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
 <style>
@@ -731,23 +734,44 @@ function buildPayload(){
     items:QUESTIONS.map((Q,i)=>({bai:Q.bai,q:toPlain(Q.q)+(Q.f?' '+toPlain(Q.f):''),options:Q.o.map(toPlain),
       correct:'ABCD'[Q.a],chosen:chosen[i]===undefined?'':'ABCD'[chosen[i]],ok:answers[i]===true}))};
 }
-/* Dán đường link Ứng dụng web Apps Script (kết thúc bằng /exec) vào giữa hai dấu nháy: */
-const SHEET_URL='';
-function sendResult(){
-  const m=$('sendMsg'),rb=$('resendBtn');
-  const show=(t,cls)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;};
-  rb.hidden=true;
-  if(submitted){show('Đã gửi kết quả cho giáo viên.','ok');return;}
-  const gs=window.google&&google.script&&google.script.run;
-  const ok=()=>{submitted=true;save();show('Đã gửi kết quả cho giáo viên.','ok');};
-  const fail=()=>{show('Chưa gửi được kết quả. Kiểm tra mạng rồi bấm Gửi lại, hoặc báo giáo viên.','bad');rb.hidden=false;};
-  if(gs){show('Đang gửi kết quả cho giáo viên…');google.script.run.withSuccessHandler(ok).withFailureHandler(fail).submitResult(buildPayload());return;}
-  if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(SHEET_URL)){show('Bản xem thử: kết quả chưa được gửi về Google Sheet của giáo viên.');return;}
-  show('Đang gửi kết quả cho giáo viên…');
-  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(buildPayload())})
-    .then(ok,fail);
+const SHEET_URL=((window.CAU_HINH||{}).SHEET_URL||'').trim();
+function buildReport(){
+  const done=answers.filter(a=>a!==undefined).length;
+  return {game:'Chim Đưa Thư Hóa 10',id:sessionId,name:player.name,cls:player.lop,sbd:player.sbd,
+    score,correct:score,wrong:done-score,none:10-done,used:mmss(endedAt-startedAt),violations:leaves,
+    reason:{timeout:'Hết thời gian',violation:'Rời màn hình 2 lần',quit:'Nộp bài và thoát',done:'Hoàn thành'}[reason]||'Hoàn thành',
+    finishedAt:new Date(endedAt).toLocaleString('vi-VN'),
+    items:QUESTIONS.map((Q,i)=>({n:i+1,place:'Tháp '+(i+1),lesson:Q.bai,q:toPlain(Q.q)+(Q.f?' '+toPlain(Q.f):''),
+      opts:Q.o.map(toPlain),correct:Q.a,chosen:chosen[i]===undefined?null:chosen[i],point:answers[i]===true?1:0,explain:toPlain(Q.e)}))};
 }
-$('resendBtn').onclick=sendResult;
+let sending=false;
+async function sendResult(){
+  const m=$('sendMsg'),rb=$('resendBtn');
+  const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
+  if(!player||!reason)return;
+  if(submitted===true){show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');return;}
+  const gs=window.google&&google.script&&google.script.run;
+  if(gs){
+    show('Đang gửi kết quả cho giáo viên…');
+    google.script.run.withSuccessHandler(()=>{submitted=true;save();show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');})
+      .withFailureHandler(()=>show('Chưa gửi được kết quả. Kiểm tra mạng rồi bấm Gửi lại.','bad',true)).submitResult(buildPayload());
+    return;
+  }
+  if(!SHEET_URL){show('Chưa cài địa chỉ Google Sheet nên kết quả chỉ lưu trên máy này. Hãy chụp màn hình gửi giáo viên.');return;}
+  if(sending)return;sending=true;show('Đang gửi kết quả cho giáo viên…');
+  const body=JSON.stringify(buildReport()),headers={'Content-Type':'text/plain;charset=utf-8'};
+  try{
+    const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});const j=await res.json();
+    if(!j.ok)throw new Error(j.error||'máy chủ báo lỗi');
+    submitted=true;save();show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');
+  }catch(err){
+    try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers});submitted='maybe';save();
+      show('Đã gửi kết quả nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy bài của em, hãy bấm Gửi lại.','',true);}
+    catch(e2){show('Chưa gửi được kết quả'+(navigator.onLine===false?' (máy đang mất mạng)':'')+'. Kiểm tra mạng rồi bấm Gửi lại.','bad',true);}
+  }finally{sending=false;}
+}
+addEventListener('online',()=>{if(reason&&submitted!==true)sendResult();});
+$('resendBtn').onclick=()=>{submitted=false;sendResult();};
 function resultText(){return `Họ tên: ${player.name} | Lớp: ${player.lop} | SBD: ${player.sbd} | Điểm: ${score}/10 | Thời gian: ${mmss(endedAt-startedAt)}${{timeout:' (hết giờ)',violation:' (rời màn hình 2 lần)',quit:' (tự thoát)'}[reason]||''}`;}
 $('copyBtn').onclick=()=>{
   const t=resultText(),m=$('copyMsg');
@@ -809,8 +833,8 @@ addEventListener('blur',()=>lockGame());
 addEventListener('pagehide',()=>lockGame());
 $('again').onclick=()=>{
   lockPurpose='new';$('lockTitle').textContent='Lượt chơi mới';
-  const gs=window.google&&google.script&&google.script.run;
-  $('lockMsg').textContent='Giáo viên nhập mã để mở lượt chơi cho học sinh tiếp theo. Kết quả hiện tại sẽ bị xóa khỏi máy này.'+(gs&&!submitted?' Lưu ý: kết quả này CHƯA gửi được về Google Sheet, hãy bấm Gửi lại hoặc ghi lại trước.':'');
+  const gs=SHEET_URL||(window.google&&google.script&&google.script.run);
+  $('lockMsg').textContent='Giáo viên nhập mã để mở lượt chơi cho học sinh tiếp theo. Kết quả hiện tại sẽ bị xóa khỏi máy này.'+(gs&&submitted!==true?' Lưu ý: kết quả này CHƯA gửi được về Google Sheet, hãy bấm Gửi lại hoặc ghi lại trước.':'');
   $('lockCancel').hidden=false;$('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;$('code').focus();
 };
 $('lockCancel').onclick=()=>{$('lock').hidden=true;};
@@ -838,7 +862,7 @@ function restore(){
   if(!d.picks)return;
   picks=d.picks;buildQuestions(picks);
   player=d.player;deadline=d.deadline;startedAt=d.startedAt;endedAt=d.endedAt||0;leaves=d.leaves||0;
-  answers=(d.answers||[]).map(v=>v===null?undefined:v);chosen=d.chosen||[];sessionId=d.sessionId||'';submitted=!!d.submitted;
+  answers=(d.answers||[]).map(v=>v===null?undefined:v);chosen=d.chosen||[];sessionId=d.sessionId||'';submitted=d.submitted===true?true:(d.submitted||false);
   score=answers.filter(Boolean).length;
   answers.forEach((a,i)=>{if(a!==undefined){towers[i].state=a?'ok':'no';drawFlag(towers[i],i);}});
   $('start').hidden=true;$('who').textContent=`${player.name} · ${player.lop} · SBD ${player.sbd}`;
