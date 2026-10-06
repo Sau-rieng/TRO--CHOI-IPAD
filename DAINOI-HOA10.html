@@ -121,6 +121,26 @@ button{font:inherit}
 .gcard .sbd input:disabled{cursor:not-allowed}
 .sendst{margin:0;font:600 13px var(--f-body);padding:8px 10px;border-radius:8px;background:#f1f3f0;color:#3f4a46}
 .sendst.ok{background:#d6efe3;color:#1d6b4f} .sendst.fail{background:#f6dcd8;color:#9b2c23}
+.gcard.compact{gap:8px;padding:16px 18px;width:min(420px,100%)}
+.gcard.compact h2{font-size:21px}
+.gcard.compact .gbtn{padding:9px 12px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gcard.compact label{margin:0;font-size:12.5px}
+.gcard label .hint{font-weight:400;color:var(--muted)}
+.gcard.compact input,.gcard.compact select{padding:8px 10px}
+.gcard.compact .sbd input{padding:8px 4px}
+.rules1{margin:0;font-size:12px;line-height:1.4;color:var(--muted);background:#f4f6f3;border-radius:8px;padding:6px 9px}
+.rtop{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rwho{min-width:0}.rwho h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0}
+.rstats div{background:#f4f6f3;border-radius:8px;padding:6px 8px;text-align:center}
+.rstats dt{font-size:11.5px;color:var(--muted)} .rstats dd{margin:0;font:700 18px var(--f-body);font-variant-numeric:tabular-nums}
+.rstats .wide{grid-column:1/-1;display:flex;justify-content:space-between;text-align:left;font-size:12.5px}
+.rstats .wide dd{font-size:12.5px}
+.gcard.compact .gactions .gbtn{flex:1 1 0;min-width:0;font-size:13px}
+.gcard.compact .sendst{font-size:12px;padding:6px 9px}
+@media (max-height:560px){.gate{place-items:start center}.gcard.compact{gap:6px;padding:12px 14px}.rules1{display:none}}
+.err:empty,.sendst:empty{display:none}
 .rules{margin:4px 0 0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
 .err{margin:0;min-height:1.2em;font:600 13px var(--f-body);color:#b0352b}
 .gbtn{font:600 14px var(--f-body);padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
@@ -129,7 +149,7 @@ button{font:inherit}
 .gactions{display:flex;gap:8px;flex-wrap:wrap}
 .gactions .gbtn{flex:1}
 .bigscore{display:flex;align-items:baseline;gap:8px}
-.bigscore span{font:700 52px/1 var(--f-body);color:var(--tim);font-variant-numeric:tabular-nums}
+.bigscore{flex:none}.bigscore span{font:700 44px/1 var(--f-body);color:var(--tim);font-variant-numeric:tabular-nums}
 .bigscore small{font-size:15px;color:var(--muted)}
 .resgrid{display:grid;grid-template-columns:1fr auto;gap:4px 14px;margin:0;font-size:14px;border-top:1px solid var(--line);padding-top:10px}
 .resgrid dt{color:var(--muted)} .resgrid dd{margin:0;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
@@ -235,26 +255,18 @@ button{font:inherit}
 </div>
 
 <div class="gate" id="gLogin" hidden>
-  <form class="gcard" id="loginForm" novalidate>
-    <div class="geyebrow">Hóa học 10 · Kết nối tri thức · Bài 1–3</div>
-    <h2>Tham quan Đại Nội Huế</h2>
-    <p class="gnote">Điền thông tin để bắt đầu. Mỗi lượt có 10 câu hỏi, mỗi câu đúng được 1 điểm.</p>
-    <label for="fName">Họ và tên</label>
-    <input id="fName" autocomplete="name" placeholder="Nguyễn Văn A" maxlength="60">
+  <form class="gcard compact" id="loginForm" novalidate>
+    <div class="ghead"><div class="geyebrow">Hóa 10 · KNTT · Bài 1–3</div><h2>Tham quan Đại Nội Huế</h2></div>
+    <div class="field"><label for="fName">Họ và tên</label><input id="fName" autocomplete="name" placeholder="Nguyễn Văn A" maxlength="60"></div>
     <div class="grow">
-      <div><label for="fClass">Lớp</label>
-        <select id="fClass"><option value="">– Chọn lớp –</option><option>9D01</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></div>
-      <div><label for="fSbd">SBD</label><div class="sbd" id="sbdBox"><span class="pre" id="sbdPre" aria-hidden="true">——————</span><input id="fSbd" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="__" aria-describedby="sbdHint" disabled></div></div>
+      <div class="field"><label for="fClass">Lớp</label>
+        <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></div>
+      <div class="field"><label for="fSbd">SBD <span class="hint">(2 số cuối)</span></label><div class="sbd" id="sbdBox"><span class="pre" id="sbdPre" aria-hidden="true">——————</span><input id="fSbd" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="__" disabled></div></div>
     </div>
-    <p class="gnote" id="sbdHint" style="font-size:12.5px">Chọn lớp để hiện 6 số đầu của SBD, sau đó nhập 2 số cuối của em.</p>
-    <ul class="rules">
-      <li>Thời gian làm bài: <b>5 phút</b>, tính từ khi bấm Bắt đầu.</li>
-      <li>Trả lời đúng: <b>+1 điểm</b>. Trả lời sai: 0 điểm. Mỗi câu chỉ chọn 1 lần, không được làm lại.</li>
-      <li>Đáp án và bài làm chi tiết không hiện trong lúc chơi; giáo viên sẽ chữa bài sau.</li>
-      <li>Không rời khỏi màn hình chơi. Rời lần 1: bài bị khóa, cần giáo viên mở lại. Rời lần 2: bài tự kết thúc và tính điểm.</li>
-    </ul>
+    <div class="field"><label for="fAccess">Mã vào chơi <span class="hint">(giáo viên cấp)</span></label><input id="fAccess" type="password" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="12" placeholder="••••••" required></div>
+    <p class="rules1">5 phút · 10 câu · đúng +1 điểm, sai 0 điểm · mỗi câu chọn 1 lần · rời màn hình lần 1 bị khóa, lần 2 tự nộp bài.</p>
     <p class="err" id="loginErr" aria-live="polite"></p>
-    <button type="submit" class="gbtn primary">Bắt đầu</button>
+    <button type="submit" class="gbtn primary" id="bStart">Bắt đầu</button>
   </form>
 </div>
 <div class="gate" id="gLock" hidden>
@@ -280,24 +292,23 @@ button{font:inherit}
   </div>
 </div>
 <div class="gate" id="gResult" hidden>
-  <div class="gcard">
-    <div class="geyebrow" id="resEyebrow">Kết quả</div>
-    <h2 id="resName"></h2>
-    <p class="gnote" id="resMeta"></p>
-    <div class="bigscore"><span id="resScore">0</span><small>/ 10 điểm</small></div>
-    <dl class="resgrid" id="resGrid"></dl>
+  <div class="gcard compact">
+    <div class="rtop">
+      <div class="rwho"><div class="geyebrow" id="resEyebrow">Kết quả</div><h2 id="resName"></h2><p class="gnote" id="resMeta"></p></div>
+      <div class="bigscore"><span id="resScore">0</span><small>/10 điểm</small></div>
+    </div>
+    <dl class="rstats" id="resGrid"></dl>
     <p class="sendst" id="sendSt" aria-live="polite"></p>
-    <button type="button" class="gbtn" id="bResend" hidden>Gửi lại kết quả</button>
     <p class="err" id="resErr" aria-live="polite"></p>
     <div class="gactions">
-      <button type="button" class="gbtn" id="bCopy">Sao chép kết quả</button>
-      <button type="button" class="gbtn" id="bNew">Lượt chơi mới</button>
+      <button type="button" class="gbtn" id="bResend" hidden>Gửi lại</button>
+      <button type="button" class="gbtn" id="bCopy">Sao chép</button>
+      <button type="button" class="gbtn" id="bNew">Lượt mới</button>
+      <button type="button" class="gbtn" id="bLeave">Thoát</button>
     </div>
-    <button type="button" class="gbtn" id="bLeave">Thoát trò chơi</button>
-    <p class="gnote" id="leaveMsg" hidden>Đã thoát. Bạn có thể đóng thẻ hoặc cửa sổ này.</p>
+    <p class="gnote" id="leaveMsg" hidden>Đã thoát. Em có thể đóng thẻ này.</p>
     <form id="newForm" class="newform" hidden novalidate>
-      <label for="fCode2">Mã của giáo viên để mở lượt mới</label>
-      <div class="grow"><input id="fCode2" type="password" inputmode="numeric" autocomplete="off" maxlength="8"><button type="submit" class="gbtn primary">Xác nhận</button></div>
+      <div class="grow"><input id="fCode2" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Mã giáo viên để mở lượt mới" aria-label="Mã giáo viên để mở lượt mới"><button type="submit" class="gbtn primary">Xác nhận</button></div>
     </form>
   </div>
 </div>
@@ -805,7 +816,7 @@ function intro(){ holdUntil=performance.now()+12000; say('Xin chào! Mình là T
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 
 /* ---------- player session: sign-in, 5-minute timer, lock on leaving ---------- */
-const TCH='g1yemw', isTeacher=v=>{let x=2166136261>>>0;for(const ch of 'dn-salt:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===TCH;}, STORE='dainoi-hoa10-session-v2', LIMIT=5*60*1000;
+const TCH='g1yemw', isTeacher=v=>{let x=2166136261>>>0;for(const ch of 'dn-salt:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===TCH;}, STORE='dainoi-hoa10-session-v3', LIMIT=5*60*1000;
 let S=null, graceUntil=0, wasFull=false;
 const $=id=>document.getElementById(id);
 function saveS(){ try{ localStorage.setItem(STORE,JSON.stringify(S)); }catch(_){} }
@@ -817,19 +828,35 @@ function mmss(ms){ const t=Math.max(0,Math.ceil(ms/1000)); return String(Math.fl
 function setWho(){ $('who').textContent=S?`${S.name} · ${S.cls} · SBD ${S.sbd}`:''; }
 function goFull(){ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(()=>{}); }
 
+const ACC='rbivhq', accessOk=v=>{let x=2166136261>>>0;for(const ch of 'dn-access:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===ACC;};
 const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
 function syncSbd(){ const pre=SBD_PREFIX[$('fClass').value]; $('sbdPre').textContent=pre||'——————'; $('fSbd').disabled=!pre; if(!pre) $('fSbd').value=''; }
 $('fClass').addEventListener('change',()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
 $('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,2); if(v!==$('fSbd').value) $('fSbd').value=v; });
-function showLogin(){ $('fName').value=''; $('fClass').value=''; $('fSbd').value=''; syncSbd(); $('loginErr').textContent=''; gate('gLogin'); $('timer').textContent='05:00'; $('timer').classList.remove('warn'); setWho(); setTimeout(()=>$('fName').focus(),50); }
-$('loginForm').addEventListener('submit',e=>{
+function showLogin(){ $('fName').value=''; $('fClass').value=''; $('fSbd').value=''; $('fAccess').value=''; syncSbd(); $('loginErr').textContent=''; gate('gLogin'); $('timer').textContent='05:00'; $('timer').classList.remove('warn'); setWho(); setTimeout(()=>$('fName').focus(),50); }
+$('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const name=$('fName').value.trim().replace(/\s+/g,' '), cls=$('fClass').value, last=$('fSbd').value.trim(), sbd=(SBD_PREFIX[cls]||'')+last;
   if(!name){ $('loginErr').textContent='Hãy nhập họ và tên.'; $('fName').focus(); return; }
   if(!cls){ $('loginErr').textContent='Hãy chọn lớp.'; $('fClass').focus(); return; }
   if(!/^\d{2}$/.test(last)){ $('loginErr').textContent='Hãy nhập đủ 2 số cuối của SBD.'; $('fSbd').focus(); return; }
+  const access=$('fAccess').value.trim();
+  if(!access){ $('loginErr').textContent='Hãy nhập mã vào chơi do giáo viên cấp.'; $('fAccess').focus(); return; }
+  let j={ok:true,ticket:''};
+  if(!SHEET_URL && !accessOk(access)){ $('loginErr').textContent='Mã vào chơi không đúng.'; $('fAccess').select(); return; }
+  if(SHEET_URL){
+  const btn=$('bStart'); btn.disabled=true; btn.textContent='Đang kiểm tra mã…'; $('loginErr').textContent='';
+  j=null;
+  try{
+    const res=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'check',code:access,cls,sbd}),redirect:'follow'});
+    j=await res.json();
+  }catch(err){ j={ok:false,error:navigator.onLine===false?'Máy đang mất mạng.':'Không kết nối được máy chủ kiểm tra mã. Báo giáo viên.'}; }
+  btn.disabled=false; btn.textContent='Bắt đầu';
+  if(!j || !j.ok || !j.ticket){ $('loginErr').textContent=(j&&j.error)||'Mã vào chơi không đúng.'; $('fAccess').select(); return; }
+  }
+  $('fAccess').value='';
   const now=Date.now();
-  S={id:now.toString(36)+Math.random().toString(36).slice(2,8),name,cls,sbd,started:now,deadline:now+LIMIT,picks:deal(),status:Array(10).fill(null),ans:Array(10).fill(null),state:'playing',locked:false,violations:0,sent:false};
+  S={id:now.toString(36)+Math.random().toString(36).slice(2,8),name,cls,sbd,ticket:j.ticket,started:now,deadline:now+LIMIT,picks:deal(),status:Array(10).fill(null),ans:Array(10).fill(null),state:'playing',locked:false,violations:0,sent:false};
   applyPicks(S.picks); resetWorld(); saveS(); setWho();
   gate(null); graceUntil=performance.now()+2000; goFull(); canvas.focus({preventScroll:true}); intro();
 });
@@ -883,8 +910,8 @@ function showResult(){
   $('resMeta').textContent=`Lớp ${S.cls} · SBD ${S.sbd}`;
   $('resScore').textContent=r.ok;
   const by=[1,2,3].map(L=>{ const ix=STATIONS.filter(s=>s.lesson===L).map(s=>s.n-1); return `${ix.filter(i=>S.status[i]==='ok').length}/${ix.length}`; });
-  $('resGrid').innerHTML=`<dt>Câu đúng (+1 điểm/câu)</dt><dd>${r.ok}</dd><dt>Câu sai</dt><dd>${r.bad}</dd><dt>Chưa trả lời</dt><dd>${r.none}</dd>
-    <dt>Bài 1 · Bài 2 · Bài 3</dt><dd>${by.join(' · ')}</dd><dt>Thời gian làm bài</dt><dd>${r.used}</dd><dt>Số lần rời màn hình</dt><dd>${S.violations||0}</dd>`;
+  $('resGrid').innerHTML=`<div><dt>Đúng</dt><dd>${r.ok}</dd></div><div><dt>Sai</dt><dd>${r.bad}</dd></div><div><dt>Chưa làm</dt><dd>${r.none}</dd></div>
+    <div class="wide"><dt>Thời gian ${r.used}</dt><dd>Rời màn hình: ${S.violations||0} lần</dd></div>`;
   $('resErr').textContent=''; $('newForm').hidden=true; $('leaveMsg').hidden=true; $('bQuit').hidden=true; gate('gResult'); setSend(S.sent===true?'ok':S.sent==='maybe'?'maybe':SHEET_URL?'idle':'none');
   $('timer').textContent=mmss(S.deadline-S.endedAt); $('timer').classList.remove('warn');
 }
@@ -910,7 +937,7 @@ function textify(h){
 }
 function buildReport(){
   const r=resultText(), d=new Date(S.endedAt);
-  return {id:S.id,name:S.name,cls:S.cls,sbd:S.sbd,score:r.ok,correct:r.ok,wrong:r.bad,none:r.none,used:r.used,violations:S.violations||0,
+  return {action:'submit',ticket:S.ticket||'',id:S.id,name:S.name,cls:S.cls,sbd:S.sbd,score:r.ok,correct:r.ok,wrong:r.bad,none:r.none,used:r.used,violations:S.violations||0,
     reason:{time:'Hết thời gian',violation:'Rời màn hình lần 2',exit:'Nộp bài và thoát'}[S.reason]||'Hoàn thành',
     finishedAt:d.toLocaleString('vi-VN'),
     items:STATIONS.map((s,i)=>({n:s.n,place:s.place,lesson:s.lesson,q:textify(s.q),opts:s.o.map(textify),correct:s.a,chosen:(S.ans||[])[i]??null,point:S.status[i]==='ok'?1:0,explain:s.e}))};
@@ -931,15 +958,16 @@ async function sendResult(){
   if(!SHEET_URL){ setSend('none'); return; }
   if(sending) return; sending=true; setSend('sending');
   const body=JSON.stringify(buildReport()), headers={'Content-Type':'text/plain;charset=utf-8'};
+  let j=null;
   try{
     const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});
-    const j=await res.json();
-    if(!j.ok) throw new Error(j.error||'máy chủ báo lỗi');
-    S.sent=true; saveS(); setSend('ok');
-  }catch(err){
-    try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers}); S.sent='maybe'; saveS(); setSend('maybe'); }
-    catch(e2){ setSend('fail',navigator.onLine===false?'máy đang mất mạng':''); }
-  }finally{ sending=false; }
+    j=await res.json();
+  }catch(err){ j=null; }
+  if(j && j.ok){ S.sent=true; saveS(); setSend('ok'); sending=false; return; }
+  if(j && !j.ok){ setSend('fail',j.error||'máy chủ từ chối'); sending=false; return; }
+  try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers}); S.sent='maybe'; saveS(); setSend('maybe'); }
+  catch(e2){ setSend('fail',navigator.onLine===false?'máy đang mất mạng':''); }
+  sending=false;
 }
 $('bResend').addEventListener('click',()=>{ S.sent=false; sendResult(); });
 addEventListener('online',()=>{ if(S && S.state==='done' && S.sent!==true) sendResult(); });
