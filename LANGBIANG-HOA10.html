@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<!-- =====================================================================
+     ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Để trống '' thì trò chơi không gửi kết quả. (Đang dùng chung địa chỉ với DAINOI-HOA10.html)
+     ===================================================================== -->
+<script>
+window.CAU_HINH = {
+  SHEET_URL: 'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'
+};
+</script>
 </head>
 <body>
 <title>Langbiang 3D</title>
@@ -126,7 +136,8 @@ button{font-family:var(--f-body)}
 .res{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
 .res dt{color:var(--hud-muted)}.res dd{margin:0;font-weight:600}
 .big{font-family:var(--f-data);font-size:30px;font-weight:700;color:var(--accent);line-height:1}
-.btn.submit{display:block;text-align:center;text-decoration:none;font-size:14px;padding:10px 14px}
+.sendst{margin:0;font-size:12.5px;line-height:1.45;padding:7px 9px;border-radius:7px;background:rgba(255,255,255,.1)}
+.sendst.ok{background:rgba(127,209,166,.22)}.sendst.fail{background:rgba(255,154,138,.22)}
 .qlist{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
 .qlist span{font-family:var(--f-data);font-size:11.5px;text-align:center;padding:3px 0;border-radius:5px;border:1px solid var(--glass-line)}
 .qlist .ok{border-color:var(--pine);color:var(--pine)}.qlist .no{border-color:var(--bad);color:var(--bad)}
@@ -170,13 +181,9 @@ button{font-family:var(--f-body)}
     <h2 id="finTitle">Bài làm đã kết thúc</h2>
     <span id="finWhy" style="font-size:12.5px;color:var(--hud-muted)"></span>
     <dl class="res" id="finRes"></dl>
-    <div id="submitBox">
-      <p style="margin:0 0 8px">Bấm nút dưới đây để gửi điểm và bài làm cho giáo viên. Một tab mới sẽ mở ra và báo "Đã nộp bài".</p>
-      <a class="btn submit" id="submitLink" href="#" target="_blank" rel="noopener">Nộp bài cho giáo viên</a>
-      <p class="err" id="submitErr"></p>
-    </div>
-    <div id="scoreBox" hidden><div style="display:flex;align-items:baseline;gap:8px"><span class="big" id="finScore">0/10</span><span style="font-size:12.5px;color:var(--hud-muted)">điểm</span></div>
-      <p style="margin:4px 0 0">Đã gửi bài. Em không cần làm gì thêm.</p></div>
+    <div style="display:flex;align-items:baseline;gap:8px"><span class="big" id="finScore">0/10</span><span style="font-size:12.5px;color:var(--hud-muted)">điểm</span></div>
+    <p class="sendst" id="sendSt" aria-live="polite"></p>
+    <button type="button" class="btn ghost" id="bResend" hidden>Gửi lại kết quả</button>
     <label class="field" for="newCode">Người chơi mới: giáo viên nhập mã
       <input id="newCode" type="password" inputmode="numeric" autocomplete="off" placeholder="Mã giáo viên"></label>
     <div class="err" id="newErr"></div>
@@ -190,7 +197,7 @@ button{font-family:var(--f-body)}
     <ul class="rules">
       <li>10 trạm câu hỏi Bài 1–3 (KNTT), rút ngẫu nhiên từ bộ 61 câu (có câu hình ô orbital, dạng AO, mô hình lớp electron), mỗi câu 1 điểm.</li>
       <li>Chỉ được chọn một lần: đúng 1 điểm, sai 0 điểm, rồi đi tiếp. Trò chơi không báo đúng sai từng câu.</li>
-      <li>Kết thúc bài, bấm <b>Nộp bài</b> để gửi điểm và bài làm cho giáo viên.</li>
+      <li>Kết thúc bài, điểm và bài làm tự động gửi cho giáo viên (cần có mạng).</li>
       <li>Thời gian làm bài: 5 phút.</li>
       <li>Rời khỏi màn hình chơi (chuyển tab, thu nhỏ, bấm ra ngoài, tải lại trang) là bài kết thúc và tính điểm ngay.</li>
     </ul>
@@ -462,7 +469,9 @@ FIG.boxes=function(groups,scale){const W=24,H=28,G=12,T=2;let x=4,parts=[];
     const m=lab.match(/^(\d[spdf])(\d+)?$/);
     parts.push('<text x="'+((x0+x)/2)+'" y="'+(T+H+17)+'" text-anchor="middle" font-size="13" fill="currentColor" font-family="sans-serif">'+(m?m[1]+(m[2]?'<tspan dy="-5" font-size="9">'+m[2]+'</tspan>':''):lab)+'</text>');
     x+=G;});
-  const w=x-G+4,h=H+24,k=scale||1;return '<svg class="fig" viewBox="0 0 '+w+' '+h+'" width="'+Math.round(w*k)+'" height="'+Math.round(h*k)+'" role="img" aria-label="sơ đồ ô orbital">'+parts.join('')+'</svg>';};
+  const SUPN={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'};
+  const alt='Sơ đồ ô orbital: '+groups.map(([lab,...bx])=>lab.replace(/^(\d[spdf])(\d+)$/,(m,a,b)=>a+[...b].map(c=>SUPN[c]).join(''))+' '+bx.map(b=>'['+(b.replace(/u/g,'↑').replace(/d/g,'↓')||' ')+']').join('')).join('  ');
+  const w=x-G+4,h=H+24,k=scale||1;return '<svg data-alt="'+alt+'" class="fig" viewBox="0 0 '+w+' '+h+'" width="'+Math.round(w*k)+'" height="'+Math.round(h*k)+'" role="img" aria-label="sơ đồ ô orbital">'+parts.join('')+'</svg>';};
 // dạng AO: 's','px','py','pz' – trục x chéo xuống trái, y ngang, z thẳng đứng; thùy tô gạch chéo
 FIG.ao=function(t){const id='h'+t+Math.floor(Math.random()*1e6);
   const hatch='<defs><pattern id="'+id+'" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="currentColor" stroke-width="1.1"/></pattern></defs>';
@@ -474,12 +483,12 @@ FIG.ao=function(t){const id='h'+t+Math.floor(Math.random()*1e6);
   if(t==='pz')body=lobe(12,24,0,0,-24)+lobe(12,24,0,0,24);
   if(t==='py')body=lobe(24,12,0,24,0)+lobe(24,12,0,-24,0);
   if(t==='px')body=lobe(12,24,45,-17,17)+lobe(12,24,45,17,-17);
-  return '<svg class="fig" viewBox="0 0 120 112" width="120" height="112" role="img" aria-label="hình dạng orbital">'+hatch+ax+body+'</svg>';};
+  return '<svg data-alt="Hình dạng orbital: AO '+t+'" class="fig" viewBox="0 0 120 112" width="120" height="112" role="img" aria-label="hình dạng orbital">'+hatch+ax+body+'</svg>';};
 // mô hình lớp electron: điện tích hạt nhân + số electron từng lớp
 FIG.shells=function(Z,counts){const cx=80,cy=80;let s='<circle cx="'+cx+'" cy="'+cy+'" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" font-family="sans-serif">+'+Z+'</text>';
   counts.forEach((n,k)=>{const r=26+k*20;s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>';
     for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n+(k%2?Math.PI/n:0);s+='<circle cx="'+(cx+r*Math.cos(a)).toFixed(1)+'" cy="'+(cy+r*Math.sin(a)).toFixed(1)+'" r="3.6" fill="currentColor"/>';}});
-  return '<svg class="fig" viewBox="0 0 160 160" width="150" height="150" role="img" aria-label="mô hình các lớp electron">'+s+'</svg>';};
+  return '<svg data-alt="Mô hình lớp electron: hạt nhân +'+Z+', các lớp '+counts.join(', ')+'" class="fig" viewBox="0 0 160 160" width="150" height="150" role="img" aria-label="mô hình các lớp electron">'+s+'</svg>';};
 const BANK=[
  // ---------- Bài 1 (17 câu) ----------
  [1,'Nguyên tử chứa những hạt mang điện là',['proton và electron','proton và hạt α','proton và neutron','electron và neutron'],'Proton mang điện tích dương, electron mang điện tích âm, neutron không mang điện.'],
@@ -681,19 +690,44 @@ function tickTimer(){if(!loggedIn)return;const left=finished?LIMIT-(endAt-startA
 const finEl2=document.getElementById('finish'),loginEl=document.getElementById('login');
 function finishGame(why){if(finished)return;finished=true;endReason=why;endAt=Math.min(Date.now(),startAt+LIMIT);playing=false;for(const k in keys)keys[k]=0;
   quizEl.hidden=true;quizOpen=false;qOpts.innerHTML='';qText.innerHTML='';qFeed.hidden=true;locked=false;save();showResults();}
-// Địa chỉ Web App (Google Apps Script) của giáo viên, dạng https://script.google.com/macros/s/.../exec
-const WEBAPP_URL='';
-let attemptId='',submitted=false;
-function payload(){return JSON.stringify({v:1,id:attemptId,name:player.name,cls:player.cls,sbd:player.sbd,start:startAt,end:endAt,reason:endReason,
-  a:stations.map(q=>[q.qid,q.perm.join(''),q.done?q.choice:null])});}
-function showScore(){document.getElementById('submitBox').hidden=true;document.getElementById('scoreBox').hidden=false;
-  document.getElementById('finScore').textContent=score()+'/'+stations.length;}
+/* ---------- gửi kết quả + bài làm lên Google Sheet (cùng cách với Đại Nội Huế 3D) ----------
+   Địa chỉ Web app đặt ở window.CAU_HINH.SHEET_URL trong phần <head> của file. Để trống thì không gửi. */
+const SHEET_URL=((window.CAU_HINH||{}).SHEET_URL||'').trim();
+let attemptId='',submitted=false,sending=false;
+const SUPC={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹','−':'⁻'},SUBC={0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',5:'₅',6:'₆',7:'₇',8:'₈',9:'₉',x:'ₓ',y:'ᵧ',z:'z'};
+function textify(h){return String(h)
+  .replace(/<svg[^>]*data-alt="([^"]*)"[\s\S]*?<\/svg>/g,' $1 ')
+  .replace(/<span class="iso"><sup>(.*?)<\/sup><sub>(.*?)<\/sub><\/span>/g,(m,a,z)=>[...a].map(c=>SUPC[c]||c).join('')+[...z].map(c=>SUBC[c]||c).join(''))
+  .replace(/<sup>(.*?)<\/sup>/g,(m,x)=>[...x].map(c=>SUPC[c]||c).join('')).replace(/<sub>(.*?)<\/sub>/g,(m,x)=>[...x].map(c=>SUBC[c]||c).join(''))
+  .replace(/<br>/g,' ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();}
+function buildReport(){const ok=score(),done=stations.filter(q=>q.done).length;
+  return {game:'Leo Langbiang',id:attemptId,name:player.name,cls:player.cls,sbd:player.sbd,score:ok,correct:ok,wrong:done-ok,none:stations.length-done,
+    used:mmss(endAt-startAt),violations:endReason==='leave'?1:0,
+    reason:{time:'Hết thời gian',leave:'Rời màn hình',exit:'Nộp bài và thoát',peak:'Hoàn thành'}[endReason]||'Hoàn thành',
+    finishedAt:new Date(endAt).toLocaleString('vi-VN'),
+    items:stations.map((q,i)=>({n:i+1,place:'Trạm '+(i+1),lesson:BANK[q.qid][0],q:textify(q.q),opts:q.o.map(textify),correct:q.a,
+      chosen:q.done?q.choice:null,point:q.done&&q.choice===q.a?1:0,explain:textify(q.e)}))};}
+function setSend(st,extra){const el=document.getElementById('sendSt'),b=document.getElementById('bResend');
+  el.textContent={none:'Chưa cài địa chỉ Google Sheet nên kết quả chỉ lưu trên máy này. Hãy chụp màn hình gửi giáo viên.',
+    idle:'Kết quả chưa được gửi.',sending:'Đang gửi kết quả cho giáo viên…',ok:'Đã gửi kết quả và bài làm cho giáo viên ✓',
+    maybe:'Đã gửi kết quả nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy bài của em, hãy bấm Gửi lại.',
+    fail:'Chưa gửi được kết quả'+(extra?' ('+extra+')':'')+'. Kiểm tra mạng rồi bấm Gửi lại.'}[st];
+  el.className='sendst'+(st==='ok'?' ok':st==='fail'?' fail':'');
+  b.hidden=!(SHEET_URL&&(st==='fail'||st==='maybe'||st==='idle'));}
+async function sendResult(){if(!finished||!player)return;if(!SHEET_URL){setSend('none');return;}
+  if(sending)return;sending=true;setSend('sending');
+  const body=JSON.stringify(buildReport()),headers={'Content-Type':'text/plain;charset=utf-8'};
+  try{const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});const j=await res.json();
+    if(!j.ok)throw new Error(j.error||'máy chủ báo lỗi');submitted=true;save();setSend('ok');}
+  catch(err){try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers});submitted='maybe';save();setSend('maybe');}
+    catch(e2){setSend('fail',navigator.onLine===false?'máy đang mất mạng':'');}}
+  finally{sending=false;}}
+document.getElementById('bResend').addEventListener('click',()=>{submitted=false;sendResult();});
+addEventListener('online',()=>{if(finished&&submitted!==true)sendResult();});
 function showResults(){dpad.hidden=true;
-  const link=document.getElementById('submitLink');
-  if(WEBAPP_URL){link.href=WEBAPP_URL+'?d='+encodeURIComponent(payload());}
-  else{link.removeAttribute('href');document.getElementById('submitErr').textContent='Giáo viên chưa cài địa chỉ nhận bài. Hãy báo giáo viên.';}
-  link.onclick=()=>{if(!WEBAPP_URL)return false;submitted=true;save();setTimeout(showScore,600);};
-  if(submitted)showScore();
+  document.getElementById('finScore').textContent=score()+'/'+stations.length;
+  setSend(submitted===true?'ok':submitted==='maybe'?'maybe':SHEET_URL?'idle':'none');
+  if(submitted!==true)sendResult();
   document.getElementById('finWhy').textContent={time:'Hết giờ',leave:'Kết thúc do rời khỏi màn hình chơi',exit:'Đã thoát trò chơi',peak:'Đã lên tới đỉnh 2.167 m'}[endReason]||'';
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   document.getElementById('finRes').innerHTML='<dt>Họ tên</dt><dd>'+esc(player.name)+'</dd><dt>Lớp</dt><dd>'+esc(player.cls)+'</dd><dt>SBD</dt><dd>'+esc(player.sbd)+'</dd>'+
@@ -729,7 +763,7 @@ addEventListener('blur',()=>{setTimeout(()=>{if(!document.hasFocus())lockGame();
 /* ---- khôi phục khi tải lại trang: vẫn bị khóa, không làm lại từ đầu được ---- */
 (function restore(){let d=null;try{d=JSON.parse(localStorage.getItem(SKEY)||'null');}catch(e){}
   dpad.hidden=true;if(!d||!d.player)return;
-  player=d.player;attemptId=d.id||'';submitted=!!d.sub;qset=d.set||drawSet();applySet(qset);startAt=d.startAt;leaves=d.leaves||0;endReason=d.endReason||'';endAt=d.endAt||0;
+  player=d.player;attemptId=d.id||'';submitted=d.sub===true?true:d.sub==='maybe'?'maybe':false;qset=d.set||drawSet();applySet(qset);startAt=d.startAt;leaves=d.leaves||0;endReason=d.endReason||'';endAt=d.endAt||0;
   (d.ans||[]).forEach((a,i)=>{if(a&&stations[i]){stations[i].done=true;stations[i].choice=a.c;paintStation(stations[i]);}});
   loggedIn=true;loginEl.hidden=true;renderCount();setProgress(Math.min(d.progress||0,lockT()),true);
   if(d.finished){finished=true;tickTimer();showResults();return;}
