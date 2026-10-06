@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Langbiang 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: full-bleed 3D scene; HUD is a set of small see-through glass chips pinned to the corners so the landscape stays visible */
+:root{
+  --bg:#dfe7e3; --ink:#16241f;
+  --glass:rgba(12,20,17,.26); --glass-strong:rgba(12,20,17,.5); --glass-line:rgba(255,255,255,.22);
+  --hud:#ffffff; --hud-muted:rgba(255,255,255,.72); --shadow:0 1px 2px rgba(0,0,0,.55);
+  --pine:#7fd1a6; --accent:#f08a4b; --bad:#ff9a8a; --soft:rgba(255,255,255,.1);
+  --f-body:"Be Vietnam Pro",system-ui,sans-serif; --f-data:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1714; --ink:#e7efe9; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1714; --ink:#e7efe9; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow:hidden}
+#scene{position:fixed;inset:0;touch-action:none;cursor:grab}
+#scene:active{cursor:grabbing}
+canvas{display:block}
+.panel{background:var(--glass);backdrop-filter:blur(5px) saturate(1.2);-webkit-backdrop-filter:blur(5px) saturate(1.2);border:1px solid var(--glass-line);border-radius:9px;color:var(--hud);text-shadow:var(--shadow)}
+button{font-family:var(--f-body)}
+:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+
+/* title chip (tap to open the stop description) */
+.title{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));max-width:min(300px,calc(100% - 110px));padding:6px 10px;font-size:12px}
+.title summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.title summary::-webkit-details-marker{display:none}
+.title .row{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.title .peak{font-weight:800;letter-spacing:.01em}
+#stopname{font-weight:500;color:var(--hud-muted);overflow:hidden;text-overflow:ellipsis}
+.title .more{margin-left:auto;font-size:10px;color:var(--hud-muted)}
+.title[open] .more{transform:rotate(180deg)}
+#desc{margin:6px 0 0;font-size:12px;line-height:1.45;color:var(--hud)}
+#desc small{display:block;margin-top:4px;color:var(--hud-muted)}
+.qdots{display:flex;gap:3px}
+.qdots i{width:7px;height:7px;border-radius:50%;border:1.2px solid var(--hud-muted);display:block}
+.qdots i.done{background:var(--pine);border-color:var(--pine)}
+.qdots i.cur{border-color:var(--accent);background:var(--accent)}
+#qcountText{font-family:var(--f-data);font-size:10.5px;color:var(--hud-muted)}
+
+/* altitude chip */
+.gauge{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));padding:6px 8px;display:flex;align-items:center;gap:7px}
+#alt{font-family:var(--f-data);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.gauge .u{font-size:10px;color:var(--hud-muted)}
+.bar{position:relative;width:5px;height:56px;border-radius:3px;background:linear-gradient(to top,rgba(143,174,106,.8),rgba(47,107,79,.8) 45%,rgba(207,214,196,.8))}
+#marker{position:absolute;left:-4px;width:13px;height:2px;background:var(--accent);border-radius:1px;transition:bottom .1s linear}
+
+/* bottom rail */
+.rail{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:5px 8px;display:flex;align-items:center;gap:8px}
+#play{flex:none;font-size:11.5px;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:6px;padding:5px 9px;cursor:pointer;text-shadow:none}
+#prog{flex:1;min-width:60px;height:14px;accent-color:var(--accent);opacity:.9}
+.stops{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:0 1 auto;min-width:0}
+.stops::-webkit-scrollbar{display:none}
+.stop{flex:none;font-size:11px;background:transparent;color:var(--hud);border:1px solid var(--glass-line);border-radius:5px;padding:3px 7px;cursor:pointer;text-shadow:var(--shadow);white-space:nowrap}
+.stop b{font-weight:600}
+.stop span{display:none}
+.stop.on{border-color:var(--accent);color:#fff;background:rgba(240,138,75,.35)}
+
+/* labels in the scene */
+.tag{position:fixed;left:0;top:0;pointer-events:none;transform:translate(-50%,-100%);font-size:10px;font-weight:600;color:#fff;background:rgba(12,20,17,.35);padding:2px 6px;border-radius:4px;white-space:nowrap;text-shadow:var(--shadow)}
+
+/* d-pad */
+.dpad{position:fixed;right:12px;display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,34px);gap:4px;padding:0;background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none;touch-action:none;user-select:none;-webkit-user-select:none}
+.dpad button{font-size:13px;color:#fff;background:var(--glass);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:1px solid var(--glass-line);border-radius:8px;cursor:pointer;touch-action:none;text-shadow:var(--shadow)}
+.dpad button.held{background:var(--accent);border-color:var(--accent)}
+#kUp{grid-column:2;grid-row:1}#kLeft{grid-column:1;grid-row:2}#kDown{grid-column:2;grid-row:2}#kRight{grid-column:3;grid-row:2}
+
+/* quiz card: a bit denser glass so the text stays readable over bright sky */
+.quiz{position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 24px));max-height:min(62vh,520px);overflow:auto;padding:11px 13px;display:flex;flex-direction:column;gap:8px;z-index:5;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.q-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.q-num{font-family:var(--f-data);font-weight:700;font-size:11.5px;color:var(--accent)}
+.q-bai{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--hud-muted)}
+#qText{margin:0;font-size:14.5px;line-height:1.45;font-weight:600;text-wrap:pretty}
+.q-opts{display:grid;gap:5px}
+.q-opt{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:13.5px;line-height:1.4;color:var(--hud);background:rgba(255,255,255,.06);border:1px solid var(--glass-line);border-radius:7px;padding:6px 9px;cursor:pointer;text-shadow:var(--shadow)}
+.quiz:focus{outline:none}
+.q-opt:focus-visible{outline:2px dashed var(--hud);outline-offset:1px}
+.q-opt:hover:not(:disabled){border-color:var(--pine);background:rgba(255,255,255,.12)}
+.q-opt kbd{flex:none;font:700 11px var(--f-data);width:18px;height:18px;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.18);text-shadow:none}
+.q-opt.wrong{border-color:var(--bad);color:var(--hud-muted);text-decoration:line-through;text-decoration-color:var(--bad)}
+.q-opt.wrong kbd{background:var(--bad);color:#2a0d08}
+.q-opt.right{border-color:var(--pine);background:rgba(127,209,166,.18)}
+.q-opt.right kbd{background:var(--pine);color:#0d2418}
+.q-opt:disabled{cursor:default}
+.q-opt.picked{border-color:var(--hud);background:rgba(255,255,255,.16)}
+.q-opt.picked kbd{background:var(--hud);color:#16241f}
+.q-feed{font-size:13px;line-height:1.5;padding:7px 9px;border-radius:7px;background:var(--soft)}
+.q-feed b{display:block;margin-bottom:1px}
+.q-feed.bad b{color:var(--bad)}.q-feed.good b{color:var(--pine)}
+.q-actions{display:flex;justify-content:flex-end;gap:6px}
+.btn{font-size:12.5px;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:7px;padding:6px 12px;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--glass-line);text-shadow:var(--shadow)}
+.fig{display:block;max-width:100%;height:auto;margin:6px 0 2px;color:inherit}
+#qText .fig{margin:8px auto 2px}
+.q-opt .fig{margin:0}
+.iso{display:inline-flex;flex-direction:column;align-items:flex-end;font-size:.66em;line-height:1.05;vertical-align:-.4em;margin-right:1px}
+.iso sup,.iso sub{font-size:1em;vertical-align:baseline;line-height:1.05}
+.done-title{font-weight:800;font-size:17px;margin:0;text-wrap:balance}
+.qdots i.wrong{background:var(--bad);border-color:var(--bad)}
+#score{font-family:var(--f-data);font-weight:700;font-size:11px;color:var(--accent);margin-left:2px}
+.timer{font-family:var(--f-data);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;padding-right:7px;margin-right:1px;border-right:1px solid var(--glass-line)}
+.timer.low{color:var(--bad)}
+.exit{flex:none;font-size:11.5px;font-weight:700;color:#fff;background:rgba(168,68,58,.75);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 9px;cursor:pointer}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(8,14,12,.28)}
+.overlay.lock{background:rgba(8,14,12,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card{width:min(380px,100%);padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card h2{margin:0;font-size:17px;font-weight:800;text-wrap:balance}
+.card p{margin:0;font-size:12.5px;line-height:1.5;color:var(--hud-muted)}
+.field{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--hud-muted)}
+.field input,.field select{font:500 14px var(--f-body);color:#fff;background:rgba(255,255,255,.1);border:1px solid var(--glass-line);border-radius:7px;padding:7px 9px;text-shadow:none}
+.field select option{color:#16241f;background:#fff}
+.field input::placeholder{color:rgba(255,255,255,.45)}
+.sbd{display:flex;align-items:stretch;border:1px solid var(--glass-line);border-radius:7px;overflow:hidden;background:rgba(255,255,255,.1)}
+#sbdPrefix{font:700 15px var(--f-data);letter-spacing:.08em;color:var(--hud-muted);padding:7px 2px 7px 10px;user-select:none;-webkit-user-select:none;background:rgba(255,255,255,.06)}
+.sbd input{flex:1;min-width:0;width:3.2em;font:700 15px var(--f-data)!important;letter-spacing:.08em;border:0!important;border-radius:0!important;background:transparent!important;padding:7px 8px 7px 2px!important}
+.sbd input:disabled{opacity:.5}
+.err{font-size:12px;color:var(--bad);min-height:1em}
+.rules{margin:0;padding-left:16px;font-size:12px;line-height:1.55;color:var(--hud)}
+.res{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
+.res dt{color:var(--hud-muted)}.res dd{margin:0;font-weight:600}
+.big{font-family:var(--f-data);font-size:30px;font-weight:700;color:var(--accent);line-height:1}
+.btn.submit{display:block;text-align:center;text-decoration:none;font-size:14px;padding:10px 14px}
+.qlist{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.qlist span{font-family:var(--f-data);font-size:11.5px;text-align:center;padding:3px 0;border-radius:5px;border:1px solid var(--glass-line)}
+.qlist .ok{border-color:var(--pine);color:var(--pine)}.qlist .no{border-color:var(--bad);color:var(--bad)}
+@media (max-width:560px){.stops{display:none}}
+@media (prefers-reduced-motion:reduce){#marker{transition:none}}
+</style>
+<div id="scene" tabindex="0" aria-label="Mô hình 3D núi Langbiang, kéo để xoay, cuộn để phóng to"></div>
+<div id="tags"></div>
+
+<details class="title panel">
+  <summary>
+    <span class="row"><span class="peak">Langbiang</span><span id="stopname">Chân núi</span><span class="more" aria-hidden="true">▾</span></span>
+    <span class="row"><span class="qdots" id="qdots"></span><span id="qcountText">0/10</span><span id="score" hidden></span></span>
+  </summary>
+  <p id="desc"><span id="stoptext"></span><small>Hóa 10 KNTT · Bài 1–3. Phím ↑ ↓ để đi, ← → để xoay. Mỗi trạm có 1 câu, đúng được 1 điểm, sai 0 điểm. Thời gian 5 phút. Điểm và bài làm được gửi cho giáo viên.</small></p>
+</details>
+
+<aside class="gauge panel" aria-label="Thời gian và độ cao">
+  <div class="timer" id="timer" aria-label="Thời gian còn lại">5:00</div>
+  <div class="bar"><div id="marker"></div></div>
+  <div><div id="alt">0</div><div class="u">mét</div></div>
+</aside>
+
+<nav class="rail panel" aria-label="Hành trình">
+  <button id="play" type="button">▶ Leo núi</button>
+  <input id="prog" type="range" min="0" max="1000" value="0" aria-label="Vị trí trên đường lên đỉnh">
+  <div class="stops" id="stops"></div>
+  <button id="exitBtn" class="exit" type="button">Thoát</button>
+</nav>
+
+<div class="quiz panel" id="quiz" tabindex="-1" hidden role="dialog" aria-modal="true" aria-labelledby="qText">
+  <div class="q-head"><span class="q-num" id="qNum">Trạm 1/10</span><span class="q-bai" id="qBai"></span></div>
+  <p id="qText"></p>
+  <div class="q-opts" id="qOpts"></div>
+  <div class="q-feed" id="qFeed" hidden></div>
+  <div class="q-actions"><button class="btn" id="qNext" type="button" hidden>Đi tiếp ▲</button></div>
+</div>
+
+<div class="overlay" id="finish" hidden>
+  <div class="card panel" role="dialog" aria-labelledby="finTitle">
+    <h2 id="finTitle">Bài làm đã kết thúc</h2>
+    <span id="finWhy" style="font-size:12.5px;color:var(--hud-muted)"></span>
+    <dl class="res" id="finRes"></dl>
+    <div id="submitBox">
+      <p style="margin:0 0 8px">Bấm nút dưới đây để gửi điểm và bài làm cho giáo viên. Một tab mới sẽ mở ra và báo "Đã nộp bài".</p>
+      <a class="btn submit" id="submitLink" href="#" target="_blank" rel="noopener">Nộp bài cho giáo viên</a>
+      <p class="err" id="submitErr"></p>
+    </div>
+    <div id="scoreBox" hidden><div style="display:flex;align-items:baseline;gap:8px"><span class="big" id="finScore">0/10</span><span style="font-size:12.5px;color:var(--hud-muted)">điểm</span></div>
+      <p style="margin:4px 0 0">Đã gửi bài. Em không cần làm gì thêm.</p></div>
+    <label class="field" for="newCode">Người chơi mới: giáo viên nhập mã
+      <input id="newCode" type="password" inputmode="numeric" autocomplete="off" placeholder="Mã giáo viên"></label>
+    <div class="err" id="newErr"></div>
+    <div class="q-actions"><button class="btn" id="newPlayer" type="button">Người chơi mới</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="login">
+  <form class="card panel" id="loginForm" novalidate aria-labelledby="loginTitle">
+    <h2 id="loginTitle">Chinh phục Langbiang · Hóa 10</h2>
+    <ul class="rules">
+      <li>10 trạm câu hỏi Bài 1–3 (KNTT), rút ngẫu nhiên từ bộ 61 câu (có câu hình ô orbital, dạng AO, mô hình lớp electron), mỗi câu 1 điểm.</li>
+      <li>Chỉ được chọn một lần: đúng 1 điểm, sai 0 điểm, rồi đi tiếp. Trò chơi không báo đúng sai từng câu.</li>
+      <li>Kết thúc bài, bấm <b>Nộp bài</b> để gửi điểm và bài làm cho giáo viên.</li>
+      <li>Thời gian làm bài: 5 phút.</li>
+      <li>Rời khỏi màn hình chơi (chuyển tab, thu nhỏ, bấm ra ngoài, tải lại trang) là bài kết thúc và tính điểm ngay.</li>
+    </ul>
+    <label class="field" for="fName">Họ và tên<input id="fName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"></label>
+    <label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
+    <label class="field" for="fSbd">Số báo danh (chọn lớp trước, rồi nhập 2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label>
+    <div class="err" id="loginErr"></div>
+    <div class="q-actions"><button class="btn" type="submit">Bắt đầu leo núi</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="exitAsk" hidden>
+  <div class="card panel" role="alertdialog" aria-labelledby="exitTitle">
+    <h2 id="exitTitle">Thoát khỏi trò chơi?</h2>
+    <p>Bài làm sẽ kết thúc ngay và điểm hiện tại được ghi nhận. Không thể quay lại làm tiếp.</p>
+    <div class="q-actions"><button class="btn ghost" id="exitNo" type="button">Ở lại chơi</button><button class="btn" id="exitYes" type="button">Thoát và xem điểm</button></div>
+  </div>
+</div>
+
+
+
+<div class="dpad" id="dpad" aria-label="Điều khiển người leo núi">
+  <button type="button" id="kUp" data-k="up" aria-label="Đi lên">▲</button>
+  <button type="button" id="kLeft" data-k="left" aria-label="Xoay trái">◀</button>
+  <button type="button" id="kDown" data-k="down" aria-label="Đi xuống">▼</button>
+  <button type="button" id="kRight" data-k="right" aria-label="Xoay phải">▶</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+/* ---------- terrain model (1 unit = 10 m horizontally) ---------- */
+function hash(x,z){let h=Math.sin(x*127.1+z*311.7)*43758.5453;return h-Math.floor(h);}
+function vnoise(x,z){const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi;const u=xf*xf*(3-2*xf),v=zf*zf*(3-2*zf);
+ const a=hash(xi,zi),b=hash(xi+1,zi),c=hash(xi,zi+1),d=hash(xi+1,zi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
+function fbm(x,z,o){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*(vnoise(x*f,z*f)*2-1);f*=2.03;a*=.5;}return s;}
+function bump(x,z,cx,cz,h,r){return h*Math.exp(-((x-cx)**2+(z-cz)**2)/(r*r));}
+function elevRaw(x,z){
+  let e=1440+25*fbm(x*.008,z*.008,4);
+  const mass=bump(x,z,30,-110,330,230); e+=mass;
+  e+=bump(x,z,50,-130,345,62);   // đỉnh Lang
+  e+=bump(x,z,160,-90,240,62);   // đỉnh Biang
+  e+=bump(x,z,105,-110,90,55);   // yên ngựa
+  e+=bump(x,z,-30,10,220,50);    // đồi Radar
+  e+=bump(x,z,-60,-60,90,80);
+  e+=Math.min(1,mass/250)*45*fbm(x*.03+7,z*.03,5);
+  return e;
+}
+const toMeters=e=>1929+(e-1937)*1.0531;   // hiệu chỉnh để Radar ≈ 1929 m, Langbiang ≈ 2167 m
+const VS=0.16, BASE=1400;
+const hY=(x,z)=>(elevRaw(x,z)-BASE)*VS;
+
+/* ---------- renderer & scene ---------- */
+const host=document.getElementById('scene');
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+host.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const FOG=new THREE.Color('#c9d8d6');
+scene.fog=new THREE.FogExp2(FOG,0.0032);
+const camera=new THREE.PerspectiveCamera(55,1,0.1,3000);
+
+// sky dome
+const sky=new THREE.Mesh(new THREE.SphereGeometry(1500,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
+ uniforms:{top:{value:new THREE.Color('#6f9fc8')},mid:{value:new THREE.Color('#bcd3dc')},bot:{value:FOG}},
+ vertexShader:'varying vec3 p;void main(){p=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'uniform vec3 top,mid,bot;varying vec3 p;void main(){float h=p.y;vec3 c=h>0.08?mix(mid,top,smoothstep(.08,.6,h)):mix(bot,mid,smoothstep(-.05,.08,h));gl_FragColor=vec4(c,1.);}'}));
+scene.add(sky);
+
+scene.add(new THREE.HemisphereLight('#e8f1ff','#4b5a3a',0.75));
+const sun=new THREE.DirectionalLight('#fff1d6',1.05); sun.position.set(-300,260,180); scene.add(sun);
+
+/* ---------- terrain mesh ---------- */
+const SIZE=640, SEG=256;
+const g=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG); g.rotateX(-Math.PI/2);
+const pos=g.attributes.position, cols=new Float32Array(pos.count*3);
+const c=new THREE.Color(), tmp=new THREE.Color();
+const C={field1:new THREE.Color('#8fae5c'),field2:new THREE.Color('#6f8f45'),soil:new THREE.Color('#9b7a52'),
+ pine:new THREE.Color('#2f5a3c'),pineDark:new THREE.Color('#244a31'),grass:new THREE.Color('#9aa572'),rock:new THREE.Color('#8b8676'),dry:new THREE.Color('#b7ad7c')};
+for(let i=0;i<pos.count;i++){
+  const x=pos.getX(i),z=pos.getZ(i),e=elevRaw(x,z);
+  pos.setY(i,(e-BASE)*VS);
+  const sl=Math.hypot(elevRaw(x+1,z)-e,elevRaw(x,z+1)-e)/10; // độ dốc (m/m)
+  const n=fbm(x*.05,z*.05,3);
+  if(e<1525){ // thung lũng: ruộng rau thành ô
+    const cell=hash(Math.floor((x+z*.3)/9),Math.floor((z-x*.3)/7));
+    c.copy(cell<.35?C.field1:cell<.7?C.field2:C.soil); c.lerp(C.dry,.15+.15*n);
+  }else if(e<2060){
+    c.copy(C.pine).lerp(C.pineDark,.5+.5*n);
+    if(n>.25) c.lerp(C.grass,.5);
+  }else{ c.copy(C.grass).lerp(C.dry,.3+.3*n); }
+  if(sl>.55) c.lerp(C.rock,Math.min(.6,(sl-.55)*1.5));
+  if(e>=1505&&e<1545) c.lerp(C.field2,(1545-e)/40*.5);
+  cols[i*3]=c.r;cols[i*3+1]=c.g;cols[i*3+2]=c.b;
+}
+g.setAttribute('color',new THREE.BufferAttribute(cols,3)); g.computeVertexNormals();
+scene.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true})));
+
+/* ---------- ground height that matches the terrain mesh exactly ---------- */
+const STEP=SIZE/SEG,GW=SEG+1;
+function groundY(x,z){
+  const gx=Math.max(0,Math.min(SEG-1e-6,(x+SIZE/2)/STEP)),gz=Math.max(0,Math.min(SEG-1e-6,(z+SIZE/2)/STEP));
+  const ix=Math.floor(gx),iz=Math.floor(gz),fx=gx-ix,fz=gz-iz;
+  const H=(i,j)=>pos.getY(j*GW+i);
+  const a=H(ix,iz),b=H(ix,iz+1),cc=H(ix+1,iz+1),d=H(ix+1,iz);
+  return fx+fz<=1?a+(d-a)*fx+(b-a)*fz:cc+(b-cc)*(1-fx)+(d-cc)*(1-fz);
+}
+
+/* ---------- route: đường nhựa có cua tay áo lên Radar, rồi đường mòn đất đỏ lên đỉnh ---------- */
+const WP=[[-200,220],[-172,192],[-140,152],[-118,130],[-96,114],[-72,104],[-90,84],[-64,70],[-82,50],[-54,40],[-64,20],[-40,10],[-30,-8],
+          [-18,-30],[-2,-50],[16,-66],[4,-82],[26,-94],[40,-108],[54,-115],[65,-123]];
+const RADAR_WP=12;
+const flat=new THREE.CatmullRomCurve3(WP.map(([x,z])=>new THREE.Vector3(x,0,z)),false,'centripetal');
+flat.arcLengthDivisions=4000;
+const ROUTE_LEN=flat.getLength();
+const pathPoint=t=>{const p=flat.getPointAt(Math.max(0,Math.min(1,t)));p.y=groundY(p.x,p.z);return p;};
+const N=1400, routePts=[];
+for(let i=0;i<=N;i++){const p=flat.getPointAt(i/N);p.y=groundY(p.x,p.z);routePts.push(p);}
+const nearestT=(x,z)=>{let bi=0,bd=1e9;routePts.forEach((p,i)=>{const d=(p.x-x)**2+(p.z-z)**2;if(d<bd){bd=d;bi=i;}});return bi/N;};
+const tRadar=nearestT(WP[RADAR_WP][0],WP[RADAR_WP][1]);
+function ribbon(t0,t1,width,lift,color,dashed){
+  const n=Math.max(2,Math.round((t1-t0)*ROUTE_LEN/.6)),P=[],Cl=[],idx=[],col=new THREE.Color(color),col2=col.clone().multiplyScalar(.8);
+  for(let i=0;i<=n;i++){const t=t0+(t1-t0)*i/n,p=flat.getPointAt(t),tg=flat.getTangentAt(t);
+    const sx=-tg.z,sz=tg.x,l=Math.hypot(sx,sz)||1;
+    for(const sgn of[-1,1]){const x=p.x+sgn*sx/l*width/2,z=p.z+sgn*sz/l*width/2;P.push(x,groundY(x,z)+lift,z);
+      const k=dashed&&Math.floor(t*ROUTE_LEN/2.2)%2?col2:col;Cl.push(k.r,k.g,k.b);}
+    if(i<n){const a=i*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(Cl,3));
+  geo.setIndex(idx);geo.computeVertexNormals();
+  const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  scene.add(mesh);}
+// lề đất hai bên + mặt đường nhựa + vạch giữa
+ribbon(0,tRadar,4.4,.1,'#9c7b57');
+ribbon(0,tRadar,3.2,.16,'#55534f');
+ribbon(0,tRadar,.18,.2,'#e9e4d2',true);
+// đường mòn đất đỏ bazan
+ribbon(tRadar,1,2.6,.1,'#7f6a48');
+ribbon(tRadar,1,1.5,.16,'#b25a32');
+
+// stops
+let tForest=0;for(let i=0;i<=N;i++){const p=routePts[i];if(toMeters(elevRaw(p.x,p.z))>=1750){tForest=i/N;break;}}
+const STOPS=[
+ {name:'Chân núi',t:nearestT(-118,130),text:'Cổng khu du lịch Langbiang ở thị trấn Lạc Dương, cách trung tâm Đà Lạt khoảng 12 km. Thung lũng phủ ruộng rau và nhà kính trắng.'},
+ {name:'Rừng thông',t:tForest,text:'Đường nhựa ôm cua tay áo, leo dốc xuyên rừng thông ba lá, loài cây đặc trưng của cao nguyên Lâm Viên.'},
+ {name:'Đỉnh Radar',t:tRadar,fixed:'1.929 m',text:'Cuối đường xe jeep. Từ đây nhìn bao quát thung lũng Lạc Dương; đường lên đỉnh chuyển thành lối mòn đất đỏ.'},
+ {name:'Đỉnh Langbiang',t:1,fixed:'2.167 m',text:'Đỉnh cao nhất của khối núi, gắn với truyền thuyết tình yêu K’Lang và H’Biang. Lên đây phải đi bộ theo đường mòn từ Radar.'}
+];
+const fmt=m=>Math.round(m).toLocaleString('vi-VN');
+STOPS.forEach(s=>{const p=pathPoint(s.t);s.p=p;s.alt=s.fixed||('~'+fmt(Math.round(toMeters(elevRaw(p.x,p.z))/10)*10)+' m');
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,8,6),new THREE.MeshLambertMaterial({color:'#f4f1e8'}));
+  const tg=flat.getTangentAt(s.t),ox=-tg.z*3.4,oz=tg.x*3.4;s.side=[p.x+ox,p.z+oz];const gy=groundY(p.x+ox,p.z+oz);pole.position.set(p.x+ox,gy+4,p.z+oz);scene.add(pole);
+  const flag=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.8,.15),new THREE.MeshLambertMaterial({color:'#c8552b'}));
+  flag.position.set(p.x+ox+1.7,gy+7.1,p.z+oz);scene.add(flag);});
+
+/* ---------- pine forest ---------- */
+const rng=(()=>{let s=7;return()=>(s=(s*16807)%2147483647)/2147483647;})();
+const near=(x,z,d)=>{for(let i=0;i<=N;i+=3){const p=routePts[i];if((p.x-x)**2+(p.z-z)**2<d*d)return true;}return false;};
+const treeM=[];const dummy=new THREE.Object3D();
+for(let k=0;k<26000&&treeM.length<9000;k++){
+  const x=(rng()-.5)*SIZE*.96,z=(rng()-.5)*SIZE*.96,e=elevRaw(x,z);
+  if(e<1515||e>2075)continue;
+  const n=fbm(x*.05,z*.05,3); if(n>.25&&rng()<.85)continue;
+  if(e>2000&&rng()<.6)continue;
+  if(near(x,z,5.5))continue;
+  const h=4+rng()*3.2,w=h*(.85+rng()*.35);dummy.position.set(x,groundY(x,z)-.2,z);dummy.scale.set(w,h,w);dummy.rotation.y=rng()*6;dummy.updateMatrix();
+  treeM.push(dummy.matrix.clone());
+}
+// Thông ba lá: thân thẳng cao, tán thưa dồn lên ngọn thành nhiều cụm lá
+function mergeGeos(parts){let n=0;parts.forEach(p=>n+=p.g.attributes.position.count);
+  const P=new Float32Array(n*3),Nr=new Float32Array(n*3),Cl=new Float32Array(n*3);let o=0;
+  parts.forEach(({g,col})=>{const a=g.attributes.position,b=g.attributes.normal;
+    for(let i=0;i<a.count;i++){P[o*3]=a.getX(i);P[o*3+1]=a.getY(i);P[o*3+2]=a.getZ(i);Nr[o*3]=b.getX(i);Nr[o*3+1]=b.getY(i);Nr[o*3+2]=b.getZ(i);
+      const sh=.85+.3*Math.max(0,b.getY(i));Cl[o*3]=col.r*sh;Cl[o*3+1]=col.g*sh;Cl[o*3+2]=col.b*sh;o++;}});
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('normal',new THREE.BufferAttribute(Nr,3));g.setAttribute('color',new THREE.BufferAttribute(Cl,3));return g;}
+function makePine(seed){let s=seed;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  const parts=[],bark=new THREE.Color('#5a3d2b'),m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler();
+  const lean=(r()-.5)*.06;
+  const trunk=new THREE.CylinderGeometry(.018,.04,1,6).toNonIndexed();m.compose(new THREE.Vector3(lean*.5,.5,0),q.setFromEuler(e.set(0,0,lean)),new THREE.Vector3(1,1,1));trunk.applyMatrix4(m);
+  parts.push({g:trunk,col:bark});
+  // vài cành chĩa lên đỡ các cụm lá
+  const clumps=5+Math.floor(r()*4);
+  for(let i=0;i<clumps;i++){
+    const t=i/(clumps-1),y=.5+t*.47+(r()-.5)*.05,ang=r()*Math.PI*2,rad=(1-t)*.2+.04+r()*.05;
+    const cx=Math.cos(ang)*rad+lean*y,cz=Math.sin(ang)*rad;
+    if(rad>.09){const br=new THREE.CylinderGeometry(.006,.012,1,4).toNonIndexed();const from=new THREE.Vector3(lean*(y-.1),y-.1,0),to=new THREE.Vector3(cx,y,cz);
+      const d=to.clone().sub(from);m.compose(from.clone().add(to).multiplyScalar(.5),q.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize()),new THREE.Vector3(1,d.length(),1));br.applyMatrix4(m);parts.push({g:br,col:bark});}
+    const cr=.09+(1-t)*.07+r()*.04;
+    const leaf=new THREE.IcosahedronGeometry(1,0).toNonIndexed();
+    m.compose(new THREE.Vector3(cx,y,cz),q.setFromEuler(e.set(r()*3,r()*3,r()*3)),new THREE.Vector3(cr*1.25,cr*.62,cr*1.25));leaf.applyMatrix4(m);leaf.computeVertexNormals();
+    parts.push({g:leaf,col:new THREE.Color().setHSL(.36+r()*.05,.38,.22+r()*.07)});
+  }
+  return mergeGeos(parts);}
+const VAR=4,pineMat=new THREE.MeshLambertMaterial({vertexColors:true});
+for(let v2=0;v2<VAR;v2++){const list=treeM.filter((_,i)=>i%VAR===v2);
+  const mesh=new THREE.InstancedMesh(makePine(11+v2*977),pineMat,list.length);
+  list.forEach((mx,i)=>{mesh.setMatrixAt(i,mx);const l=.85+rng()*.3;mesh.setColorAt(i,tmp.setRGB(l,l*(.95+rng()*.1),l));});
+  scene.add(mesh);}
+
+/* ---------- greenhouses & houses in the valley ---------- */
+const gh=[],hs=[];
+for(let k=0;k<6000&&(gh.length<260||hs.length<170);k++){
+  const x=-320+rng()*330,z=-40+rng()*360,e=elevRaw(x,z);
+  if(e>1515||near(x,z,5))continue;
+  const dTown=Math.hypot(x+205,z+0-225);
+  if(dTown<55&&hs.length<170)hs.push([x,z]);
+  else if(dTown>40&&gh.length<260&&hash(Math.floor(x/14),Math.floor(z/14))>.45)gh.push([x,z]);
+}
+const ghMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:'#eef1ee'}),gh.length);
+gh.forEach(([x,z],i)=>{const w=5+rng()*4,l=8+rng()*6;dummy.position.set(x,groundY(x,z)+.8,z);dummy.scale.set(w,1.6,l);dummy.rotation.y=.3+(rng()<.5?0:Math.PI/2);dummy.updateMatrix();ghMesh.setMatrixAt(i,dummy.matrix);});
+scene.add(ghMesh);
+const wall=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:'#f2ece0'}),hs.length);
+const roof=new THREE.InstancedMesh(new THREE.ConeGeometry(.8,1,4),new THREE.MeshLambertMaterial({color:'#ffffff'}),hs.length);
+const roofCols=['#b5462e','#a8582f','#5b6f8a','#7a3b2a'];
+hs.forEach(([x,z],i)=>{const s=1.6+rng()*1.4,y=groundY(x,z),r=rng()*6;
+ dummy.position.set(x,y+s*.5,z);dummy.scale.set(s,s,s*1.3);dummy.rotation.y=r;dummy.updateMatrix();wall.setMatrixAt(i,dummy.matrix);
+ dummy.position.set(x,y+s*1.35,z);dummy.scale.set(s*1.25,s*.8,s*1.6);dummy.rotation.y=r+Math.PI/4;dummy.updateMatrix();roof.setMatrixAt(i,dummy.matrix);
+ roof.setColorAt(i,tmp.set(roofCols[i%4]));});
+scene.add(wall,roof);
+
+/* ---------- clouds ---------- */
+const cc=document.createElement('canvas');cc.width=cc.height=128;const cx=cc.getContext('2d');
+const grd=cx.createRadialGradient(64,64,4,64,64,62);grd.addColorStop(0,'rgba(255,255,255,.95)');grd.addColorStop(.5,'rgba(255,255,255,.45)');grd.addColorStop(1,'rgba(255,255,255,0)');
+cx.fillStyle=grd;cx.fillRect(0,0,128,128);
+const cloudTex=new THREE.CanvasTexture(cc);const clouds=[];
+for(let i=0;i<46;i++){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:.5+rng()*.35}));
+ const s=40+rng()*70;m.scale.set(s,s*.45,1);m.position.set((rng()-.5)*700,(1880-BASE)*VS+rng()*55,(rng()-.5)*700);m.userData.v=.6+rng()*.8;scene.add(m);clouds.push(m);}
+
+/* ---------- người leo núi ---------- */
+const hiker=new THREE.Group();
+const L=c=>new THREE.MeshLambertMaterial({color:c});
+const box=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);return o;};
+const mPants=L('#3b4a5a'),mShirt=L('#d9502b'),mSkin=L('#e0b48c'),mBoot=L('#3a2a1f'),mPack=L('#2f5d8a'),mHat=L('#c9b27a'),mPole=L('#cfd3d6');
+function limb(x,y,len,w,mat,foot){const g2=new THREE.Group();g2.position.set(x,y,0);g2.add(box(w,len,w*1.1,mat,0,-len/2,0));
+  if(foot)g2.add(box(w*1.1,.12,w*1.9,mBoot,0,-len+.04,.07));else{const h=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),mSkin);h.position.y=-len;g2.add(h);}return g2;}
+const legL=limb(-.11,.86,.84,.16,mPants,true),legR=limb(.11,.86,.84,.16,mPants,true);
+const armL=limb(-.3,1.42,.56,.12,mShirt),armR=limb(.3,1.42,.56,.12,mShirt);
+const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,1.25,5),mPole);pole.position.set(0,-.56,.12);pole.rotation.x=.25;armR.add(pole);
+hiker.add(legL,legR,armL,armR);
+hiker.add(box(.46,.62,.26,mShirt,0,1.16,0));
+hiker.add(box(.4,.56,.24,mPack,0,1.2,-.24));
+const roll=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.46,8),L('#5c7a3a'));roll.rotation.z=Math.PI/2;roll.position.set(0,1.54,-.24);hiker.add(roll);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.15,12,10),mSkin);head.position.y=1.63;hiker.add(head);
+const brim=new THREE.Mesh(new THREE.CylinderGeometry(.27,.27,.03,16),mHat);brim.position.y=1.72;hiker.add(brim);
+const crown=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.13,12),mHat);crown.position.y=1.79;hiker.add(crown);
+const blob=new THREE.Mesh(new THREE.CircleGeometry(.5,16),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.25,depthWrite:false}));
+blob.rotation.x=-Math.PI/2;blob.position.y=.05;hiker.add(blob);
+hiker.scale.setScalar(1.15);scene.add(hiker);
+
+/* ---------- trạm câu hỏi: Hóa 10 KNTT, Bài 1–3 ---------- */
+const iso=(a,z,x)=>'<span class="iso"><sup>'+a+'</sup><sub>'+z+'</sub></span>'+x;
+const B1='Bài 1 · Thành phần của nguyên tử',B2='Bài 2 · Nguyên tố hóa học',B3='Bài 3 · Cấu trúc lớp vỏ electron nguyên tử';
+const SUP=t=>t.replace(/(\d)\^(\d+)/g,'$1<sup>$2</sup>').replace(/([spdf])(\d+)/g,'$1<sup>$2</sup>');
+const cfg=t=>t.split(' ').map(x=>x.replace(/^(\d[spdf])(\d+)$/,'$1<sup>$2</sup>')).join('');
+const e10=n=>'10<sup>'+n+'</sup>';
+// Mỗi câu: [bài, câu hỏi, [đáp án đúng, nhiễu 1, nhiễu 2, nhiễu 3], giải thích]. Thứ tự phương án được xáo trộn mỗi lượt chơi.
+/* ---------- hình vẽ đen trắng cho câu hỏi (dùng currentColor, in trắng đen vẫn rõ) ---------- */
+const FIG={};
+// ô orbital: groups = [['1s','ud'],['2s','ud'],['2p','u','u','u']]; ô: 'ud' cặp, 'u' lên, 'd' xuống, 'uu' hai mũi tên cùng chiều, '' trống
+FIG.boxes=function(groups,scale){const W=24,H=28,G=12,T=2;let x=4,parts=[];
+  const arrow=(cx,up)=>{const yt=T+5,yb=T+H-5,tip=up?yt:yb,h=up?6:-6;
+    return '<line x1="'+cx+'" y1="'+yt+'" x2="'+cx+'" y2="'+yb+'" stroke="currentColor" stroke-width="1.8"/>'+
+      '<path d="M'+(cx-4)+' '+(tip+h)+' L'+cx+' '+tip+' L'+(cx+4)+' '+(tip+h)+'" fill="none" stroke="currentColor" stroke-width="1.8"/>';};
+  groups.forEach(g=>{const [lab,...bx]=g;const x0=x;
+    bx.forEach(b=>{parts.push('<rect x="'+x+'" y="'+T+'" width="'+W+'" height="'+H+'" fill="none" stroke="currentColor" stroke-width="1.5"/>');
+      const s2=b.split('');
+      if(s2.length===1)parts.push(arrow(x+W/2,s2[0]==='u'));
+      else if(s2.length===2){parts.push(arrow(x+W/2-5,s2[0]==='u'));parts.push(arrow(x+W/2+5,s2[1]==='u'));}
+      x+=W;});
+    const m=lab.match(/^(\d[spdf])(\d+)?$/);
+    parts.push('<text x="'+((x0+x)/2)+'" y="'+(T+H+17)+'" text-anchor="middle" font-size="13" fill="currentColor" font-family="sans-serif">'+(m?m[1]+(m[2]?'<tspan dy="-5" font-size="9">'+m[2]+'</tspan>':''):lab)+'</text>');
+    x+=G;});
+  const w=x-G+4,h=H+24,k=scale||1;return '<svg class="fig" viewBox="0 0 '+w+' '+h+'" width="'+Math.round(w*k)+'" height="'+Math.round(h*k)+'" role="img" aria-label="sơ đồ ô orbital">'+parts.join('')+'</svg>';};
+// dạng AO: 's','px','py','pz' – trục x chéo xuống trái, y ngang, z thẳng đứng; thùy tô gạch chéo
+FIG.ao=function(t){const id='h'+t+Math.floor(Math.random()*1e6);
+  const hatch='<defs><pattern id="'+id+'" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="currentColor" stroke-width="1.1"/></pattern></defs>';
+  const ax='<g stroke="currentColor" stroke-width="1.2" fill="none"><line x1="60" y1="108" x2="60" y2="8"/><path d="M56 15 L60 8 L64 15"/><line x1="10" y1="60" x2="112" y2="60"/><path d="M105 56 L112 60 L105 64"/><line x1="86" y1="38" x2="22" y2="102"/><path d="M24 94 L22 102 L30 100"/></g>'+
+    '<g fill="currentColor" font-size="12" font-family="sans-serif" font-style="italic"><text x="66" y="14">z</text><text x="108" y="74">y</text><text x="14" y="104">x</text></g>';
+  const lobe=(rx,ry,rot,dx,dy)=>'<ellipse cx="'+(60+dx)+'" cy="'+(60+dy)+'" rx="'+rx+'" ry="'+ry+'" transform="rotate('+rot+' '+(60+dx)+' '+(60+dy)+')" fill="url(#'+id+')" stroke="currentColor" stroke-width="1.5"/>';
+  let body='';
+  if(t==='s')body='<circle cx="60" cy="60" r="30" fill="url(#'+id+')" stroke="currentColor" stroke-width="1.5"/>';
+  if(t==='pz')body=lobe(12,24,0,0,-24)+lobe(12,24,0,0,24);
+  if(t==='py')body=lobe(24,12,0,24,0)+lobe(24,12,0,-24,0);
+  if(t==='px')body=lobe(12,24,45,-17,17)+lobe(12,24,45,17,-17);
+  return '<svg class="fig" viewBox="0 0 120 112" width="120" height="112" role="img" aria-label="hình dạng orbital">'+hatch+ax+body+'</svg>';};
+// mô hình lớp electron: điện tích hạt nhân + số electron từng lớp
+FIG.shells=function(Z,counts){const cx=80,cy=80;let s='<circle cx="'+cx+'" cy="'+cy+'" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" font-family="sans-serif">+'+Z+'</text>';
+  counts.forEach((n,k)=>{const r=26+k*20;s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>';
+    for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n+(k%2?Math.PI/n:0);s+='<circle cx="'+(cx+r*Math.cos(a)).toFixed(1)+'" cy="'+(cy+r*Math.sin(a)).toFixed(1)+'" r="3.6" fill="currentColor"/>';}});
+  return '<svg class="fig" viewBox="0 0 160 160" width="150" height="150" role="img" aria-label="mô hình các lớp electron">'+s+'</svg>';};
+const BANK=[
+ // ---------- Bài 1 (17 câu) ----------
+ [1,'Nguyên tử chứa những hạt mang điện là',['proton và electron','proton và hạt α','proton và neutron','electron và neutron'],'Proton mang điện tích dương, electron mang điện tích âm, neutron không mang điện.'],
+ [1,'Trong nguyên tử, hạt không mang điện là',['neutron','proton','electron','hạt nhân'],'Neutron có điện tích bằng 0.'],
+ [1,'Thành phần cấu tạo của nguyên tử gồm',['hạt nhân và vỏ nguyên tử','proton và hạt nhân','neutron và vỏ nguyên tử','proton và neutron'],'Nguyên tử gồm hạt nhân ở tâm và vỏ nguyên tử chứa các electron.'],
+ [1,'Hạt nhân nguyên tử (trừ '+iso(1,1,'H')+') được tạo nên từ',['proton và neutron','proton và electron','neutron và electron','chỉ có electron'],'Hạt nhân chứa các proton mang điện dương và các neutron không mang điện.'],
+ [1,'Vỏ nguyên tử chứa',['các electron mang điện tích âm','các proton mang điện tích dương','các neutron không mang điện','các proton và neutron'],'Vỏ nguyên tử chứa các electron mang điện tích âm, chuyển động rất nhanh xung quanh hạt nhân.'],
+ [1,'Trong nguyên tử, số proton luôn bằng',['số electron','số neutron','số khối','tổng số neutron và electron'],'Nguyên tử trung hòa về điện nên số proton bằng số electron.'],
+ [1,'Nguyên tử trung hòa về điện vì',['số proton bằng số electron','số proton bằng số neutron','neutron không mang điện','khối lượng electron rất nhỏ'],'Mỗi proton mang điện +1, mỗi electron mang điện −1. Số proton bằng số electron nên tổng điện tích bằng 0.'],
+ [1,'Khối lượng của một electron xấp xỉ bằng',['0,00055 amu','1 amu','0,55 amu','1837 amu'],'Khối lượng electron bằng khoảng 1/1837 amu ≈ 0,00055 amu.'],
+ [1,'Khối lượng của một proton xấp xỉ bằng',['1 amu','0,00055 amu','12 amu','1837 amu'],'Proton và neutron đều có khối lượng xấp xỉ 1 amu.'],
+ [1,'Điện tích tương đối của electron là',['−1','+1','0','−2'],'Electron có điện tích −1,602·10<sup>−19</sup> C, điện tích tương đối là −1.'],
+ [1,'Khối lượng của nguyên tử tập trung hầu hết ở',['hạt nhân','vỏ nguyên tử','các electron lớp ngoài cùng','khoảng trống giữa hạt nhân và vỏ'],'Khối lượng electron rất nhỏ, không đáng kể so với proton và neutron nên khối lượng nguyên tử tập trung ở hạt nhân.'],
+ [1,'Nếu coi nguyên tử là một khối cầu thì đường kính của nó vào khoảng',[e10('−10')+' m',e10('−14')+' m',e10('−6')+' m',e10('−2')+' m'],'Nguyên tử có đường kính khoảng '+e10('−10')+' m.'],
+ [1,'1 picomet (pm) bằng',[e10('−12')+' m',e10('−10')+' m',e10('−9')+' m',e10('−6')+' m'],'1 pm = '+e10('−12')+' m; còn 1 Å = '+e10('−10')+' m.'],
+ [1,'Nguyên tử có đường kính khoảng '+e10('−10')+' m, hạt nhân có đường kính khoảng '+e10('−2')+' pm. Nguyên tử lớn hơn hạt nhân khoảng',[e10(4)+' lần',e10(2)+' lần',e10(8)+' lần',e10(12)+' lần'],e10('−10')+' m = 100 pm. Ta có 100 : '+e10('−2')+' = '+e10(4)+'.'],
+ [1,'1 amu được định nghĩa bằng',['1/12 khối lượng một nguyên tử carbon-12','khối lượng một nguyên tử hydrogen','khối lượng một electron','1/16 khối lượng một nguyên tử oxygen'],'1 amu = 1/12 khối lượng nguyên tử carbon-12 ≈ 1,661·10<sup>−27</sup> kg.'],
+ [1,'Hạt nhân aluminium có điện tích +13 và số khối 27. Số proton, neutron, electron của nguyên tử aluminium lần lượt là',['13, 14, 13','13, 27, 13','14, 13, 14','13, 13, 14'],'Z = p = e = 13; N = A − Z = 27 − 13 = 14.'],
+ [1,'Hạt nhân nguyên tử Na có 11 proton và 12 neutron. Số khối của Na là',['23','11','12','34'],'A = Z + N = 11 + 12 = 23.'],
+ // ---------- Bài 2 (16 câu) ----------
+ [2,'Nguyên tố hóa học là tập hợp các nguyên tử có cùng',['số đơn vị điện tích hạt nhân','số khối','số neutron','khối lượng'],'Các nguyên tử có cùng số đơn vị điện tích hạt nhân (cùng số proton) thuộc cùng một nguyên tố hóa học.'],
+ [2,'Cho các nguyên tử: L (Z = 8, A = 16), D (Z = 9, A = 19), E (Z = 8, A = 18), G (Z = 7, A = 15). Những nguyên tử thuộc cùng một nguyên tố hóa học là',['L và E','L và D','D và G','E và G'],'L và E cùng có Z = 8 nên thuộc cùng một nguyên tố.'],
+ [2,'Trong kí hiệu nguyên tử <sup>A</sup><sub>Z</sub>X, A và Z lần lượt là',['số khối và số hiệu nguyên tử','số hiệu nguyên tử và số khối','số neutron và số proton','nguyên tử khối và số electron'],'Số khối A ở phía trên, số hiệu nguyên tử Z ở phía dưới, bên trái kí hiệu nguyên tố.'],
+ [2,'Nguyên tử '+iso(4,2,'He')+' có số neutron là',['2','4','6','1'],'N = A − Z = 4 − 2 = 2.'],
+ [2,'Nguyên tử nitrogen có 7 proton và 7 neutron. Kí hiệu nguyên tử là',[iso(14,7,'N'),iso(7,14,'N'),iso(7,7,'N'),iso(14,14,'N')],'Z = 7, A = 7 + 7 = 14.'],
+ [2,'Nguyên tử phosphorus có 15 proton và 16 neutron. Kí hiệu nguyên tử là',[iso(31,15,'P'),iso(15,31,'P'),iso(16,15,'P'),iso(31,16,'P')],'Z = 15, A = 15 + 16 = 31.'],
+ [2,'Nguyên tử copper có 29 proton và 34 neutron. Kí hiệu nguyên tử là',[iso(63,29,'Cu'),iso(34,29,'Cu'),iso(29,63,'Cu'),iso(63,34,'Cu')],'Z = 29, A = 29 + 34 = 63.'],
+ [2,'Đồng vị là những nguyên tử có',['cùng số proton nhưng khác số neutron','cùng số neutron nhưng khác số proton','cùng số khối nhưng khác số proton','khác số proton và khác số electron'],'Đồng vị có cùng số đơn vị điện tích hạt nhân (cùng số proton) nhưng khác số neutron.'],
+ [2,'Nguyên tử '+iso(29,14,'Si')+' có số neutron là',['15','14','29','43'],'N = 29 − 14 = 15.'],
+ [2,'Số proton, neutron, electron trong nguyên tử '+iso(56,26,'Fe')+' lần lượt là',['26, 30, 26','26, 56, 26','30, 26, 30','26, 26, 30'],'p = e = Z = 26; N = 56 − 26 = 30.'],
+ [2,'Ở dạng đơn chất, so với đồng vị '+iso(35,17,'Cl')+' thì đồng vị '+iso(37,17,'Cl')+' có',['tỉ khối lớn hơn, nhiệt độ nóng chảy và nhiệt độ sôi cao hơn','tỉ khối nhỏ hơn, nhiệt độ sôi thấp hơn','số proton nhiều hơn','tính chất hóa học hoàn toàn khác'],'Các đồng vị khác nhau về số neutron nên khác khối lượng hạt nhân và khác một số tính chất vật lí.'],
+ [2,'Các đồng vị không bền được gọi là',['đồng vị phóng xạ','đồng vị tự nhiên','nguyên tố nhân tạo','nguyên tử trung hòa'],'Đồng vị phóng xạ được dùng trong y học, nông nghiệp, nghiên cứu khoa học,…'],
+ [2,'Nguyên tử tritium '+iso(3,1,'H')+' có số neutron là',['2','1','3','0'],'N = 3 − 1 = 2. Hydrogen có ba đồng vị: protium, deuterium và tritium.'],
+ [2,'Nguyên tử khối cho biết',['khối lượng nguyên tử nặng gấp bao nhiêu lần đơn vị khối lượng nguyên tử','số proton trong hạt nhân','số electron ở vỏ nguyên tử','số đồng vị của nguyên tố'],'Nguyên tử khối là khối lượng tương đối của nguyên tử, tính theo đơn vị amu.'],
+ [2,'Nguyên tử potassium có 19 proton và 20 neutron. Nguyên tử khối của potassium xấp xỉ',['39','19','20','1'],'Có thể coi nguyên tử khối xấp xỉ số khối: A = 19 + 20 = 39.'],
+ [2,'Vì sao nguyên tử khối của nhiều nguyên tố (như chromium là 51,996) không phải là số nguyên?',['Vì đó là nguyên tử khối trung bình của hỗn hợp các đồng vị','Vì electron có khối lượng âm','Vì số proton thay đổi theo thời gian','Vì neutron không có khối lượng'],'Hầu hết nguyên tố trong tự nhiên là hỗn hợp nhiều đồng vị, nên nguyên tử khối là giá trị trung bình.'],
+ // ---------- Bài 3 (17 câu) ----------
+ [3,'Theo mô hình hiện đại, electron trong nguyên tử',['chuyển động rất nhanh, không theo quỹ đạo xác định','chuyển động theo quỹ đạo tròn xác định','chuyển động theo quỹ đạo bầu dục như các hành tinh','đứng yên xung quanh hạt nhân'],'Electron chuyển động rất nhanh, không theo quỹ đạo xác định; chỉ xác định được vùng có xác suất tìm thấy electron lớn nhất.'],
+ [3,'Orbital nguyên tử là vùng không gian quanh hạt nhân mà xác suất tìm thấy electron khoảng',['90%','50%','70%','100%'],'AO là vùng không gian xung quanh hạt nhân có xác suất tìm thấy electron khoảng 90%.'],
+ [3,'Orbital s có dạng',['hình cầu','hình tròn','hình số tám nổi','hình bầu dục'],'Orbital s có dạng hình cầu.'],
+ [3,'Orbital p có dạng',['hình số tám nổi','hình cầu','hình tròn','hình bầu dục'],'Orbital p có dạng hình số 8 nổi, gồm p<sub>x</sub>, p<sub>y</sub>, p<sub>z</sub>.'],
+ [3,'Theo nguyên lí Pauli, một orbital chứa tối đa',['2 electron có chiều tự quay ngược nhau','2 electron có cùng chiều tự quay','1 electron','8 electron'],'Mỗi orbital chứa tối đa 2 electron có chiều tự quay ngược nhau.'],
+ [3,'Phân lớp p có bao nhiêu orbital?',['3','1','5','7'],'Phân lớp s: 1 AO; p: 3 AO; d: 5 AO; f: 7 AO.'],
+ [3,'Phân lớp d chứa tối đa bao nhiêu electron?',['10','6','14','5'],'Phân lớp d có 5 AO, mỗi AO chứa tối đa 2 electron: 5 × 2 = 10.'],
+ [3,'Tổng số electron tối đa trong mỗi lớp L và M lần lượt là',['8 và 18','2 và 8','8 và 10','18 và 32'],'Lớp L: 2s + 2p = 2 + 6 = 8. Lớp M: 3s + 3p + 3d = 2 + 6 + 10 = 18.'],
+ [3,'Lớp electron thứ hai (lớp L, n = 2) gồm các phân lớp',['2s và 2p','2s','2s, 2p và 2d','2p và 2d'],'Số phân lớp trong mỗi lớp bằng số thứ tự lớp (n ≤ 4): lớp L có 2s và 2p.'],
+ [3,'Lớp N (n = 4) có bao nhiêu orbital?',['16','4','8','32'],'Lớp thứ n có n<sup>2</sup> AO (n ≤ 4): 4<sup>2</sup> = 16.'],
+ [3,'Theo chiều tăng dần năng lượng, phân lớp nằm ngay sau 3p là',['4s','3d','4p','3s'],'Thứ tự năng lượng: 1s 2s 2p 3s 3p 4s …'],
+ [3,'Cấu hình electron của nguyên tử có Z = 16 là',[cfg('1s2 2s2 2p6 3s2 3p4'),cfg('1s2 2s2 2p6 3s2 3p3'),cfg('1s2 2s2 2p6 3s2 3p5'),cfg('1s2 2s2 2p5 3s2 3p5')],'Điền 16 electron theo thứ tự 1s 2s 2p 3s 3p.'],
+ [3,'Cấu hình electron của nguyên tử potassium (Z = 19) là',[cfg('1s2 2s2 2p6 3s2 3p6 4s1'),cfg('1s2 2s2 2p6 3s2 3p6 3d1'),cfg('1s2 2s2 2p6 3s2 3p5 4s2'),cfg('1s2 2s2 2p6 3s2 3p7')],'Sau 3p là 4s nên electron thứ 19 điền vào 4s: [Ar]4s<sup>1</sup>.'],
+ [3,'Chlorine (Z = 17) là phi kim vì',['lớp ngoài cùng có 7 electron','lớp ngoài cùng có 1 electron','lớp ngoài cùng có 8 electron','nguyên tử có 3 lớp electron'],'Cấu hình '+cfg('1s2 2s2 2p6 3s2 3p5')+'; nguyên tử có 5, 6, 7 electron lớp ngoài cùng thường là phi kim.'],
+ [3,'Nguyên tử nitrogen (Z = 7) có cấu hình '+cfg('1s2 2s2 2p3')+'. Số electron độc thân là',['3','1','2','5'],'Theo quy tắc Hund, 3 electron 2p xếp vào 3 ô orbital riêng, cùng chiều, nên có 3 electron độc thân.'],
+ [3,'Nguyên tử có 8 electron ở lớp ngoài cùng (trừ He) thuộc loại nguyên tố',['khí hiếm','kim loại','phi kim','có thể là kim loại hoặc phi kim'],'Nguyên tử có 8 electron lớp ngoài cùng rất bền vững, hầu như không tham gia phản ứng hóa học.'],
+ [3,'Magnesium (Z = 12) có cấu hình '+cfg('1s2 2s2 2p6 3s2')+'. Magnesium là',['kim loại','phi kim','khí hiếm','có thể là kim loại hoặc phi kim'],'Lớp ngoài cùng có 2 electron nên magnesium là kim loại.'],
+ // ---------- Bài 3 · câu có hình (11 câu) ----------
+ [3,'Sơ đồ ô orbital nào biểu diễn đúng cấu hình electron của nguyên tử nitrogen (Z = 7)?',
+  [FIG.boxes([['1s2','ud'],['2s2','ud'],['2p3','u','u','u']]),FIG.boxes([['1s2','ud'],['2s2','ud'],['2p3','ud','u','']]),FIG.boxes([['1s2','ud'],['2s2','ud'],['2p3','u','d','u']]),FIG.boxes([['1s2','uu'],['2s2','ud'],['2p3','u','u','u']])],
+  'Hai electron trong một ô có chiều ngược nhau (Pauli); 3 electron 2p xếp vào 3 ô riêng, cùng chiều mũi tên đi lên (Hund).',1],
+ [3,'Sơ đồ ô orbital nào biểu diễn đúng cấu hình electron của nguyên tử oxygen (Z = 8)?',
+  [FIG.boxes([['1s2','ud'],['2s2','ud'],['2p4','ud','u','u']]),FIG.boxes([['1s2','ud'],['2s2','ud'],['2p4','ud','ud','']]),FIG.boxes([['1s2','ud'],['2s2','ud'],['2p4','ud','u','d']]),FIG.boxes([['1s2','ud'],['2s1','u'],['2p5','ud','ud','u']])],
+  'Oxygen: 1s²2s²2p⁴. Theo quy tắc Hund, 4 electron 2p điền mỗi ô 1 electron cùng chiều trước, electron thứ tư mới ghép đôi.',1],
+ [3,'Sơ đồ ô orbital dưới đây là của nguyên tử nguyên tố nào?<br>'+FIG.boxes([['1s2','ud'],['2s2','ud'],['2p2','u','u','']],1.15),
+  ['Carbon (Z = 6)','Nitrogen (Z = 7)','Boron (Z = 5)','Oxygen (Z = 8)'],'Đếm mũi tên: 2 + 2 + 2 = 6 electron, nên Z = 6 (carbon): 1s²2s²2p².',1],
+ [3,'Cách điền electron vào ô orbital dưới đây vi phạm điều gì?<br>'+FIG.boxes([['1s2','ud'],['2s2','ud'],['2p3','ud','u','']],1.15),
+  ['Quy tắc Hund','Nguyên lí Pauli','Nguyên lí vững bền','Không vi phạm'],'Các electron 2p phải điền sao cho số electron độc thân là tối đa: mỗi ô 1 electron trước, rồi mới ghép đôi.',1],
+ [3,'Cách điền electron vào ô orbital dưới đây vi phạm điều gì?<br>'+FIG.boxes([['1s2','uu'],['2s1','u']],1.15),
+  ['Nguyên lí Pauli','Quy tắc Hund','Nguyên lí vững bền','Không vi phạm'],'Một orbital chứa tối đa 2 electron có chiều tự quay ngược nhau; ô 1s ở đây có 2 mũi tên cùng chiều.',1],
+ [3,'Nguyên tử silicon (Z = 14) có sơ đồ ô orbital như dưới đây. Số electron độc thân là<br>'+FIG.boxes([['1s2','ud'],['2s2','ud'],['2p6','ud','ud','ud'],['3s2','ud'],['3p2','u','u','']],1),
+  ['2','4','0','1'],'Chỉ 2 electron ở phân lớp 3p nằm riêng trong 2 ô, nên có 2 electron độc thân.',1],
+ [3,'Hình dưới đây biểu diễn orbital nào?<br>'+FIG.ao('s'),['AO s','AO p<sub>x</sub>','AO p<sub>y</sub>','AO p<sub>z</sub>'],'Orbital s có dạng hình cầu, đối xứng quanh hạt nhân.',1],
+ [3,'Hình dưới đây biểu diễn orbital nào?<br>'+FIG.ao('pz'),['AO p<sub>z</sub>','AO p<sub>x</sub>','AO p<sub>y</sub>','AO s'],'Orbital p có dạng hình số 8 nổi; hai thùy nằm dọc trục z nên đây là AO p<sub>z</sub>.',1],
+ [3,'Hình dưới đây biểu diễn orbital nào?<br>'+FIG.ao('py'),['AO p<sub>y</sub>','AO p<sub>x</sub>','AO p<sub>z</sub>','AO s'],'Hai thùy của orbital nằm dọc trục y nên đây là AO p<sub>y</sub>.',1],
+ [3,'Mô hình các lớp electron của một nguyên tử được cho như hình. Nguyên tố này là<br>'+FIG.shells(11,[2,8,1]),
+  ['kim loại','phi kim','khí hiếm','có thể là kim loại hoặc phi kim'],'Nguyên tử có 11 electron xếp thành (2, 8, 1); lớp ngoài cùng có 1 electron nên là kim loại (sodium).',1],
+ [3,'Mô hình các lớp electron của một nguyên tử được cho như hình. Cấu hình electron của nguyên tử này là<br>'+FIG.shells(16,[2,8,6]),
+  [cfg('1s2 2s2 2p6 3s2 3p4'),cfg('1s2 2s2 2p6 3s2 3p6'),cfg('1s2 2s2 2p6 3s1 3p5'),cfg('1s2 2s2 2p4 3s2 3p6')],'Có 16 electron xếp thành (2, 8, 6): 1s²2s²2p⁶3s²3p⁴.',1]
+];
+const BAI={1:'Bài 1 · Thành phần của nguyên tử',2:'Bài 2 · Nguyên tố hóa học',3:'Bài 3 · Cấu trúc lớp vỏ electron nguyên tử'};
+const PICK={1:3,2:3,3:2},PICK_IMG=2; // mỗi lượt: 3 câu Bài 1, 3 câu Bài 2, 2 câu Bài 3 dạng chữ + 2 câu Bài 3 có hình
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function drawSet(){const set=[];const pool=f=>BANK.map((q,i)=>f(q)?i:-1).filter(i=>i>=0);
+  for(const b of [1,2,3]){let ids=shuffle(pool(q=>q[0]===b&&!q[4])).slice(0,PICK[b]);if(b===3)ids=ids.concat(shuffle(pool(q=>q[4])).slice(0,PICK_IMG));
+    ids.sort((x,y)=>x-y).forEach(id=>set.push({id,perm:shuffle([0,1,2,3])}));}return set;}
+function applySet(set){set.forEach((it,i)=>{const [b,q,opts,e]=BANK[it.id];const st3=stations[i];
+  st3.qid=it.id;st3.perm=it.perm;st3.bai=BAI[b];st3.q=q;st3.e=e;st3.o=it.perm.map(k=>opts[k]);st3.a=it.perm.indexOf(0);});}
+const NQ=10;
+const T0=.05,T1=.965;
+const stations=Array.from({length:NQ},(_,i)=>({t:T0+(T1-T0)*i/(NQ-1),done:false,tries:0}));
+function boardTexture(label,bg,fg){const cv=document.createElement('canvas');cv.width=128;cv.height=96;const x=cv.getContext('2d');
+  x.fillStyle=bg;x.fillRect(0,0,128,96);x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=6;x.strokeRect(3,3,122,90);
+  x.fillStyle=fg;x.font='bold 54px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(label,64,52);return new THREE.CanvasTexture(cv);}
+stations.forEach((st2,i)=>{const p=pathPoint(st2.t),tg=flat.getTangentAt(st2.t),ox=tg.z*3,oz=-tg.x*3,gy=groundY(p.x+ox,p.z+oz);
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.14,3.4,6),new THREE.MeshLambertMaterial({color:'#6b4a32'}));post.position.set(p.x+ox,gy+1.7,p.z+oz);scene.add(post);
+  st2.matTodo=new THREE.MeshLambertMaterial({map:boardTexture(String(i+1),'#e9b44c','#2a1d12')});
+  st2.matDone=new THREE.MeshLambertMaterial({map:boardTexture('✔','#6f7774','#ffffff')});
+  st2.matWrong=new THREE.MeshLambertMaterial({map:boardTexture('✗','#a8443a','#ffffff')});
+  const board=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.3,.12),[L('#6b4a32'),L('#6b4a32'),L('#6b4a32'),L('#6b4a32'),st2.matTodo,st2.matTodo]);
+  board.position.set(p.x+ox,gy+3.3,p.z+oz);board.rotation.y=Math.atan2(tg.x,tg.z);scene.add(board);st2.board=board;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.1,1.45,28),new THREE.MeshBasicMaterial({color:'#e9b44c',transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(p.x,p.y+.28,p.z);scene.add(ring);st2.ring=ring;});
+const lockT=()=>{for(const q of stations)if(!q.done)return q.t;return 1;};
+let quizOpen=false,activeQ=-1,finished=false,loggedIn=false,locked=false;
+const paused=()=>quizOpen||finished||!loggedIn||locked||!document.getElementById('exitAsk').hidden;
+
+/* ---------- camera control ---------- */
+const CAM_DIST=4.2,CAM_PITCH=.16;
+const st={target:new THREE.Vector3(),yaw:0,pitch:CAM_PITCH,dist:CAM_DIST};
+const goal={target:new THREE.Vector3(),yaw:0,pitch:CAM_PITCH,dist:CAM_DIST};
+let progress=0,playing=false,userYaw=0,facing=0,walkPhase=0;
+function setProgress(t,snap){progress=Math.max(0,Math.min(1,lockT(),t));const p=pathPoint(progress);goal.target.copy(p);
+  const a=pathPoint(progress-.01),b=pathPoint(progress+.01);
+  if(snap){facing=Math.atan2(b.x-a.x,b.z-a.z);goal.yaw=facing+Math.PI+userYaw;st.target.copy(goal.target);st.yaw=goal.yaw;}
+  prog.value=Math.round(progress*1000);updateStop();}
+let drag=null;const pts=new Map();
+host.addEventListener('pointerdown',e=>{host.focus({preventScroll:true});host.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);drag={x:e.clientX,y:e.clientY};});
+host.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;
+  if(pts.size===2){const prev=[...pts.values()];const d0=Math.hypot(prev[0][0]-prev[1][0],prev[0][1]-prev[1][1]);pts.set(e.pointerId,[e.clientX,e.clientY]);
+    const now=[...pts.values()];const d1=Math.hypot(now[0][0]-now[1][0],now[0][1]-now[1][1]);goal.dist=Math.max(2.5,Math.min(420,goal.dist*d0/d1));return;}
+  pts.set(e.pointerId,[e.clientX,e.clientY]);
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};
+  userYaw-=dx*.006;goal.pitch=Math.max(-.15,Math.min(1.35,goal.pitch+dy*.004));});
+const up=e=>{pts.delete(e.pointerId);};host.addEventListener('pointerup',up);host.addEventListener('pointercancel',up);
+host.addEventListener('wheel',e=>{e.preventDefault();goal.dist=Math.max(2.5,Math.min(420,goal.dist*Math.exp(e.deltaY*.001)));},{passive:false});
+
+/* ---------- UI ---------- */
+const prog=document.getElementById('prog'),playBtn=document.getElementById('play'),stopsEl=document.getElementById('stops');
+const altEl=document.getElementById('alt'),marker=document.getElementById('marker'),nameEl=document.getElementById('stopname'),textEl=document.getElementById('stoptext');
+const tagsEl=document.getElementById('tags');
+STOPS.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='stop';b.id='stop'+i;b.innerHTML='<b>'+s.name+'</b><span>'+s.alt+'</span>';b.title=s.name+' · '+s.alt;
+  b.onclick=()=>{if(paused())return;playing=false;playBtn.textContent='▶ Leo núi';flyTo=Math.min(s.t,lockT());};stopsEl.appendChild(b);
+  const t=document.createElement('div');t.className='tag';t.textContent=s.name+' · '+s.alt;tagsEl.appendChild(t);s.tag=t;});
+let flyTo=null,curStop=-1;
+function updateStop(){let k=0;STOPS.forEach((s,i)=>{if(progress>=s.t-.02)k=i;});
+  if(k!==curStop){curStop=k;nameEl.textContent=STOPS[k].name;textEl.textContent=STOPS[k].text;
+    STOPS.forEach((s,i)=>document.getElementById('stop'+i).classList.toggle('on',i===k));}}
+prog.addEventListener('input',()=>{if(paused()){prog.value=Math.round(progress*1000);return;}playing=false;flyTo=null;playBtn.textContent='▶ Leo núi';setProgress(prog.value/1000);});
+playBtn.onclick=()=>{if(paused())return;playing=!playing;flyTo=null;if(playing&&progress>=1)setProgress(0);playBtn.textContent=playing?'❚❚ Dừng':'▶ Leo núi';if(playing){goal.dist=CAM_DIST;goal.pitch=CAM_PITCH;userYaw=0;}};
+
+const keys={up:0,down:0,left:0,right:0,run:0};
+const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+function stopAuto(){if(playing){playing=false;playBtn.textContent='▶ Leo núi';}flyTo=null;}
+addEventListener('keydown',e=>{if(e.target&&e.target.closest&&e.target.closest('input,select,textarea'))return;if(!loggedIn||locked||finished)return;if(quizOpen){quizKey(e);return;}if(e.key==='Shift')keys.run=1;const k=KEYMAP[e.code];if(!k)return;
+  if(e.target===prog)prog.blur();e.preventDefault();keys[k]=1;if(k==='up'||k==='down')stopAuto();});
+addEventListener('keyup',e=>{if(e.key==='Shift')keys.run=0;const k=KEYMAP[e.code];if(k)keys[k]=0;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=0;});
+document.querySelectorAll('#dpad button').forEach(b=>{const k=b.dataset.k;
+  const on=e=>{e.preventDefault();b.setPointerCapture&&b.setPointerCapture(e.pointerId);keys[k]=1;b.classList.add('held');if(k==='up'||k==='down')stopAuto();};
+  const off=()=>{keys[k]=0;b.classList.remove('held');};
+  b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off);});
+const dpad=document.getElementById('dpad'),rail=document.querySelector('.rail');
+const quizEl=document.getElementById('quiz'),qNum=document.getElementById('qNum'),qBai=document.getElementById('qBai'),qText=document.getElementById('qText'),
+  qOpts=document.getElementById('qOpts'),qFeed=document.getElementById('qFeed'),qNext=document.getElementById('qNext'),
+  finEl=document.getElementById('finish'),finText=document.getElementById('finText'),qdots=document.getElementById('qdots'),qcountText=document.getElementById('qcountText');
+stations.forEach(()=>{qdots.appendChild(document.createElement('i'));});
+const scoreEl=document.getElementById('score'),timerEl=document.getElementById('timer');
+const TEACHER_CODE='7070',LIMIT=5*60*1000,SKEY='langbiang-hoa10-v1';
+let player=null,startAt=0,leaves=0,endReason='',qset=null;
+function save(){try{localStorage.setItem(SKEY,JSON.stringify({player,startAt,leaves,progress,finished,endReason,endAt,
+  id:attemptId,sub:submitted,set:qset,ans:stations.map(q=>q.done?{c:q.choice}:null)}));}catch(e){}}
+function clearSave(){try{localStorage.removeItem(SKEY);}catch(e){}}
+const score=()=>stations.filter(q=>q.done&&q.choice===q.a).length;
+function renderCount(){const n=stations.filter(q=>q.done).length;qcountText.textContent='đã làm '+n+'/'+stations.length;
+  const cur=stations.findIndex(q=>!q.done);[...qdots.children].forEach((d,i)=>{const q=stations[i];d.className=q.done?'done':i===cur?'cur':'';});}
+function paintStation(q){if(!q.done){q.ring.material.color.set('#e9b44c');q.ring.material.opacity=.85;q.board.material[4]=q.board.material[5]=q.matTodo;return;}
+  q.ring.material.color.set('#9aa3a0');q.ring.material.opacity=.5;q.ring.scale.setScalar(1);
+  q.board.material[4]=q.board.material[5]=q.matDone;}
+renderCount();
+function checkStations(){if(paused())return;
+  const i=stations.findIndex(q=>!q.done);
+  if(i>=0&&progress>=stations[i].t-1e-6)openQuiz(i);
+  else if(i<0&&progress>=1-1e-6)finishGame('peak');}
+function openQuiz(i){const q=stations[i];quizOpen=true;activeQ=i;playing=false;flyTo=null;playBtn.textContent='▶ Leo núi';
+  for(const k in keys)keys[k]=0;document.querySelectorAll('#dpad button').forEach(b=>b.classList.remove('held'));
+  qNum.textContent='Trạm '+(i+1)+'/'+stations.length+' · 1 điểm';qBai.textContent=q.bai;qText.innerHTML=q.q;qFeed.hidden=true;qNext.hidden=true;qOpts.innerHTML='';
+  q.o.forEach((txt,j)=>{const b=document.createElement('button');b.type='button';b.className='q-opt';b.id='q'+i+'o'+j;
+    b.innerHTML='<kbd>'+'ABCD'[j]+'</kbd><span>'+txt+'</span>';b.onclick=()=>answer(j);qOpts.appendChild(b);});
+  dpad.hidden=true;quizEl.hidden=false;placeDpad();setTimeout(()=>quizEl.focus({preventScroll:true}),30);}
+function answer(j){if(locked||finished)return;const q=stations[activeQ];if(!q||q.done)return;
+  q.done=true;q.choice=j;
+  [...qOpts.children].forEach((b,k)=>{b.disabled=true;if(k===j)b.classList.add('picked');});
+  qFeed.className='q-feed';qFeed.innerHTML='<b>Đã ghi nhận đáp án '+'ABCD'[j]+'.</b>Kết quả sẽ được giáo viên công bố.';qFeed.hidden=false;
+  paintStation(q);renderCount();save();
+  qNext.textContent=activeQ===stations.length-1?'Lên đỉnh ▲':'Đi tiếp ▲';qNext.hidden=false;qNext.focus({preventScroll:true});}
+function closeQuiz(){quizEl.hidden=true;dpad.hidden=false;quizOpen=false;host.focus({preventScroll:true});}
+qNext.onclick=closeQuiz;
+function quizKey(e){if(e.key==='Shift')return;const map={Digit1:0,Digit2:1,Digit3:2,Digit4:3,KeyA:0,KeyB:1,KeyC:2,KeyD:3,Numpad1:0,Numpad2:1,Numpad3:2,Numpad4:3};
+  if(map[e.code]!==undefined&&!quizEl.hidden&&qNext.hidden){e.preventDefault();answer(map[e.code]);}
+  else if(!qNext.hidden&&(e.code==='ArrowUp'||(e.code==='Enter'&&document.activeElement!==qNext))){e.preventDefault();closeQuiz();}
+  else if(KEYMAP[e.code])e.preventDefault();}
+
+/* ---- đồng hồ 5 phút ---- */
+let endAt=0;
+const mmss=ms=>{const t=Math.max(0,Math.ceil(ms/1000));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};
+function tickTimer(){if(!loggedIn)return;const left=finished?LIMIT-(endAt-startAt):LIMIT-(Date.now()-startAt);
+  timerEl.textContent=mmss(left);timerEl.classList.toggle('low',left<60000);
+  if(!finished&&left<=0)finishGame('time');}
+
+/* ---- kết thúc & kết quả ---- */
+const finEl2=document.getElementById('finish'),loginEl=document.getElementById('login');
+function finishGame(why){if(finished)return;finished=true;endReason=why;endAt=Math.min(Date.now(),startAt+LIMIT);playing=false;for(const k in keys)keys[k]=0;
+  quizEl.hidden=true;quizOpen=false;qOpts.innerHTML='';qText.innerHTML='';qFeed.hidden=true;locked=false;save();showResults();}
+// Địa chỉ Web App (Google Apps Script) của giáo viên, dạng https://script.google.com/macros/s/.../exec
+const WEBAPP_URL='';
+let attemptId='',submitted=false;
+function payload(){return JSON.stringify({v:1,id:attemptId,name:player.name,cls:player.cls,sbd:player.sbd,start:startAt,end:endAt,reason:endReason,
+  a:stations.map(q=>[q.qid,q.perm.join(''),q.done?q.choice:null])});}
+function showScore(){document.getElementById('submitBox').hidden=true;document.getElementById('scoreBox').hidden=false;
+  document.getElementById('finScore').textContent=score()+'/'+stations.length;}
+function showResults(){dpad.hidden=true;
+  const link=document.getElementById('submitLink');
+  if(WEBAPP_URL){link.href=WEBAPP_URL+'?d='+encodeURIComponent(payload());}
+  else{link.removeAttribute('href');document.getElementById('submitErr').textContent='Giáo viên chưa cài địa chỉ nhận bài. Hãy báo giáo viên.';}
+  link.onclick=()=>{if(!WEBAPP_URL)return false;submitted=true;save();setTimeout(showScore,600);};
+  if(submitted)showScore();
+  document.getElementById('finWhy').textContent={time:'Hết giờ',leave:'Kết thúc do rời khỏi màn hình chơi',exit:'Đã thoát trò chơi',peak:'Đã lên tới đỉnh 2.167 m'}[endReason]||'';
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  document.getElementById('finRes').innerHTML='<dt>Họ tên</dt><dd>'+esc(player.name)+'</dd><dt>Lớp</dt><dd>'+esc(player.cls)+'</dd><dt>SBD</dt><dd>'+esc(player.sbd)+'</dd>'+
+    '<dt>Thời gian</dt><dd>'+mmss(endAt-startAt)+' / 5:00</dd>';
+  finEl2.hidden=false;}
+document.getElementById('newPlayer').onclick=()=>{const c=document.getElementById('newCode');
+  if(c.value.trim()!==TEACHER_CODE){document.getElementById('newErr').textContent='Mã không đúng.';return;}
+  clearSave();location.reload();};
+
+/* ---- nút thoát ---- */
+const exitAskEl=document.getElementById('exitAsk');
+document.getElementById('exitBtn').onclick=()=>{if(!loggedIn||finished||locked)return;playing=false;for(const k in keys)keys[k]=0;exitAskEl.hidden=false;document.getElementById('exitNo').focus({preventScroll:true});};
+document.getElementById('exitNo').onclick=()=>{exitAskEl.hidden=true;host.focus({preventScroll:true});};
+document.getElementById('exitYes').onclick=()=>{exitAskEl.hidden=true;finishGame('exit');};
+
+/* ---- đăng nhập ---- */
+// SBD = 26 + khối (2 số) + số thứ tự lớp (2 số) + 2 số học sinh tự nhập. VD 10E01 → 261001__
+const sbdPrefix=cls=>{const m=/^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls||'');return m?'26'+m[1].padStart(2,'0')+m[2]:'';};
+const fClass=document.getElementById('fClass'),fSbd=document.getElementById('fSbd'),sbdPre=document.getElementById('sbdPrefix');
+fClass.addEventListener('change',()=>{const pre=sbdPrefix(fClass.value);sbdPre.textContent=pre||'______';fSbd.disabled=!pre;if(pre)fSbd.focus();});
+fSbd.addEventListener('input',()=>{const v=fSbd.value.replace(/\D/g,'').slice(0,2);if(v!==fSbd.value)fSbd.value=v;});
+function beginPlay(){loggedIn=true;loginEl.hidden=true;dpad.hidden=false;renderCount();host.focus({preventScroll:true});}
+document.getElementById('loginForm').addEventListener('submit',e=>{e.preventDefault();
+  const name=document.getElementById('fName').value.trim(),cls=fClass.value,tail=fSbd.value.trim(),sbd=sbdPrefix(cls)+tail;
+  const err=document.getElementById('loginErr');
+  if(!name){err.textContent='Nhập họ và tên.';return;} if(!cls){err.textContent='Chọn lớp.';return;} if(!/^\d{2}$/.test(tail)){err.textContent='Nhập đủ 2 số cuối của số báo danh.';return;}
+  player={name,cls,sbd};attemptId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);qset=drawSet();applySet(qset);startAt=Date.now();leaves=0;save();beginPlay();});
+
+/* ---- khóa khi rời màn hình ---- */
+function lockGame(){if(!loggedIn||finished)return;leaves++;exitAskEl.hidden=true;finishGame('leave');}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)lockGame();});
+addEventListener('blur',()=>{setTimeout(()=>{if(!document.hasFocus())lockGame();},150);});
+/* ---- khôi phục khi tải lại trang: vẫn bị khóa, không làm lại từ đầu được ---- */
+(function restore(){let d=null;try{d=JSON.parse(localStorage.getItem(SKEY)||'null');}catch(e){}
+  dpad.hidden=true;if(!d||!d.player)return;
+  player=d.player;attemptId=d.id||'';submitted=!!d.sub;qset=d.set||drawSet();applySet(qset);startAt=d.startAt;leaves=d.leaves||0;endReason=d.endReason||'';endAt=d.endAt||0;
+  (d.ans||[]).forEach((a,i)=>{if(a&&stations[i]){stations[i].done=true;stations[i].choice=a.c;paintStation(stations[i]);}});
+  loggedIn=true;loginEl.hidden=true;renderCount();setProgress(Math.min(d.progress||0,lockT()),true);
+  if(d.finished){finished=true;tickTimer();showResults();return;}
+  lockGame();})();
+function placeDpad(){const b='calc('+(rail.offsetHeight+20)+'px + env(safe-area-inset-bottom,0px))';dpad.style.bottom=b;quizEl.style.bottom=b;}
+
+function resize(){placeDpad();const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!player)setProgress(0,true);
+const v=new THREE.Vector3(),clock=new THREE.Clock();
+function frame(){
+  const dt=Math.min(.05,clock.getDelta());
+  const before=progress;
+  const turn=keys.right-keys.left;if(turn){userYaw-=turn*dt*1.6;}
+  const dir=paused()?0:keys.up-keys.down;
+  if(dir){setProgress(progress+dir*dt*(keys.run?14:6.5)/ROUTE_LEN);}
+  else if(playing&&!paused()){setProgress(progress+dt*9/ROUTE_LEN);if(progress>=1){playing=false;playBtn.textContent='▶ Leo núi';}}
+  else if(flyTo!==null){const d=flyTo-progress;if(Math.abs(d)<.002){setProgress(flyTo);flyTo=null;}else setProgress(progress+d*Math.min(1,dt*2.2));}
+  checkStations();tickTimer();
+  // người leo núi
+  const moved=progress-before,hp=pathPoint(progress);
+  hiker.position.copy(hp);
+  if(Math.abs(moved)>1e-7){const tg=flat.getTangentAt(progress);let want=Math.atan2(tg.x,tg.z)+(moved<0?Math.PI:0);
+    let df=want-facing;df=Math.atan2(Math.sin(df),Math.cos(df));facing+=df*Math.min(1,dt*10);
+    walkPhase+=Math.min(.6,Math.abs(moved)*ROUTE_LEN*1.6);}
+  const moving=Math.abs(moved)>1e-7, sw=moving?Math.sin(walkPhase):0;
+  hiker.rotation.y=facing;
+  legL.rotation.x=sw*.6;legR.rotation.x=-sw*.6;armL.rotation.x=-sw*.5;armR.rotation.x=sw*.5;
+
+  goal.yaw=facing+Math.PI+userYaw;st.target.copy(hiker.position);goal.target.copy(hiker.position);
+  if(!turn&&!pts.size&&userYaw&&dir)userYaw*=Math.max(0,1-dt*1.5); // tự quay về sau lưng khi đi tiếp
+  const k=reduce?1:Math.min(1,dt*5);
+  let dy=goal.yaw-st.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));st.yaw+=dy*(reduce?1:Math.min(1,dt*4));
+  st.pitch+=(goal.pitch-st.pitch)*k;st.dist+=(goal.dist-st.dist)*k;
+  const HEAD=2.05; // ngang đầu nhân vật
+  const cxp=st.target.x+st.dist*Math.cos(st.pitch)*Math.sin(st.yaw),czp=st.target.z+st.dist*Math.cos(st.pitch)*Math.cos(st.yaw);
+  camera.position.set(cxp,st.target.y+HEAD+.35+st.dist*Math.sin(st.pitch),czp);
+  const gy=groundY(cxp,czp)+.9;if(camera.position.y<gy)camera.position.y=gy;
+  const ahead=Math.max(0,3-st.dist*.3);
+  camera.lookAt(st.target.x-Math.sin(st.yaw)*ahead,st.target.y+HEAD-.1,st.target.z-Math.cos(st.yaw)*ahead);
+  sky.position.copy(camera.position);
+  const pulse=1+.12*Math.sin(clock.elapsedTime*4);stations.forEach(q=>{if(!q.done)q.ring.scale.setScalar(pulse);});
+  if(!reduce)clouds.forEach(m=>{m.position.x+=m.userData.v*dt*3;if(m.position.x>360)m.position.x=-360;});
+  // altitude
+  const m=toMeters(elevRaw(st.target.x,st.target.z));altEl.textContent=fmt(m);
+  marker.style.bottom=(Math.max(0,Math.min(1,(m-1400)/800))*100)+'%';
+  // tags
+  STOPS.forEach(s=>{v.set(s.side[0],s.p.y+10,s.side[1]).project(camera);const vis=v.z<1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1;
+    s.tag.hidden=!vis;if(vis){s.tag.style.left=((v.x+1)/2*innerWidth)+'px';s.tag.style.top=((1-v.y)/2*innerHeight)+'px';}});
+  renderer.render(scene,camera);requestAnimationFrame(frame);
+}
+frame();
+})();
+</script>
+
+</body>
+</html>
