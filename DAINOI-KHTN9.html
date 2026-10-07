@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<!-- =====================================================================
+     ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Để trống '' thì trò chơi không gửi kết quả.
+     ===================================================================== -->
+<script>
+window.CAU_HINH = {
+  SHEET_URL: 'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'
+};
+</script>
+<title>Đại Nội Huế – KHTN 9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif+Display:wght@500;600;700&display=swap">
+<style>
+/* Layout: one full-screen 3D game stage; a single horizontal place bar on top, zoom rail on the right, guide bubble bottom-left */
+:root{
+  --bg:#e9ece7; --panel:#f6f7f3; --ink:#1d2623; --muted:#5b6762; --line:#cfd5cf;
+  --lacquer:#9b2a23; --imperial:#a87b12; --chip:#e3e7e1;
+  --tim:#5e3584;            /* áo dài tím Huế */
+  --ok:#23805e; --ok-soft:#d6efe3; --bad:#b0352b; --bad-soft:#f6dcd8;
+  --f-display:"Noto Serif Display","Times New Roman",Georgia,serif;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111614;--panel:#171d1b;--ink:#e5eae6;--muted:#9aa6a0;--line:#2b3431;--lacquer:#e0635a;--imperial:#e3b747;
+  --chip:#212926;--tim:#b48ade;--ok:#4cc492;--ok-soft:#173a2c;--bad:#ef7b70;--bad-soft:#3e1d1a;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614;--panel:#171d1b;--ink:#e5eae6;--muted:#9aa6a0;--line:#2b3431;--lacquer:#e0635a;--imperial:#e3b747;
+  --chip:#212926;--tim:#b48ade;--ok:#4cc492;--ok-soft:#173a2c;--bad:#ef7b70;--bad-soft:#3e1d1a;color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.stage{position:relative;height:100%;overflow:hidden;background:var(--bg)}
+#c{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+#c:active{cursor:grabbing}
+button{font:inherit}
+:is(button):focus-visible{outline:2px solid var(--imperial);outline-offset:2px}
+.glass{background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line);box-shadow:0 2px 10px rgb(0 0 0 / .12)}
+
+/* floating labels */
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.lbl{position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px;padding:3px 9px 3px 3px;border-radius:999px;
+  background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);color:var(--ink);
+  font:500 12px/1.2 var(--f-body);white-space:nowrap;box-shadow:0 2px 6px rgb(0 0 0 / .12)}
+.lbl b{display:grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border-radius:999px;background:var(--imperial);color:#fff;font:700 11px var(--f-body);font-variant-numeric:tabular-nums}
+.lbl.st{font-weight:600}
+.lbl.st.done b{background:var(--muted)} .lbl.st.done{font-weight:500;color:var(--muted)}
+.lbl.name b{background:var(--muted)}
+.nonames .lbl.name{display:none}
+
+/* the one horizontal bar */
+.bar{position:absolute;top:10px;left:10px;right:10px;display:flex;align-items:center;gap:8px;padding:6px;border-radius:12px;z-index:30}
+.brand{flex:none;font:700 15px var(--f-display);padding:0 6px;white-space:nowrap}
+.score{flex:none;font:700 13px var(--f-body);padding:5px 10px;border-radius:8px;background:var(--tim);color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.places{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;padding:2px}
+.place{flex:none;display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid var(--line);
+  background:var(--bg);color:var(--ink);font:500 12.5px var(--f-body);white-space:nowrap;cursor:pointer}
+.place b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--imperial);color:#fff;font:700 11px var(--f-body)}
+.place.done b{background:var(--muted)} .place.done{color:var(--muted)}
+.place.near{border-color:var(--tim);box-shadow:inset 0 0 0 1px var(--tim)}
+.place:hover{border-color:var(--tim)}
+.again{flex:none;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 12.5px var(--f-body);cursor:pointer}
+
+/* compact question strip inside the top bar */
+.bar.asking{--panel:#ffffff;--bg:#f5f7f3;--ink:#1d2623;--muted:#5b6762;--line:#cfd5cf;--chip:#eceff0;--tim:#5e3584;--imperial:#a87b12;color-scheme:light;color:var(--ink);align-items:flex-start;background:var(--panel);border-color:var(--tim);box-shadow:0 6px 24px rgb(0 0 0 / .28);padding:10px 12px}
+.bar.asking>.brand,.bar.asking>.places,.bar.asking>.again{display:none}
+.qbar{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.qbar .qt{flex:none;font:700 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:5px;background:var(--tim);color:#fff;white-space:nowrap}
+.qbar .qq{flex:1 1 260px;min-width:0;margin:0;font:600 14px/1.35 var(--f-body)}
+.qbar .qo{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px}
+.qbar .qo button{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 13px/1.3 var(--f-body);cursor:pointer;text-align:left}
+.qbar .qo button:hover{border-color:var(--tim)}
+.qbar .qo b{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--chip);font:700 11px var(--f-body)}
+.qbar .qo button:disabled{cursor:default}
+.bar.asking.flash-ok{border-color:#23805e;box-shadow:0 0 0 3px #23805e55,0 6px 24px rgb(0 0 0 / .28)}
+.bar.asking.flash-bad{border-color:#b0352b;box-shadow:0 0 0 3px #b0352b55,0 6px 24px rgb(0 0 0 / .28)}
+.qbar .qo button.right,.qbar .qo button.wrong{color:#fff;font-weight:700}
+.qbar .qo button.right{background:#23805e;border-color:#23805e} .qbar .qo button.right b{background:#fff;color:#23805e}
+.qbar .qo button.wrong{background:#b0352b;border-color:#b0352b} .qbar .qo button.wrong b{background:#fff;color:#b0352b}
+.qbar .qo button.right svg.fig,.qbar .qo button.wrong svg.fig{color:#fff}
+.qbar .qo button.right{border-color:#23805e;background:#d6efe3} .qbar .qo button.right b{background:#23805e;color:#fff}
+.qbar .qo button.wrong{border-color:#b0352b;background:#f6dcd8} .qbar .qo button.wrong b{background:#b0352b;color:#fff}
+.qbar .qe{flex:1 1 100%;font:400 13.5px/1.45 var(--f-body);padding:6px 10px;border-radius:8px;background:var(--bg);border-left:3px solid #23805e}
+.qbar .qe.bad{border-left-color:#b0352b}
+.qbar .qe strong{color:#23805e} .qbar .qe.bad strong{color:#b0352b}
+.qbar svg.fig{display:block;color:var(--ink);max-width:100%;height:auto;margin-top:4px}
+.qbar .qo svg.fig{display:inline-block;margin:0;vertical-align:middle}
+.qbar .qx{flex:none;padding:3px 9px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--muted);font:500 12px var(--f-body);cursor:pointer}
+.qbar .qx.primary{background:var(--tim);border-color:var(--tim);color:#fff}
+/* sign-in, lock and result gates: always light cards */
+.who-chip{flex:none;font:600 12.5px var(--f-body);padding:5px 10px;border-radius:8px;background:var(--chip);white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.timer{flex:none;font:700 14px var(--f-body);padding:5px 10px;border-radius:8px;background:var(--ink);color:var(--panel);font-variant-numeric:tabular-nums}
+.timer.warn{background:#b0352b;color:#fff}
+.bar.asking>.who-chip,.bar.asking>.quit{display:none}
+.quit{flex:none;padding:5px 10px;border-radius:8px;border:1px solid #b0352b;background:none;color:#b0352b;font:600 12.5px var(--f-body);cursor:pointer}
+.quit:hover{background:#b0352b;color:#fff}
+.gate{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:rgb(14 20 18 / .58);backdrop-filter:blur(3px);overflow:auto}
+.gcard{--ink:#1d2623;--muted:#5b6762;--line:#cfd5cf;--tim:#5e3584;color-scheme:light;color:var(--ink);background:#fff;width:min(440px,100%);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 50px rgb(0 0 0 / .35);margin:auto}
+.gcard h2{margin:0;font:700 24px/1.15 var(--f-display);text-wrap:balance}
+.geyebrow{font:700 11px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--tim)}
+.geyebrow.bad{color:#b0352b}
+.gnote{margin:0;font-size:14px;color:var(--muted)}
+.gcard label{font:600 13px var(--f-body);margin-top:4px}
+.gcard input,.gcard select{width:100%;font:500 15px var(--f-body);padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:#f7f8f6;color:var(--ink)}
+.gcard input:focus,.gcard select:focus{outline:2px solid var(--tim);outline-offset:0;border-color:var(--tim)}
+.grow{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.grow>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sbd{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;background:#f7f8f6;padding-left:11px;min-width:0}
+.sbd:focus-within{outline:2px solid var(--tim);border-color:var(--tim)}
+.sbd .pre{font:700 15px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;color:var(--ink);user-select:none;white-space:nowrap}
+.gcard .sbd input{border:0;background:none;outline:none;width:3.4em;padding:9px 6px;font:700 15px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em}
+.gcard .sbd input:focus{outline:none}
+.gcard .sbd input:disabled{cursor:not-allowed}
+.sendst{margin:0;font:600 13px var(--f-body);padding:8px 10px;border-radius:8px;background:#f1f3f0;color:#3f4a46}
+.sendst.ok{background:#d6efe3;color:#1d6b4f} .sendst.fail{background:#f6dcd8;color:#9b2c23}
+.gcard.compact{gap:8px;padding:16px 18px;width:min(420px,100%)}
+.gcard.compact h2{font-size:21px}
+.gcard.compact .gbtn{padding:9px 12px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gcard.compact label{margin:0;font-size:12.5px}
+.gcard label .hint{font-weight:400;color:var(--muted)}
+.gcard.compact input,.gcard.compact select{padding:8px 10px}
+.gcard.compact .sbd input{padding:8px 4px}
+.rules1{margin:0;font-size:12px;line-height:1.4;color:var(--muted);background:#f4f6f3;border-radius:8px;padding:6px 9px}
+.rtop{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rwho{min-width:0}.rwho h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0}
+.rstats div{background:#f4f6f3;border-radius:8px;padding:6px 8px;text-align:center}
+.rstats dt{font-size:11.5px;color:var(--muted)} .rstats dd{margin:0;font:700 18px var(--f-body);font-variant-numeric:tabular-nums}
+.rstats .wide{grid-column:1/-1;display:flex;justify-content:space-between;text-align:left;font-size:12.5px}
+.rstats .wide dd{font-size:12.5px}
+.gcard.compact .gactions .gbtn{flex:1 1 0;min-width:0;font-size:13px}
+.gcard.compact .sendst{font-size:12px;padding:6px 9px}
+@media (max-height:560px){.gate{place-items:start center}.gcard.compact{gap:6px;padding:12px 14px}.rules1{display:none}}
+.err:empty,.sendst:empty{display:none}
+.rules{margin:4px 0 0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.err{margin:0;min-height:1.2em;font:600 13px var(--f-body);color:#b0352b}
+.gbtn{font:600 14px var(--f-body);padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+.gbtn.primary{background:var(--tim);border-color:var(--tim);color:#fff}
+.gbtn:focus-visible{outline:2px solid var(--tim);outline-offset:2px}
+.gactions{display:flex;gap:8px;flex-wrap:wrap}
+.gactions .gbtn{flex:1}
+.bigscore{display:flex;align-items:baseline;gap:8px}
+.bigscore{flex:none}.bigscore span{font:700 44px/1 var(--f-body);color:var(--tim);font-variant-numeric:tabular-nums}
+.bigscore small{font-size:15px;color:var(--muted)}
+.resgrid{display:grid;grid-template-columns:1fr auto;gap:4px 14px;margin:0;font-size:14px;border-top:1px solid var(--line);padding-top:10px}
+.resgrid dt{color:var(--muted)} .resgrid dd{margin:0;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.newform{display:flex;flex-direction:column;gap:4px}
+.newform .grow{grid-template-columns:1fr auto}
+@media (max-width:820px){.who-chip{display:none}}
+/* zoom rail */
+.rail{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;padding:4px;border-radius:12px;z-index:4}
+.rail button{width:40px;height:40px;border-radius:8px;border:1px solid transparent;background:none;color:var(--ink);cursor:pointer;display:grid;place-items:center;font:600 20px/1 var(--f-body)}
+.rail button:hover{background:var(--chip)}
+.rail button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.rail svg{width:20px;height:20px}
+.rail hr{width:24px;border:0;border-top:1px solid var(--line);margin:2px auto}
+
+/* minimap */
+.mini{position:absolute;top:66px;right:10px;border-radius:10px;padding:6px;z-index:4}
+.mini canvas{display:block;width:120px;height:156px}
+
+/* guide speech bubble */
+.bubble{position:absolute;left:10px;bottom:10px;max-width:min(460px,calc(100% - 20px));display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;z-index:4}
+.bubble svg{flex:none;width:40px;height:40px}
+.bubble .who{font:700 12px var(--f-body);color:var(--tim);letter-spacing:.04em}
+.bubble p{margin:0;font-size:13.5px;line-height:1.45}
+.bubble p strong{color:var(--ok)} .bubble p strong.bad{color:var(--bad)}
+
+/* d-pad */
+.dpad{position:absolute;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;z-index:4}
+.dpad button{border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 90%,transparent);color:var(--ink);font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}
+.dpad button:active,.dpad button.held{background:var(--tim);color:#fff}
+.dpad .u{grid-area:1/2} .dpad .l{grid-area:2/1} .dpad .r{grid-area:2/3} .dpad .d{grid-area:3/2}
+@media (pointer:fine) and (min-width:821px){.dpad{display:none}}
+
+/* question dialog */
+.qcard{width:min(500px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 40px rgb(0 0 0 / .3)}
+.qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.tag{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--chip);color:var(--ink)}
+.tag.lesson{background:var(--tim);color:#fff}
+.qplace{font-family:var(--f-display);font-size:22px;line-height:1.15;margin:0}
+.say{margin:0;font-size:14px;color:var(--muted);border-left:3px solid var(--tim);padding-left:10px}
+.say b{color:var(--tim)}
+.qtext{margin:0;font-weight:600;font-size:16px;line-height:1.45}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:center;text-align:left;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-size:15px}
+.opt:hover{border-color:var(--tim)}
+.opt .k{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--chip);font:700 12px var(--f-body)}
+.qfoot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.qfoot small{color:var(--muted);font-size:12px}
+.btn{font:500 13px var(--f-body);padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--tim);border-color:var(--tim);color:#fff}
+.keys{display:grid;grid-template-columns:auto auto;gap:6px 12px;font-size:14px;margin:0}
+.keys dt{font-weight:500} .keys dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.iso{display:inline-flex;flex-direction:column;font-size:.68em;line-height:1.05;vertical-align:-.45em;text-align:right;margin-right:1px}
+
+@media (max-width:820px){
+  .brand{display:none}
+  .mini canvas{width:84px;height:110px}
+  .bubble{bottom:168px}
+  .rail{top:auto;bottom:168px;transform:none}
+  .bubble{max-width:calc(100% - 80px)}
+}
+</style>
+</head>
+<body>
+
+
+<div class="stage" id="stage">
+  <canvas id="c" tabindex="0" aria-label="Đại Nội Huế 3D. Dùng phím mũi tên để di chuyển hướng dẫn viên."></canvas>
+  <div id="labels" class="nonames"></div>
+
+  <nav class="bar glass" aria-label="Các địa điểm">
+    <span class="brand">Đại Nội Huế</span>
+    <span class="score" id="score">0/10</span>
+    <div class="places" id="places"></div>
+    <span class="who-chip" id="who"></span>
+    <span class="timer" id="timer" title="Thời gian còn lại">05:00</span>
+    <button class="quit" id="bQuit" type="button">Thoát</button>
+    <div class="qbar" id="qbar" hidden></div>
+  </nav>
+
+  <div class="rail glass" aria-label="Góc nhìn">
+    <button id="bIn" type="button" title="Phóng to" aria-label="Phóng to">+</button>
+    <button id="bOut" type="button" title="Thu nhỏ" aria-label="Thu nhỏ">−</button>
+    <hr>
+    <button id="bView" type="button" title="Nhìn toàn cảnh Đại Nội" aria-label="Nhìn toàn cảnh" aria-pressed="false">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg></button>
+    <button id="bNames" type="button" title="Hiện tên công trình" aria-label="Hiện tên công trình" aria-pressed="false">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h14M3 10h10M3 15h12"/></svg></button>
+  </div>
+
+  <div class="mini glass"><canvas id="mini" aria-hidden="true"></canvas></div>
+
+  <div class="bubble glass" id="bubble">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="var(--chip)"/><path d="M4 17 L20 6 L36 17 Z" fill="#d9c27f" stroke="#a68a45" stroke-width="1"/><circle cx="20" cy="21" r="7" fill="#eac6a2"/><path d="M13 21 q0 -6 7 -5 q7 -1 7 5 q-2 -3 -7 -3 q-5 0 -7 3z" fill="#1d1a19"/><path d="M10 40 q1 -10 10 -11 q9 1 10 11z" fill="#6a3d8f"/><circle cx="17.5" cy="22" r=".9" fill="#1d1a19"/><circle cx="22.5" cy="22" r=".9" fill="#1d1a19"/></svg>
+    <div><div class="who">HDV THẢO</div><p id="say" aria-live="polite"></p></div>
+  </div>
+
+  <div class="dpad" id="dpad" aria-label="Phím di chuyển">
+    <button class="u" data-k="up" aria-label="Lên">▲</button><button class="l" data-k="left" aria-label="Trái">◀</button>
+    <button class="r" data-k="right" aria-label="Phải">▶</button><button class="d" data-k="down" aria-label="Xuống">▼</button>
+  </div>
+</div>
+
+<div class="gate" id="gLogin" hidden>
+  <form class="gcard compact" id="loginForm" novalidate>
+    <div class="ghead"><div class="geyebrow">KHTN 9 · KNTT · Bài 18–19</div><h2>Tham quan Đại Nội Huế</h2></div>
+    <div class="field"><label for="fName">Họ và tên</label><input id="fName" autocomplete="name" placeholder="Nguyễn Văn A" maxlength="60"></div>
+    <div class="grow">
+      <div class="field"><label for="fClass">Lớp</label>
+        <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option></select></div>
+      <div class="field"><label for="fSbd">SBD <span class="hint">(2 số cuối)</span></label><div class="sbd" id="sbdBox"><span class="pre" id="sbdPre" aria-hidden="true">——————</span><input id="fSbd" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="__" disabled></div></div>
+    </div>
+    <div class="field"><label for="fAccess">Mã vào chơi <span class="hint">(giáo viên cấp)</span></label><input id="fAccess" type="password" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="12" placeholder="••••••" required></div>
+    <p class="rules1">5 phút · 10 câu · đúng +1 điểm, sai 0 điểm · mỗi câu chọn 1 lần · rời màn hình lần 1 bị khóa, lần 2 tự nộp bài.</p>
+    <p class="err" id="loginErr" aria-live="polite"></p>
+    <button type="submit" class="gbtn primary" id="bStart">Bắt đầu</button>
+  </form>
+</div>
+<div class="gate" id="gLock" hidden>
+  <form class="gcard" id="lockForm" novalidate>
+    <div class="geyebrow bad">Bài làm đã bị khóa</div>
+    <h2>Bạn đã rời khỏi màn hình chơi</h2>
+    <p class="gnote" id="lockMsg">Mời giáo viên nhập mã để tiếp tục. Đồng hồ vẫn tiếp tục chạy.</p>
+    <label for="fCode">Mã của giáo viên</label>
+    <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+    <p class="err" id="lockErr" aria-live="polite"></p>
+    <button type="submit" class="gbtn primary">Mở khóa</button>
+  </form>
+</div>
+<div class="gate" id="gExit" hidden>
+  <div class="gcard">
+    <div class="geyebrow bad">Thoát khỏi trò chơi</div>
+    <h2>Nộp bài và kết thúc?</h2>
+    <p class="gnote" id="exitMsg">Các câu chưa trả lời sẽ tính 0 điểm. Sau khi nộp, bạn không thể chơi tiếp lượt này.</p>
+    <div class="gactions">
+      <button type="button" class="gbtn" id="bStay">Tiếp tục chơi</button>
+      <button type="button" class="gbtn primary" id="bSubmit">Nộp bài và thoát</button>
+    </div>
+  </div>
+</div>
+<div class="gate" id="gResult" hidden>
+  <div class="gcard compact">
+    <div class="rtop">
+      <div class="rwho"><div class="geyebrow" id="resEyebrow">Kết quả</div><h2 id="resName"></h2><p class="gnote" id="resMeta"></p></div>
+      <div class="bigscore"><span id="resScore">0</span><small>/10 điểm</small></div>
+    </div>
+    <dl class="rstats" id="resGrid"></dl>
+    <p class="sendst" id="sendSt" aria-live="polite"></p>
+    <p class="err" id="resErr" aria-live="polite"></p>
+    <div class="gactions">
+      <button type="button" class="gbtn" id="bResend" hidden>Gửi lại</button>
+      <button type="button" class="gbtn" id="bCopy">Sao chép</button>
+      <button type="button" class="gbtn" id="bNew">Lượt mới</button>
+      <button type="button" class="gbtn" id="bLeave">Thoát</button>
+    </div>
+    <p class="gnote" id="leaveMsg" hidden>Đã thoát. Em có thể đóng thẻ này.</p>
+    <form id="newForm" class="newform" hidden novalidate>
+      <div class="grow"><input id="fCode2" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Mã giáo viên để mở lượt mới" aria-label="Mã giáo viên để mở lượt mới"><button type="submit" class="gbtn primary">Xác nhận</button></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const iso=(A,Z,X)=>`<span class="iso"><span>${A}</span><span>${Z}</span></span>${X}`;
+
+/* ---------- content ---------- */
+const SITES = [
+ {id:'quangduc',name:'Cửa Quảng Đức',han:'廣德門',year:'Thời Gia Long',x:-70,z:270,ly:20,r:22,desc:'Một trong các cửa phía nam Kinh thành, nằm bên trái Kỳ Đài, mở ra con đường ven sông Hương.'},
+ {id:'kydai',name:'Kỳ Đài',han:'旗臺',year:'1807 · Gia Long',x:0,z:262,ly:44,r:40,desc:'Đài treo cờ triều Nguyễn trên tường Kinh thành, nhìn thẳng ra sông Hương. Gồm ba tầng đài, trên đỉnh là cột cờ.'},
+ {id:'ngomon',name:'Ngọ Môn',han:'午門',year:'1833 · Minh Mạng',x:0,z:166,ly:30,r:42,desc:'Cổng chính phía nam Hoàng thành, có 5 lối đi; lối giữa chỉ dành cho vua. Phía trên là lầu Ngũ Phụng. Ngày 30/8/1945, vua Bảo Đại thoái vị tại đây.'},
+ {id:'thaidich',name:'Hồ Thái Dịch',han:'太液湖',year:'Thời Minh Mạng',x:0,z:130,ly:7,r:30,desc:'Hai hồ sen giữa Ngọ Môn và sân Đại Triều Nghi; cầu Trung Đạo bắc qua giữa, lối giữa dành cho vua.'},
+ {id:'thaihoa',name:'Điện Thái Hòa',han:'太和殿',year:'1805 · dựng lại 1833',x:0,z:58,ly:22,r:40,desc:'Nơi đặt ngai vàng và tổ chức đại lễ. Có 80 cột gỗ lim sơn son thếp vàng, trang trí rồng mây.'},
+ {id:'tucam',name:'Tử Cấm Thành',han:'紫禁城',year:'1804 · Gia Long',x:0,z:-2,ly:14,r:22,desc:'Vòng thành trong cùng dành cho vua và hoàng gia. Đại Cung Môn là cổng chính phía nam. Phần lớn công trình bị phá hủy năm 1947.'},
+ {id:'canchanh',name:'Nền điện Cần Chánh',han:'勤政殿',year:'1804 · Gia Long',x:0,z:-35,ly:5,r:30,desc:'Nơi vua làm việc hằng ngày. Điện bị thiêu rụi năm 1947, nay chỉ còn nền và chân tảng cột.'},
+ {id:'duyetthi',name:'Duyệt Thị Đường',han:'閱是堂',year:'1826 · Minh Mạng',x:38,z:-78,ly:14,r:28,desc:'Nhà hát cung đình, nay biểu diễn Nhã nhạc cung đình Huế – di sản được UNESCO ghi danh năm 2003.'},
+ {id:'kientrung',name:'Điện Kiến Trung',han:'建中殿',year:'1921–1923 · Khải Định',x:0,z:-118,ly:20,r:30,desc:'Nơi ở của vua Khải Định và Bảo Đại, kiến trúc pha trộn Á – Âu. Bị phá năm 1947 và đã được phục dựng.'},
+ {id:'themieu',name:'Thế Miếu',han:'世廟',year:'1821–1822 · Minh Mạng',x:-100,z:12,ly:16,r:34,desc:'Nơi thờ các vua Nguyễn; từ năm 1959 thờ thêm ba vua yêu nước Hàm Nghi, Thành Thái, Duy Tân.'},
+ {id:'hienlam',name:'Hiển Lâm Các',han:'顯臨閣',year:'1821–1822 · Minh Mạng',x:-100,z:78,ly:28,r:18,desc:'Gác ba tầng cao khoảng 13 m tưởng niệm công thần. Theo lệ, không công trình nào trong Hoàng thành được cao hơn.'},
+ {id:'cuudinh',name:'Cửu Đỉnh',han:'九鼎',year:'1835–1837 · Minh Mạng',x:-100,z:48,ly:8,r:16,desc:'Chín đỉnh đồng, mỗi đỉnh mang tên miếu hiệu một vị vua; tổng cộng 153 hình chạm về sông núi, sản vật.'},
+ {id:'thaimieu',name:'Thái Miếu',han:'太廟',year:'1804 · Gia Long',x:100,z:20,ly:16,r:34,desc:'Nơi thờ các chúa Nguyễn, đối xứng với Thế Miếu qua trục chính của Hoàng thành.'},
+ {id:'dientho',name:'Cung Diên Thọ',han:'延壽宮',year:'1804 · Gia Long',x:-104,z:-80,ly:14,r:30,desc:'Nơi ở của Hoàng Thái hậu, một trong những cung điện còn giữ tương đối nguyên vẹn.'},
+ {id:'truongsanh',name:'Cung Trường Sanh',han:'長生宮',year:'1821 · Minh Mạng',x:-108,z:-136,ly:12,r:24,desc:'Khu cung có hồ nước, non bộ, tiêu biểu cho nghệ thuật vườn cung đình Huế.'}
+];
+
+/* Ngân hàng câu hỏi đã được mã hóa để học sinh không đọc được đáp án trong mã nguồn. */
+const BANK=(function(s,k){const r=atob(s),u=new Uint8Array(r.length);for(let i=0;i<r.length;i++)u[i]=r.charCodeAt(i)^k.charCodeAt(i%k.length)^((i*131)&255);return JSON.parse(new TextDecoder().decode(u));})("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","DaiNoi-Hue-Hoa10-KNTT");
+const isImg=q=>/<svg/.test(q[1]+q[2].join(""));
+const STATIONS = [
+ {place:'Kỳ Đài',x:-34,z:236,lesson:1},
+ {place:'Ngọ Môn',x:0,z:200,lesson:1},
+ {place:'Điện Thái Hòa',x:0,z:84,lesson:1},
+ {place:'Hiển Lâm Các',x:-100,z:93,lesson:2},
+ {place:'Cửu Đỉnh',x:-100,z:60,lesson:2},
+ {place:'Thế Miếu',x:-100,z:33,lesson:2},
+ {place:'Thái Miếu',x:100,z:37,lesson:3},
+ {place:'Đại Cung Môn',x:0,z:16,lesson:3},
+ {place:'Duyệt Thị Đường',x:38,z:-55,lesson:3},
+ {place:'Điện Kiến Trung',x:0,z:-96,lesson:3}
+];
+STATIONS.forEach((s,i)=>{s.n=i+1;s.status=null;s.armed=true;});
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+/* draw a fresh set: 3 from Bài 1, 3 from Bài 2, 4 from Bài 3, options shuffled */
+function deal(){
+  // 5 câu Bài 18 + 5 câu Bài 19, xen kẽ hai bài
+  const all=BANK.map((q,i)=>i), a=shuffle(all.filter(i=>BANK[i][0]===18)).slice(0,5), b=shuffle(all.filter(i=>BANK[i][0]===19)).slice(0,5);
+  const idx=[]; for(let k=0;k<5;k++){ if(Math.random()<.5) idx.push(a[k],b[k]); else idx.push(b[k],a[k]); }
+  return idx.map(i=>[i,shuffle([0,1,2,3])]);
+}
+function applyPicks(p){ STATIONS.forEach((s,i)=>{ const [bi,order]=p[i], [L,q,opts,e]=BANK[bi];
+  s.lesson=L; s.q=q; s.o=order.map(k=>opts[k]); s.a=order.indexOf(0); s.e=e; }); }
+applyPicks(deal());
+
+/* ---------- renderer & scene ---------- */
+const canvas=document.getElementById('c'), stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(48,1,1,3000);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.1; controls.enablePan=false;
+controls.maxPolarAngle=1.38; controls.minDistance=14; controls.maxDistance=600;
+
+const hemi=new THREE.HemisphereLight(0xcfe3f5,0x56603a,.45); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffe2b2,1.15); const SUN_DIR=new THREE.Vector3(-.55,.62,.56).normalize(); scene.add(sun.target);
+sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-260,right:260,top:260,bottom:-260,near:10,far:1400}); sun.shadow.normalBias=.4;
+sun.shadow.bias=-0.0006; scene.add(sun);
+
+const LOTUS_PINK=new THREE.MeshStandardMaterial({color:0xf08cb0,roughness:.6});
+const C={stone:0xbdb6a5,stoneDk:0x9a927f,wallHT:0x9e9378,wallTC:0x9a5a45,wood:0x7c2a20,col:0xa8291f,
+  roof:0xd4a32b,ridge:0xb98a1c,grass:0x7f9a64,path:0xd2c9b4,water:0x4e8189,bronze:0x5f6a52,
+  tree:0x4f7044,trunk:0x5a4632,kt:0xd9b85e,dark:0x231c18,lotus:0x4f8a3e};
+const mats={};
+/* ===== cảnh đẹp hơn: chất liệu vẽ bằng canvas, mái cong đầu đao, bầu trời, mây, núi xa ===== */
+let _vs=11; const vr=()=>((_vs=(_vs*16807)%2147483647)/2147483647);
+const ANISO=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+function canvasTex(w,h,draw){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=ANISO; return t; }
+function speckle(x,w,h,n,cols,rmin,rmax,alpha){ for(let i=0;i<n;i++){ x.globalAlpha=alpha*(0.5+vr()*0.5); x.fillStyle=cols[(vr()*cols.length)|0];
+  x.beginPath(); x.arc(vr()*w,vr()*h,rmin+vr()*(rmax-rmin),0,7); x.fill(); } x.globalAlpha=1; }
+const TEX={
+  grass:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#6d8f43'; x.fillRect(0,0,w,h);
+    speckle(x,w,h,60,['#5d7d37','#7fa04f','#64873d'],10,26,.35); speckle(x,w,h,2600,['#86a957','#557634','#9bbd63','#4d6b2e'],.6,1.6,.7); }),
+  pave:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#cdc4ad'; x.fillRect(0,0,w,h);
+    for(let r=0;r<4;r++) for(let c=0;c<4;c++){ const o=(r%2)*32; const g=200+((vr()*26)|0)-13; x.fillStyle=`rgb(${g+8},${g},${g-22})`; x.fillRect(c*64+o+2,r*64+2,60,60); x.fillRect(c*64+o-256+2,r*64+2,60,60); }
+    speckle(x,w,h,900,['#b3a990','#e2dac5','#9d947c'],.5,1.4,.6); }),
+  stone:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#55524a'; x.fillRect(0,0,w,h);
+    for(let r=0;r<8;r++){ let cx=-(vr()*40); while(cx<w){ const bw=40+vr()*40, g=128+((vr()*36)|0)-18; x.fillStyle=`rgb(${g},${g-3},${g-14})`; x.fillRect(cx+1.5,r*32+1.5,bw-3,29); cx+=bw; } }
+    for(let i=0;i<26;i++){ const sx=vr()*w, sl=30+vr()*120, gr=x.createLinearGradient(0,0,0,sl); gr.addColorStop(0,'rgba(40,38,32,.35)'); gr.addColorStop(1,'rgba(40,38,32,0)'); x.fillStyle=gr; x.fillRect(sx,vr()*h*.5,2+vr()*5,sl); }
+    const m=x.createLinearGradient(0,h*.62,0,h); m.addColorStop(0,'rgba(78,96,52,0)'); m.addColorStop(1,'rgba(78,96,52,.55)'); x.fillStyle=m; x.fillRect(0,0,w,h);
+    speckle(x,w,h,700,['#3e3b34','#9a958a','#5f7340'],.5,1.6,.45); }),
+  brick:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#6d3a2b'; x.fillRect(0,0,w,h);
+    for(let r=0;r<16;r++){ const o=(r%2)*16; for(let c=-1;c<9;c++){ const g=(vr()*30)|0; x.fillStyle=`rgb(${150+g},${82+g/2},${62+g/3})`; x.fillRect(c*32+o+1,r*16+1,30,14); } }
+    const m=x.createLinearGradient(0,h*.6,0,h); m.addColorStop(0,'rgba(60,70,40,0)'); m.addColorStop(1,'rgba(60,70,40,.45)'); x.fillStyle=m; x.fillRect(0,0,w,h);
+    speckle(x,w,h,500,['#4a2a20','#b88a6a'],.5,1.3,.4); }),
+  plinth:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#a49e8e'; x.fillRect(0,0,w,h);
+    for(let r=0;r<4;r++) for(let c=0;c<3;c++){ const g=205+((vr()*24)|0)-12; x.fillStyle=`rgb(${g},${g-4},${g-16})`; x.fillRect(c*86+(r%2)*43-43+2,r*64+2,82,60); x.fillRect(c*86+(r%2)*43+215,r*64+2,82,60); }
+    speckle(x,w,h,600,['#8f897a','#e9e3d4'],.5,1.4,.5); }),
+  wood:canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#7b2016'; x.fillRect(0,0,w,h);
+    for(let c=0;c<8;c++){ x.fillStyle='#5a150e'; x.fillRect(c*32,0,3,h); x.fillStyle='rgba(255,255,255,.05)'; x.fillRect(c*32+6,30,20,h-60); x.strokeStyle='rgba(214,170,70,.55)'; x.lineWidth=1.5; x.strokeRect(c*32+7,36,18,h-72); }
+    x.fillStyle='#c79a2e'; x.fillRect(0,0,w,10); x.fillRect(0,h-6,w,6); }),
+  roofY:null, roofG:null
+};
+function roofTex(light,mid,dark,edge){ return canvasTex(128,128,(x,w,h)=>{ x.fillStyle=dark; x.fillRect(0,0,w,h);
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){ const gx=c*16, gy=r*16, gr=x.createLinearGradient(gx,0,gx+16,0);
+    gr.addColorStop(0,dark); gr.addColorStop(.35,light); gr.addColorStop(.6,mid); gr.addColorStop(1,dark); x.fillStyle=gr; x.fillRect(gx+1,gy,14,15);
+    x.fillStyle=edge; x.fillRect(gx+1,gy+13,14,3); } }); }
+TEX.roofY=roofTex('#ffd96a','#e3a92a','#9c6a12','rgba(90,55,10,.65)');
+TEX.roofG=roofTex('#9fd18a','#5f9a55','#2f5a30','rgba(20,45,20,.65)');
+C.roofG=0x4f8f5a;
+function texMat(map,tile,extra){ const m=new THREE.MeshStandardMaterial(Object.assign({map,color:0xffffff,roughness:.92,metalness:0},extra||{})); m.userData.tile=tile; return m; }
+mats[C.grass]=texMat(TEX.grass,14);
+mats[C.path]=texMat(TEX.pave,10,{roughness:.85});
+mats[C.wallHT]=texMat(TEX.stone,8);
+mats[C.wallTC]=texMat(TEX.brick,6);
+mats[C.stone]=texMat(TEX.plinth,7,{roughness:.8});
+mats[C.stoneDk]=texMat(TEX.plinth,7,{color:0xc9c2b2,roughness:.85});
+mats[C.wood]=texMat(TEX.wood,6,{roughness:.55});
+mats[C.col]=new THREE.MeshStandardMaterial({color:0xa3231a,roughness:.32,metalness:.05});
+mats[C.roof]=texMat(TEX.roofY,4,{roughness:.38,metalness:.12,side:THREE.DoubleSide});
+mats[C.roofG]=texMat(TEX.roofG,4,{roughness:.38,metalness:.1,side:THREE.DoubleSide});
+mats[C.ridge]=new THREE.MeshStandardMaterial({color:0xd9a32a,roughness:.3,metalness:.45});
+mats[C.dark]=new THREE.MeshStandardMaterial({color:0x6b1d12,roughness:.5});
+mats[C.kt]=new THREE.MeshStandardMaterial({color:0xe2c27a,roughness:.7});
+function uvScale(geo,su,sv){ const uv=geo.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*su,uv.getY(i)*sv); uv.needsUpdate=true; }
+function uvBox(geo,w,h,d,tile){ const uv=geo.attributes.uv, f=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+  for(let i=0;i<24;i++){ const [a,b]=f[(i/4)|0]; uv.setXY(i,uv.getX(i)*a/tile,uv.getY(i)*b/tile); } uv.needsUpdate=true; }
+
+function M(c){ if(!mats[c]) mats[c]=new THREE.MeshStandardMaterial({color:c,roughness:.85,flatShading:true}); return mats[c]; }
+/*MESHDEF*/function mesh(geo,c,parent){ const m=new THREE.Mesh(geo,typeof c==='number'?M(c):c); m.castShadow=m.receiveShadow=true; parent.add(m); return m; }
+function box(p,w,h,d,c,x,y,z){ const g=new THREE.BoxGeometry(w,h,d), mt=typeof c==='number'?M(c):c; if(mt.map) uvBox(g,w,h,d,mt.userData.tile||8); const m=mesh(g,mt,p); m.position.set(x,y,z); return m; }
+function cyl(p,r,h,c,x,y,z,seg=8){ const m=mesh(new THREE.CylinderGeometry(r,r,h,seg),c,p); m.position.set(x,y,z); return m; }
+
+/* collision & floor data */
+const solids=[], circles=[], floors=[], occupied=[];
+function solid(x1,z1,x2,z2){solids.push([Math.min(x1,x2),Math.min(z1,z2),Math.max(x1,x2),Math.max(z1,z2)]);}
+function solidC(cx,cz,w,d){solid(cx-w/2,cz-d/2,cx+w/2,cz+d/2);}
+function floor(cx,cz,w,d,h){floors.push([cx-w/2,cz-d/2,cx+w/2,cz+d/2,h]);}
+function occ(x1,z1,x2,z2){occupied.push([x1,z1,x2,z2]);}
+
+/* mái cong: dốc thoải ở chân, dốc đứng gần nóc, bốn góc đầu đao vểnh lên */
+function curvedRoofGeo(w,d,h){
+  const N=7, S=10, pos=[], uv=[], idx=[], ring=[];
+  const corners=[[1,1],[-1,1],[-1,-1],[1,-1]], cr=Math.min(w,d)*.42;
+  for(let k=0;k<=N;k++){
+    const t=k/N, hx=w/2-(d/2)*t, hz=Math.max(0,d/2-(d/2)*t), y=h*(.3*t+.7*t*t), pts=[];
+    const P=[[hx,hz],[-hx,hz],[-hx,-hz],[hx,-hz]];
+    for(let e=0;e<4;e++){ const a=P[e], b=P[(e+1)%4];
+      for(let s=0;s<S;s++){ const u=s/S; let px=a[0]+(b[0]-a[0])*u, pz=a[1]+(b[1]-a[1])*u, py=y;
+        if(k<3){ const fall=Math.pow(1-t/(3/N),2.2);
+          let best=0, cdx=0, cdz=0; for(const [sx,sz] of corners){ const dd=Math.hypot(px-sx*hx,pz-sz*hz), c=Math.max(0,1-dd/cr); if(c>best){best=c;cdx=sx;cdz=sz;} }
+          const lift=best*best*fall; py+=h*.32*lift; px+=cdx*1.1*lift; pz+=cdz*1.1*lift; }
+        pts.push([px,py,pz]); } }
+    ring.push(pts);
+  }
+  const R=4*S;
+  let acc=[]; // arc length for u
+  for(let k=0;k<=N;k++){ const pts=ring[k]; let L=0; const us=[0]; for(let i=1;i<=R;i++){ const a=pts[i-1], b=pts[i%R]; L+=Math.hypot(b[0]-a[0],b[2]-a[2]); us.push(L); } acc.push(us); }
+  const slant=Math.hypot(d/2,h)/N;
+  for(let k=0;k<=N;k++) for(let i=0;i<=R;i++){ const p=ring[k][i%R]; pos.push(p[0],p[1],p[2]); uv.push(acc[0][i]/4, k*slant/4); }
+  for(let k=0;k<N;k++) for(let i=0;i<R;i++){ const a=k*(R+1)+i, b=a+1, c=a+(R+1), e=c+1; idx.push(a,c,b, b,c,e); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx); g.computeVertexNormals();
+  g.userData.corners=[0,S,2*S,3*S].map(i=>ring[0][i]);
+  return g;
+}
+const hornGeo=new THREE.ConeGeometry(.28,1.6,5); hornGeo.translate(0,.8,0);
+const finialGeo=new THREE.SphereGeometry(.55,10,8);
+function roof(p,w,d,h,y,c=C.roof){
+  const geo=curvedRoofGeo(w,d,h), m=mesh(geo,c,p); m.position.y=y;
+  const r=Math.max(0,(w-d)/2);
+  if(r>.5){ box(p,2*r+1.4,.75,.9,C.ridge,0,y+h+.25,0);
+    for(const s of [-1,1]){ const k=mesh(hornGeo,C.ridge,p); k.position.set(s*(r+.6),y+h+.4,0); k.rotation.z=-s*.5; } }
+  else { const f=mesh(finialGeo,C.ridge,p); f.position.set(0,y+h+.5,0); }
+  for(const q of geo.userData.corners){ const k=mesh(hornGeo,C.ridge,p); k.position.set(q[0],y+q[1],q[2]); k.scale.set(.6,Math.min(.7,w/40+.3),.6);
+    k.rotation.set(Math.sign(q[2])*.55,0,-Math.sign(q[0])*.55); }
+  return m;
+}
+
+/* pillared hall; o.passage = width of a walk-through opening in the body */
+function hall(parent,o){
+  const g=new THREE.Group(); g.position.set(o.x||0,o.y0||0,o.z||0); g.rotation.y=o.rot||0; parent.add(g);
+  const base=o.base??1.2, colH=o.colH??5, w=o.w, d=o.d, bw=w-1.6;
+  if(o.passage){
+    const p=o.passage, side=(bw-p)/2;
+    box(g,(w+3-p)/2,base,d+3,o.baseC??C.stone,-(p/2+(w+3-p)/4),base/2,0); box(g,(w+3-p)/2,base,d+3,o.baseC??C.stone,(p/2+(w+3-p)/4),base/2,0);
+    box(g,side,colH,d-1.6,o.body??C.wood,-(p/2+side/2),base+colH/2,0); box(g,side,colH,d-1.6,o.body??C.wood,(p/2+side/2),base+colH/2,0);
+    box(g,p,colH*.12,d-1.6,o.body??C.wood,0,base+colH*.94,0);
+    if(!o.y0){ solidC(o.x-(p/2+(w+3-p)/4),o.z,(w+3-p)/2,d+3); solidC(o.x+(p/2+(w+3-p)/4),o.z,(w+3-p)/2,d+3); }
+  } else {
+    box(g,w+3,base,d+3,o.baseC??C.stone,0,base/2,0);
+    box(g,bw,colH,d-1.6,o.body??C.wood,0,base+colH/2,0);
+    if(!o.y0 && o.solid!==false){ const sw=Math.abs(Math.sin(o.rot||0))>.5; solidC(o.x,o.z,sw?d+3:w+3,sw?w+3:d+3); }
+  }
+  if(o.cols!==false){
+    const nx=Math.max(2,Math.round(w/4.5)), nz=Math.max(1,Math.round(d/4.5));
+    for(let i=0;i<=nx;i++){const xx=-w/2+i*w/nx; if(o.passage&&Math.abs(xx)<o.passage/2) continue; cyl(g,.35,colH,C.col,xx,base+colH/2,d/2); cyl(g,.35,colH,C.col,xx,base+colH/2,-d/2);}
+    for(let j=1;j<nz;j++){const zz=-d/2+j*d/nz; cyl(g,.35,colH,C.col,w/2,base+colH/2,zz); cyl(g,.35,colH,C.col,-w/2,base+colH/2,zz);}
+  }
+  const y=base+colH, rh=o.roofH??Math.min(w,d)*.42, rc=o.roofC??C.roof;
+  if((o.tiers||1)===1) roof(g,w+4,d+4,rh,y,rc);
+  else{ roof(g,w+4.5,d+4.5,rh*.55,y,rc); box(g,w*.66,colH*.55,d*.56,o.body??C.wood,0,y+rh*.3+colH*.27,0); roof(g,w*.78,d*.7,rh*.62,y+rh*.3+colH*.55,rc); }
+  return g;
+}
+function wallSeg(p,x1,z1,x2,z2,h,t,c){
+  const len=Math.hypot(x2-x1,z2-z1), m=box(p,len,h,t,c,(x1+x2)/2,h/2,(z1+z2)/2);
+  m.rotation.y=-Math.atan2(z2-z1,x2-x1);
+  if(z1===z2) solid(x1,z1-t/2,x2,z1+t/2); else solid(x1-t/2,z1,x1+t/2,z2);
+  return m;
+}
+function rectWall(p,x1,z1,x2,z2,h,t,c,gapS){
+  wallSeg(p,x1,z1,x2,z1,h,t,c); wallSeg(p,x1,z1,x1,z2,h,t,c); wallSeg(p,x2,z1,x2,z2,h,t,c);
+  if(gapS){ wallSeg(p,x1,z2,gapS[0],z2,h,t,c); wallSeg(p,gapS[1],z2,x2,z2,h,t,c); } else wallSeg(p,x1,z2,x2,z2,h,t,c);
+}
+function plane(p,w,d,c,x,y,z){ const g=new THREE.PlaneGeometry(w,d), mt=M(c); if(mt.map) uvScale(g,w/(mt.userData.tile||8),d/(mt.userData.tile||8)); const m=new THREE.Mesh(g,mt); m.rotation.x=-Math.PI/2; m.position.set(x,y,z); m.receiveShadow=true; p.add(m); return m; }
+const WATER_TEX=canvasTex(256,256,(x,w,h)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,w,h);
+  for(let i=0;i<220;i++){ const y=vr()*h, x0=vr()*w, l=20+vr()*60; x.strokeStyle=`rgba(${vr()<.5?'255,255,255':'120,170,180'},${.25+vr()*.35})`; x.lineWidth=1+vr()*1.5;
+    x.beginPath(); x.moveTo(x0,y); x.quadraticCurveTo(x0+l/2,y-2,x0+l,y); x.stroke(); } });
+const waterMat=new THREE.MeshPhongMaterial({color:0x2c6f7c,map:WATER_TEX,specular:0xffe8c0,shininess:70,emissive:0x07262c});
+function water(p,w,d,x,z,isSolid=true){ const wg=new THREE.PlaneGeometry(w,d); uvScale(wg,w/30,d/30); const m=new THREE.Mesh(wg,waterMat); m.rotation.x=-Math.PI/2; m.position.set(x,.08,z); m.receiveShadow=true; p.add(m); if(isSolid) solidC(x,z,w,d); return m; }
+
+/* ---------- bầu trời, mây, núi xa, ánh sáng môi trường ---------- */
+const SKY={top:new THREE.Color(0x2f72c4), hor:new THREE.Color(0xcfe4ef), sun:new THREE.Color(0xffd9a0)};
+function skyMesh(r){
+  return new THREE.Mesh(new THREE.SphereGeometry(r,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
+    uniforms:{top:{value:SKY.top},hor:{value:SKY.hor},sunc:{value:SKY.sun},sund:{value:SUN_DIR}},
+    vertexShader:'varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:`uniform vec3 top,hor,sunc,sund; varying vec3 vP;
+      void main(){ float h=vP.y; vec3 c=mix(hor,top,pow(clamp(h,0.,1.),.55));
+        if(h<0.) c=mix(hor,hor*.82,clamp(-h*4.,0.,1.));
+        float d=max(dot(vP,sund),0.); c+=sunc*(pow(d,180.)*1.2+pow(d,10.)*.22); gl_FragColor=vec4(c,1.); }`}));
+}
+const sky=skyMesh(2600); sky.renderOrder=-1; scene.add(sky);
+scene.fog=new THREE.Fog(SKY.hor.getHex(),700,2300);
+{ // mây
+  const tex=canvasTex(256,128,(x,w,h)=>{ for(let i=0;i<14;i++){ const cx=40+vr()*176, cy=70+vr()*25-(Math.abs(cx-128)<60?15:0), r=18+vr()*30;
+      const g=x.createRadialGradient(cx,cy,0,cx,cy,r); g.addColorStop(0,'rgba(255,255,255,.95)'); g.addColorStop(.6,'rgba(250,250,252,.6)'); g.addColorStop(1,'rgba(255,255,255,0)');
+      x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); } });
+  for(let i=0;i<22;i++){ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,fog:false,depthWrite:false,opacity:.75+vr()*.2}));
+    const a=vr()*Math.PI*2, R=900+vr()*900; sp.position.set(Math.cos(a)*R,260+vr()*320,Math.sin(a)*R-200); const sc=260+vr()*320; sp.scale.set(sc,sc*.45,1); scene.add(sp); } }
+{ // núi xa (Ngự Bình phía nam, dãy Trường Sơn phía tây)
+  const hm=new THREE.MeshStandardMaterial({color:0x5c7651,roughness:1,flatShading:true});
+  for(let i=0;i<26;i++){ const a=vr()*Math.PI*2, R=1250+vr()*500, hh=90+vr()*170, rr=200+vr()*260;
+    const m=new THREE.Mesh(new THREE.ConeGeometry(rr,hh,7,1),hm); m.position.set(Math.cos(a)*R,hh/2-8,Math.sin(a)*R); m.rotation.y=vr()*3; m.scale.z=.6+vr()*.8; scene.add(m); }
+  const ng=new THREE.Mesh(new THREE.ConeGeometry(240,150,8,1),hm); ng.position.set(80,67,1150); scene.add(ng); }
+
+const world=new THREE.Group(); scene.add(world);
+const groups={};
+function site(id){ const g=new THREE.Group(); g.userData.site=id; world.add(g); groups[id]=g; return g; }
+
+/* ground, moat */
+plane(world,900,900,C.grass,0,0,40);
+plane(world,70,340,C.path,0,.03,10);
+water(world,12,370,-162,10); water(world,12,370,162,10); water(world,336,12,0,-172);
+water(world,128,12,-104,196); water(world,128,12,104,196);
+box(world,80,.6,12,C.stone,0,.3,196); floor(0,196,80,12,.6);
+plane(world,64,60,C.path,0,.04,226); plane(world,40,24,C.path,-70,.042,250);
+wallSeg(world,-320,270,-80,270,7,16,C.wallHT); wallSeg(world,-60,270,320,270,7,16,C.wallHT);
+{ const g=site('quangduc');
+  box(g,20,2.6,16,C.wallHT,-70,11.3,270);                       // lintel over the gate passage
+  box(g,6,12.6,18,C.wallHT,-83,6.3,270); box(g,6,12.6,18,C.wallHT,-57,6.3,270); solid(-86,261,-80,279); solid(-60,261,-54,279);
+  hall(g,{x:-70,z:270,y0:12.6,w:14,d:8,base:.5,colH:3.4,tiers:2,roofH:5}); }
+// road along the Perfume River, outside Kinh thành
+plane(world,700,16,0x6f6c67,0,.05,304); plane(world,700,2,0xd8d2c2,0,.06,295); plane(world,700,2,0xd8d2c2,0,.06,313);
+for(let x=-340;x<340;x+=10) box(world,4,.08,.5,0xe9e4d6,x,.1,304);
+plane(world,40,24,C.path,-70,.045,288);
+water(world,800,110,0,392); box(world,800,1.2,3,C.stoneDk,0,.6,337.5);
+occ(-400,186,400,345);
+
+/* Hoàng thành wall + gates */
+const HT=8,T=4;
+wallSeg(world,-150,-160,150,-160,HT,T,C.wallHT);
+wallSeg(world,-150,-160,-150,160,HT,T,C.wallHT);
+wallSeg(world,150,-160,150,160,HT,T,C.wallHT);
+wallSeg(world,-150,160,-32,160,HT,T,C.wallHT);
+wallSeg(world,32,160,150,160,HT,T,C.wallHT);
+function gateTower(x,z,rot){ hall(world,{x,z,rot,w:16,d:8,base:HT+.2,baseC:C.wallHT,colH:3.5,roofH:4.5,cols:false,y0:.001}); box(world,rot?8:18,HT,rot?18:8,C.wallHT,x,HT/2,z); solidC(x,z,rot?8:18,rot?18:8); }
+gateTower(0,-160,0); gateTower(-150,30,Math.PI/2); gateTower(150,30,Math.PI/2);
+
+/* Kỳ Đài */
+let flag;
+{ const g=site('kydai');
+  box(g,46,6,30,C.wallHT,0,3,262); box(g,36,5,24,C.wallHT,0,8.5,262); box(g,26,5,18,C.wallHT,0,13.5,262); solidC(0,262,46,30);
+  cyl(g,.7,34,0xe8e4da,0,33,262,10);
+  const cv=document.createElement('canvas'); cv.width=180; cv.height=120; const x=cv.getContext('2d');
+  x.fillStyle='#da251d'; x.fillRect(0,0,180,120); x.fillStyle='#ffde00'; x.beginPath();
+  for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5, r=i%2?16:40; x.lineTo(90+r*Math.cos(a),60+r*Math.sin(a));} x.fill();
+  flag=new THREE.Mesh(new THREE.PlaneGeometry(12,8,12,1),new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv),side:THREE.DoubleSide,roughness:.9}));
+  flag.position.set(6.4,45,262); g.add(flag); }
+
+/* Ngọ Môn with a walk-through central gate */
+{ const g=site('ngomon'), H=11, gap=8;
+  const sw=32-gap/2;
+  box(g,sw,H,18,C.wallHT,-(gap/2+sw/2),H/2,160); box(g,sw,H,18,C.wallHT,(gap/2+sw/2),H/2,160);
+  box(g,gap,H-10,18,C.wallHT,0,10+(H-10)/2,160);
+  solid(-32,151,-gap/2,169); solid(gap/2,151,32,169);
+  box(g,14,H,34,C.wallHT,-25,H/2,168); box(g,14,H,34,C.wallHT,25,H/2,168); solid(-32,151,-18,185); solid(18,151,32,185);
+  box(g,5,5.5,1,C.dark,-12,2.75,169.1); box(g,5,5.5,1,C.dark,12,2.75,169.1);
+  box(g,4,4.5,1,C.dark,-25,2.25,185.1); box(g,4,4.5,1,C.dark,25,2.25,185.1);
+  hall(g,{x:0,z:160,y0:H,w:30,d:12,base:.6,colH:4,tiers:2,roofH:7});
+  hall(g,{x:-15,z:160,y0:H,w:10,d:10,base:.6,colH:3.4,roofH:4.2}); hall(g,{x:15,z:160,y0:H,w:10,d:10,base:.6,colH:3.4,roofH:4.2});
+  for(const s of [-1,1]){ hall(g,{x:25*s,z:158,y0:H,w:9,d:8,base:.5,colH:3,roofH:3.6,roofC:C.roofG}); hall(g,{x:25*s,z:177,y0:H,w:9,d:9,base:.5,colH:3,roofH:3.8,roofC:C.roofG}); }
+  occ(-36,148,36,188); }
+
+/* Thái Dịch */
+{ const g=site('thaidich'); let s0=3; const rr=()=>((s0=(s0*16807)%2147483647)/2147483647);
+  for(const s of [-1,1]){ box(g,42,.5,34,C.stoneDk,26*s,.2,130); water(g,39,31,26*s,130,false); solidC(26*s,130,42,34);
+    for(let i=0;i<34;i++){ const l=mesh(new THREE.CylinderGeometry(1+rr()*.6,1,.12,9),C.lotus,g); l.position.set(26*s+(rr()-.5)*34,.2,130+(rr()-.5)*26);
+      if(i%3===0){ const f=mesh(new THREE.SphereGeometry(.42,8,6),LOTUS_PINK,g); f.position.set(l.position.x+.3,.75,l.position.z); f.scale.y=1.3; } } }
+  box(g,10,.9,40,C.stone,0,.45,130); floor(0,130,10,40,.9);
+  for(const zz of [112,149]){ box(g,.8,6,.8,C.col,-4,3,zz); box(g,.8,6,.8,C.col,4,3,zz); box(g,9.6,1,1.6,C.roof,0,6.3,zz); }
+  occ(-50,108,50,152); }
+
+/* Đại Triều Nghi */
+{ const g=site('trieunghi');
+  box(g,62,.6,32,C.stone,0,.3,92); box(g,44,.6,18,C.stone,0,.9,86); floor(0,92,62,32,.6); floor(0,86,44,18,1.2);
+  for(let i=0;i<9;i++) for(const s of [-1,1]) box(g,.6,1.3,.25,C.stoneDk,s*(10+i*2.2),1.2,100);
+  occ(-32,75,32,109); }
+
+/* Thái Hòa + Tả/Hữu Vu */
+{ const g=site('thaihoa'); hall(g,{x:0,z:58,w:44,d:28,base:2.6,colH:6.5,tiers:2,roofH:13}); box(g,20,1.4,6,C.stone,0,.7,75); floor(0,75,20,6,1.4); occ(-26,42,26,78); }
+for(const s of [-1,1]){ hall(world,{x:44*s,z:45,w:36,d:9,rot:Math.PI/2,base:.8,colH:4,roofH:4.5}); occ(44*s-7,25,44*s+7,65); }
+
+/* Tử Cấm Thành + Đại Cung Môn (walk-through) */
+{ const g=site('tucam'); rectWall(g,-62,-152,62,0,4.5,2.2,C.wallTC,[-14,14]);
+  hall(g,{x:0,z:0,w:26,d:8,base:.6,colH:11,tiers:2,roofH:7,passage:8}); floor(0,0,8,11,0); occ(-16,-8,16,8); }
+hall(world,{x:-36,z:-92,w:14,d:10,base:.8,colH:3.5,roofH:5}); occ(-45,-99,-27,-85);
+hall(world,{x:-38,z:-40,w:12,d:16,base:.8,colH:3.5,roofH:5}); occ(-46,-50,-30,-30);
+hall(world,{x:38,z:-36,w:12,d:16,base:.8,colH:3.5,roofH:5}); occ(30,-46,46,-26);
+water(world,16,12,30,-120); occ(20,-128,40,-112);
+
+/* Cần Chánh ruins */
+{ const g=site('canchanh'); box(g,48,1.4,30,C.stone,0,.7,-35); floor(0,-35,48,30,1.4);
+  for(let i=0;i<=8;i++) for(let j=0;j<=4;j++) cyl(g,.7,.5,C.stoneDk,-21+i*5.25,1.65,-47+j*6,8); occ(-26,-52,26,-18); }
+
+/* Duyệt Thị Đường */
+{ const g=site('duyetthi'); hall(g,{x:38,z:-78,w:14,d:26,base:1,colH:5,roofH:7}); occ(29,-93,47,-63); }
+
+/* Kiến Trung */
+{ const g=site('kientrung'), z=-118;
+  box(g,36,2,20,C.stone,0,1,z); box(g,32,6,16,C.kt,0,5,z); box(g,33,.8,17,0xe9dcb4,0,8.4,z);
+  box(g,30,5,14,C.kt,0,11.3,z); box(g,31,.8,15,0xe9dcb4,0,14.2,z); roof(g,31,15,4,14.6,C.roof);
+  box(g,8,9,3,0xe9dcb4,0,6.5,z+8.6); box(g,6,3,2,C.kt,0,12.5,z+8.3);
+  for(let i=0;i<7;i++){ box(g,2,2.6,.4,0x47604d,-12+i*4,5,z+8.1); box(g,2,2.4,.4,0x47604d,-12+i*4,11.4,z+7.1); }
+  solid(-18,z-10,18,z+10.2); occ(-20,z-12,20,z+12); }
+
+/* Thế Miếu enclosure */
+rectWall(world,-140,-10,-60,100,3.2,1.6,C.wallTC,[-108,-92]);
+{ const g=site('themieu'); hall(g,{x:-100,z:12,w:56,d:16,base:1.4,colH:5,roofH:7.5}); occ(-130,2,-70,22); }
+{ const g=site('hienlam'); const x=-100,z=78;
+  hall(g,{x,z,w:14,d:10,base:1.6,colH:4,roofH:3.2}); hall(g,{x,z,y0:7.2,w:11,d:8,base:.3,colH:3,roofH:2.8}); hall(g,{x,z,y0:12.6,w:8,d:6,base:.3,colH:2.6,roofH:4});
+  occ(-110,70,-90,86); }
+{ const g=site('cuudinh');
+  const prof=[[0,0],[1.1,0],[1.2,.6],[.9,.9],[1.5,1.4],[1.9,2.4],[1.8,3.2],[1.4,3.5],[1.5,3.8],[0,3.8]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const geo=new THREE.LatheGeometry(prof,14), bm=new THREE.MeshStandardMaterial({color:C.bronze,roughness:.55,metalness:.5,flatShading:true});
+  for(let i=0;i<9;i++){ const x=-124+i*6, big=i===4?1.25:1;
+    box(g,3.6,.8,3.6,C.stone,x,.4,48); circles.push([x,48,2.3]);
+    const u=new THREE.Mesh(geo,bm); u.scale.setScalar(big); u.position.set(x,.8,48); u.castShadow=true; g.add(u);
+    for(const s of [-1,1]){ const h=mesh(new THREE.TorusGeometry(.5,.14,5,8),C.bronze,g); h.position.set(x+s*1.5*big,.8+3.9*big,48); h.rotation.y=Math.PI/2; } }
+  occ(-128,44,-72,52); }
+
+/* Thái Miếu */
+rectWall(world,60,-10,140,90,3.2,1.6,C.wallTC,[92,108]);
+{ const g=site('thaimieu'); hall(g,{x:100,z:20,w:56,d:16,base:1.4,colH:5,roofH:7.5}); hall(g,{x:100,z:70,w:14,d:9,base:1.2,colH:3.6,roofH:5}); occ(70,10,130,30); occ(90,62,110,78); }
+
+/* Diên Thọ */
+rectWall(world,-138,-118,-72,-48,3,1.4,C.wallTC,[-112,-96]);
+{ const g=site('dientho'); hall(g,{x:-104,z:-88,w:28,d:14,base:1.2,colH:4.5,roofH:6.5});
+  hall(g,{x:-126,z:-74,w:16,d:8,rot:Math.PI/2,base:.8,colH:3.5,roofH:4}); hall(g,{x:-82,z:-74,w:16,d:8,rot:Math.PI/2,base:.8,colH:3.5,roofH:4}); occ(-140,-120,-70,-46); }
+
+/* Trường Sanh */
+{ const g=site('truongsanh'); hall(g,{x:-108,z:-142,w:18,d:10,base:1,colH:3.8,roofH:5});
+  water(g,22,10,-104,-126); box(g,3,3,3,0x8a8577,-100,1.5,-126); box(g,2,5,2,0x8a8577,-99,2.5,-127); occ(-122,-150,-90,-118); }
+
+for(const [x,z] of [[96,-60],[96,-100],[120,-130]]){ hall(world,{x,z,w:22,d:10,base:.8,colH:3.5,roofH:5}); occ(x-14,z-8,x+14,z+8); }
+occ(-30,-160,30,200); occ(-64,-154,64,2);
+STATIONS.forEach(s=>occ(s.x-9,s.z-9,s.x+9,s.z+9));
+occ(-112,86,-88,104); occ(88,80,112,100); occ(-112,-50,-92,-40);
+
+/* trees */
+{ let s=7; const rnd=()=>((s=(s*16807)%2147483647)/2147483647); const pts=[];
+  for(let k=0;k<4000 && pts.length<340;k++){
+    const x=-300+rnd()*600, z=-230+rnd()*440;
+    const inHT=x>-145&&x<145&&z>-155&&z<155, out=!inHT&&(x<-175||x>175||z<-185)&&Math.abs(x)<320&&z>-260;
+    if(!inHT&&!out) continue;
+    if(occupied.some(r=>x>r[0]-4&&x<r[2]+4&&z>r[1]-4&&z<r[3]+4)) continue;
+    if(pts.some(p=>(p[0]-x)**2+(p[1]-z)**2<64)) continue;
+    pts.push([x,z,.8+rnd()*.7]);
+  }
+  for(let x=-280;x<=280;x+=22){ if(Math.abs(x+70)<26) continue; pts.push([x,288,1.1]); pts.push([x+11,322,1.1]); }
+  const leafM=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9,flatShading:true});
+  const can=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(3.2,1),leafM,pts.length), can2=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2.4,1),leafM,pts.length);
+  const greens=[0x3f6b35,0x4c7a3a,0x5b8a3f,0x35592d,0x6a9446,0x2f5a3a].map(h=>new THREE.Color(h));
+  const tr=new THREE.InstancedMesh(new THREE.CylinderGeometry(.4,.5,3,5),M(C.trunk),pts.length);
+  const o=new THREE.Object3D();
+  pts.forEach(([x,z,sc],i)=>{ circles.push([x,z,.9*sc]);
+    o.position.set(x,1.5*sc,z); o.scale.set(sc,sc,sc); o.rotation.set(0,0,0); o.updateMatrix(); tr.setMatrixAt(i,o.matrix);
+    o.position.set(x,5.2*sc,z); o.rotation.set(0,i,0); o.scale.set(sc*1.1,sc*.95,sc*1.1); o.updateMatrix(); can.setMatrixAt(i,o.matrix);
+    const g=greens[i%greens.length]; can.setColorAt(i,g);
+    o.position.set(x+1.6*sc,6.6*sc,z-1.1*sc); o.scale.set(sc,sc,sc); o.updateMatrix(); can2.setMatrixAt(i,o.matrix); can2.setColorAt(i,g.clone().offsetHSL(0,0,.05)); });
+  can.castShadow=can2.castShadow=tr.castShadow=true; world.add(can,can2,tr); }
+
+/* ---------- station markers ---------- */
+const COL={pending:0xe2b33c,done:0x8a9490};
+STATIONS.forEach(s=>{
+  const g=new THREE.Group(); g.position.set(s.x,groundH(s.x,s.z),s.z); scene.add(g);
+  const mat=new THREE.MeshStandardMaterial({color:COL.pending,emissive:COL.pending,emissiveIntensity:.45,roughness:.4});
+  const pad=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,.25,24),mat); pad.position.y=.2; g.add(pad);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,10,8),new THREE.MeshBasicMaterial({color:COL.pending,transparent:true,opacity:.45})); beam.position.y=5; g.add(beam);
+  const gem=new THREE.Mesh(new THREE.OctahedronGeometry(1.4,0),mat); gem.position.y=11; gem.castShadow=true; g.add(gem);
+  s.mesh={g,mat,beam,gem};
+});
+function paintStation(s){
+  const c=s.status?COL.done:COL.pending;
+  s.mesh.mat.color.set(c); s.mesh.mat.emissive.set(c); s.mesh.beam.material.color.set(c);
+  s.mesh.mat.emissiveIntensity=s.status?.2:.45;
+}
+
+/* ---------- the guide: Thảo in purple áo dài and nón lá ---------- */
+const guide=new THREE.Group(); scene.add(guide);
+const body=new THREE.Group(); guide.add(body);
+const TIM=0x6a3d8f, TIM_DK=0x55307a, WHITE=0xf2efe8, SKIN=0xe8c29e, HAIR=0x1b1716, NON=0xe2cd92;
+function gm(c,opts={}){ return new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.75},opts)); }
+function part(geo,mat,parent,x,y,z){ const m=new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.castShadow=true; parent.add(m); return m; }
+// legs (white trousers), pivot at hip
+const legs=[];
+for(const s of [-1,1]){ const piv=new THREE.Group(); piv.position.set(.26*s,2.7,0); body.add(piv);
+  part(new THREE.CylinderGeometry(.26,.3,2.6,10),gm(WHITE),piv,0,-1.3,0);
+  part(new THREE.BoxGeometry(.32,.18,.55),gm(0x7a5a3a),piv,0,-2.62,.1); legs.push(piv); }
+// fitted bodice
+const torso=part(new THREE.CylinderGeometry(.5,.55,1.9,14),gm(TIM),body,0,3.6,0);
+part(new THREE.SphereGeometry(.5,14,8,0,Math.PI*2,0,Math.PI/2),gm(TIM),body,0,4.5,0).scale.set(1.1,.5,.9);
+part(new THREE.CylinderGeometry(.2,.22,.42,12),gm(TIM_DK),body,0,4.85,0); // high collar
+// front and back flaps, pivot at waist
+const flaps=[];
+for(const s of [1,-1]){ const piv=new THREE.Group(); piv.position.set(0,2.75,.38*s); body.add(piv);
+  const sh=new THREE.Shape(); sh.moveTo(-.45,0); sh.lineTo(.45,0); sh.lineTo(.62,-2.35); sh.quadraticCurveTo(0,-2.5,-.62,-2.35); sh.lineTo(-.45,0);
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:.06,bevelEnabled:false}); geo.translate(0,0,-.03);
+  const m=part(geo,gm(TIM,{side:THREE.DoubleSide}),piv,0,0,0);
+  // a simple embroidered motif on the front flap
+  if(s===1){ part(new THREE.CircleGeometry(.18,16),gm(0xe7c46a,{side:THREE.DoubleSide}),piv,.1,-1.2,.04); part(new THREE.CircleGeometry(.1,12),gm(0xe7c46a,{side:THREE.DoubleSide}),piv,-.2,-1.6,.04); }
+  flaps.push({piv,s}); }
+// arms with long sleeves
+const arms=[];
+for(const s of [-1,1]){ const piv=new THREE.Group(); piv.position.set(.62*s,4.35,0); piv.rotation.z=.12*s; body.add(piv);
+  part(new THREE.CylinderGeometry(.15,.17,1.9,10),gm(TIM),piv,0,-.95,0);
+  part(new THREE.SphereGeometry(.16,10,8),gm(SKIN),piv,0,-1.98,0); arms.push(piv); }
+// head, hair, face
+const head=new THREE.Group(); head.position.set(0,5.45,0); body.add(head);
+part(new THREE.SphereGeometry(.45,18,14),gm(SKIN),head,0,0,0);
+const hair=part(new THREE.SphereGeometry(.48,18,14,0,Math.PI*2,0,Math.PI*.55),gm(HAIR),head,0,.04,-.04); hair.rotation.x=-.35;
+part(new THREE.BoxGeometry(.62,1.9,.14),gm(HAIR),head,0,-1.05,-.36).rotation.x=.1; // long straight hair
+for(const s of [-1,1]) part(new THREE.SphereGeometry(.055,8,6),gm(0x1a1412),head,.16*s,.04,.41);
+part(new THREE.TorusGeometry(.09,.022,6,10,Math.PI),gm(0xb4544a),head,0,-.16,.42).rotation.z=Math.PI;
+for(const s of [-1,1]) part(new THREE.CircleGeometry(.07,10),gm(0xf0a8a0,{transparent:true,opacity:.6}),head,.26*s,-.08,.38).rotation.y=.5*s;
+// nón lá: straw cone with a few rib rings and a chin ribbon
+const non=new THREE.Group(); non.position.set(0,.3,0); non.rotation.x=-.08; head.add(non);
+const nonMat=gm(NON,{roughness:.9,side:THREE.DoubleSide,flatShading:true});
+part(new THREE.ConeGeometry(1.45,.95,28,1,true),nonMat,non,0,.42,0);
+for(const k of [.35,.62,.86]){ const r=part(new THREE.TorusGeometry(1.45*(1-k),.022,4,28),gm(0xbfa767),non,0,.95*k-.05,0); r.rotation.x=Math.PI/2; }
+part(new THREE.TorusGeometry(.42,.02,4,16,Math.PI),gm(0x9c2a3a),head,0,-.05,.0).rotation.set(Math.PI/2,0,Math.PI);
+guide.scale.setScalar(1.5);
+
+/* ---------- theme ---------- */
+function isDark(){ const t=document.documentElement.getAttribute('data-theme'); if(t) return t==='dark'; return matchMedia('(prefers-color-scheme: dark)').matches; }
+let miniCol={};
+function applyTheme(){
+  const cs=getComputedStyle(document.documentElement), v=n=>cs.getPropertyValue(n).trim();
+  miniCol={bg:v('--bg'),line:v('--muted'),ink:v('--ink'),tim:v('--tim'),gold:v('--imperial'),ok:v('--ok'),bad:v('--bad'),water:'#4e8189',wall:v('--lacquer')};
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- labels ---------- */
+const labelsEl=document.getElementById('labels'); const labels=[];
+STATIONS.forEach(s=>{ const el=document.createElement('div'); el.className='lbl st'; labelsEl.appendChild(el); s.lbl=el; labels.push({el,x:s.x,y:13.5+groundH(s.x,s.z),z:s.z}); });
+SITES.forEach(s=>{ const el=document.createElement('div'); el.className='lbl name'; el.innerHTML=`<b>•</b>${s.name}`; labelsEl.appendChild(el); labels.push({el,x:s.x,y:s.ly,z:s.z}); });
+function paintLabel(s){ s.lbl.className='lbl st'+(s.status?' done':''); s.lbl.innerHTML=`<b>${s.status?'•':s.n}</b>Trạm ${s.n} · ${s.status?'đã trả lời':'Bài '+s.lesson}`; }
+
+/* ---------- place bar ---------- */
+const placesEl=document.getElementById('places');
+STATIONS.forEach(s=>{ const b=document.createElement('button'); b.type='button'; b.className='place';
+  b.title=`Trạm ${s.n} · Bài ${s.lesson}`; b.innerHTML=`<b>${s.n}</b>${s.place}`;
+  b.addEventListener('click',()=>{ const site=SITES.find(x=>x.name.includes(s.place)||s.place.includes(x.name));
+    const d=Math.round(Math.hypot(s.x-pos.x,s.z-pos.z));
+    say(`${site?site.name+' ('+site.year+'): '+site.desc+' ':''}Trạm ${s.n} ở ${DIR(s.x-pos.x,s.z-pos.z)}, cách khoảng ${d} m.`,true); canvas.focus({preventScroll:true}); });
+  placesEl.appendChild(b); s.chip=b; });
+function refreshPanel(){
+  const done=STATIONS.filter(s=>s.status).length;
+  document.getElementById('score').textContent=`Đã làm ${done}/10`;
+  STATIONS.forEach(s=>{ s.chip.className='place'+(s.status?' done':''); s.chip.querySelector('b').textContent=s.status?'•':s.n; paintLabel(s); paintStation(s); });
+}
+let lastSite=null;
+function renderCard(s){ const id=s?s.id:null; if(id===lastSite) return; lastSite=id; if(s && performance.now()>holdUntil) say(`Đây là ${s.name}. ${s.desc}`); }
+
+/* ---------- guide speech ---------- */
+const sayEl=document.getElementById('say'); let holdUntil=0, hintTimer=0;
+function say(t,hold){ sayEl.innerHTML=t; clearTimeout(hintTimer); if(hold) holdUntil=performance.now()+9000; }
+const DIR=(dx,dz)=>{ const a=[]; if(dz<-20)a.push('bắc'); else if(dz>20)a.push('nam'); if(dx>20)a.push('đông'); else if(dx<-20)a.push('tây'); return a.length?'phía '+a.join(' '):'ngay gần đây'; };
+function nextHint(){
+  const left=STATIONS.filter(s=>!s.status);
+  if(!left.length) return;
+  left.sort((a,b)=>((a.x-pos.x)**2+(a.z-pos.z)**2)-((b.x-pos.x)**2+(b.z-pos.z)**2));
+  const n=left[0]; say(`Trạm gần nhất là Trạm ${n.n} ở ${n.place}, ${DIR(n.x-pos.x,n.z-pos.z)}. Đi theo cột sáng màu vàng nhé!`);
+}
+
+/* ---------- question strip (top bar) ---------- */
+const bar=document.querySelector('.bar'), qbar=document.getElementById('qbar');
+let active=null, answered=false;
+function showStrip(html){ qbar.innerHTML=html; qbar.hidden=false; bar.classList.add('asking'); }
+function hideStrip(){ qbar.hidden=true; qbar.innerHTML=''; bar.classList.remove('asking','flash-ok','flash-bad'); }
+function openQ(s){
+  active=s; answered=false; keys.clear();
+  if(!savedCam){ const off=camera.position.clone().sub(controls.target), L=off.length(); savedCam={len:L,elev:Math.asin(Math.min(1,off.y/L))}; }
+  camTo(40,.36);
+  showStrip(`<span class="qt">Trạm ${s.n} · Bài ${s.lesson}</span><p class="qq">${s.q}</p><button type="button" class="qx" id="later">Để sau</button>
+   <div class="qo">${s.o.map((t,i)=>`<button type="button" data-i="${i}"><b>${'ABCD'[i]}</b><span>${t}</span></button>`).join('')}</div>`);
+  qbar.querySelectorAll('.qo button').forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.i)));
+  qbar.querySelector('#later').addEventListener('click',()=>{ if(active) active.armed=false; closeQ(); });
+  say(`Mình đang ở ${s.place}. Câu hỏi ở thanh phía trên – chọn đáp án bằng chuột hoặc phím 1–4 nhé!`);
+}
+let endTimer=0;
+function choose(i){
+  if(answered||!active) return; answered=true;
+  const s=active, right=i===s.a; s.status=right?'ok':'bad';
+  if(S){ S.status[s.n-1]=s.status; (S.ans=S.ans||Array(10).fill(null))[s.n-1]=i; saveS(); }
+  refreshPanel();
+  // chỉ tô màu đáp án em vừa chọn: xanh = đúng, đỏ = sai (không lộ đáp án đúng, không có giải thích)
+  qbar.querySelectorAll('.qo button').forEach((b,j)=>{ b.disabled=true; if(j===i) b.classList.add(right?'right':'wrong'); });
+  bar.classList.add(right?'flash-ok':'flash-bad');
+  const later=qbar.querySelector('#later'); if(later) later.hidden=true;
+  say(`Đã ghi nhận câu trả lời ở trạm ${s.n}. Đi tiếp tới trạm sau nhé!`,true);
+  clearTimeout(endTimer); endTimer=setTimeout(endAnswer,1800);
+}
+function endAnswer(){
+  if(!active||!answered) return; clearTimeout(endTimer);
+  const s=active; active=null; hideStrip(); s.armed=false; canvas.focus({preventScroll:true}); restoreCam();
+  if(STATIONS.every(t=>t.status)){ finish(); return; }
+  hintTimer=setTimeout(nextHint,3500);
+}
+function closeQ(){
+  if(!active) return; active=null; hideStrip(); canvas.focus({preventScroll:true}); restoreCam();
+  say('Được thôi, khi nào sẵn sàng thì quay lại trạm này nhé.');
+}
+function finish(reason){ endGame(reason||'done'); }
+
+/* ---------- movement ---------- */
+const pos=new THREE.Vector3(-70,0,306); let yaw=Math.PI, walkPhase=0;
+const keys=new Set();
+const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+addEventListener('keydown',e=>{
+  if(!playing()) return;
+  if(active){
+    if(answered){ if(KEYMAP[e.code]||e.key==='Enter'||e.key===' '){ e.preventDefault(); endAnswer(); } return; }
+    if(!answered && /^[1-4]$/.test(e.key)){ choose(+e.key-1); e.preventDefault(); }
+    else if(!answered && /^[a-dA-D]$/.test(e.key)){ choose('abcd'.indexOf(e.key.toLowerCase())); e.preventDefault(); }
+    else if(e.key==='Escape' && !answered){ active.armed=false; closeQ(); }
+    return;
+  }
+  const k=KEYMAP[e.code]; if(k){ keys.add(k); e.preventDefault(); }
+  if(e.key==='Shift') keys.add('fast');
+});
+addEventListener('keyup',e=>{ const k=KEYMAP[e.code]; if(k) keys.delete(k); if(e.key==='Shift') keys.delete('fast'); });
+
+document.querySelectorAll('#dpad button').forEach(b=>{
+  const k=b.dataset.k, on=e=>{e.preventDefault(); if(!playing()) return; if(active){ if(answered) endAnswer(); return; } keys.add(k); b.classList.add('held'); try{b.setPointerCapture(e.pointerId);}catch(_){} }, off=()=>{keys.delete(k); b.classList.remove('held');};
+  b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off); b.addEventListener('lostpointercapture',off);
+});
+
+function blocked(x,z){
+  const r=1.9; if(x<-290||x>290||z<-240||z>334) return true;
+  for(const s of solids) if(x>s[0]-r&&x<s[2]+r&&z>s[1]-r&&z<s[3]+r) return true;
+  for(const c of circles){ const dx=x-c[0],dz=z-c[1]; if(dx*dx+dz*dz<(c[2]+r)**2) return true; }
+  return false;
+}
+function groundH(x,z){ let h=0; for(const f of floors) if(x>f[0]&&x<f[2]&&z>f[1]&&z<f[3]) h=Math.max(h,f[4]); return h; }
+
+/* camera follow */
+const FOCUS_FAR=new THREE.Vector3(0,0,40), FOCUS_TMP=new THREE.Vector3();
+const camOff=new THREE.Vector3(0,105,78); let viewFar=false, offTween=null;
+function placeCamera(){ controls.target.set(pos.x,pos.y+6,pos.z); camera.position.copy(controls.target).add(camOff); }
+placeCamera();
+const bView=document.getElementById('bView'); let nearDist=131, savedCam=null;
+function zoomTo(len,far){ const dir=camera.position.clone().sub(controls.target).normalize();
+  const to=dir.clone().multiplyScalar(len); if(far) to.y=Math.max(to.y,len*.75);
+  offTween={t:0,from:camera.position.clone().sub(controls.target),to}; }
+function camTo(len,elev){ const d=camera.position.clone().sub(controls.target); d.y=0; if(d.lengthSq()<1e-4) d.set(0,0,1); d.normalize();
+  const to=d.multiplyScalar(len*Math.cos(elev)); to.y=len*Math.sin(elev); offTween={t:0,from:camera.position.clone().sub(controls.target),to}; }
+function restoreCam(){ if(savedCam){ camTo(savedCam.len,savedCam.elev); savedCam=null; } }
+function curDist(){ return camera.position.distanceTo(controls.target); }
+document.getElementById('bIn').onclick=()=>{ const d=Math.max(controls.minDistance,curDist()*.7); zoomTo(d); if(viewFar&&d<200){viewFar=false;bView.setAttribute('aria-pressed','false');} };
+document.getElementById('bOut').onclick=()=>zoomTo(Math.min(controls.maxDistance,curDist()*1.45));
+bView.onclick=()=>{ viewFar=!viewFar; bView.setAttribute('aria-pressed',viewFar);
+  if(viewFar){ nearDist=curDist(); zoomTo(360,true); } else zoomTo(Math.min(nearDist,160)); };
+addEventListener('keydown',e=>{ if(active||!playing()) return; if(e.key==='+'||e.key==='='){document.getElementById('bIn').click();} else if(e.key==='-'){document.getElementById('bOut').click();} });
+const bN=document.getElementById('bNames'); bN.onclick=()=>{ const on=bN.getAttribute('aria-pressed')!=='true'; bN.setAttribute('aria-pressed',on); labelsEl.classList.toggle('nonames',!on); };
+
+function resetWorld(){
+  STATIONS.forEach(s=>{s.status=null;s.armed=true;}); active=null; answered=false; hideStrip();
+  pos.set(-70,0,306); yaw=Math.PI; camOff.set(0,105,78); offTween=null; savedCam=null; viewFar=false; bView.setAttribute('aria-pressed','false'); placeCamera();
+  refreshPanel();
+}
+function intro(){ holdUntil=performance.now()+12000; say('Xin chào! Mình là Thảo, hướng dẫn viên Đại Nội. Chúng ta đang ở con đường ven sông Hương. Đi thẳng qua cửa Quảng Đức để vào Kinh thành – Trạm 1 ở ngay cạnh Kỳ Đài. Bạn có 5 phút, cố lên nhé!'); }
+
+/* ======================================================================
+   ĐỊA CHỈ GOOGLE SHEET (Web app URL của Google Apps Script)
+   Dán địa chỉ dạng https://script.google.com/macros/s/……/exec vào giữa hai dấu nháy.
+   Để trống '' thì trò chơi không gửi kết quả.
+   ====================================================================== */
+const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
+
+/* ---------- player session: sign-in, 5-minute timer, lock on leaving ---------- */
+const TCH='g1yemw', isTeacher=v=>{let x=2166136261>>>0;for(const ch of 'dn-salt:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===TCH;}, STORE='dainoi-khtn9-session-v1', LIMIT=5*60*1000;
+let S=null, graceUntil=0, wasFull=false;
+const $=id=>document.getElementById(id);
+function saveS(){ try{ localStorage.setItem(STORE,JSON.stringify(S)); }catch(_){} }
+function loadS(){ try{ return JSON.parse(localStorage.getItem(STORE)||'null'); }catch(_){ return null; } }
+function clearS(){ try{ localStorage.removeItem(STORE); }catch(_){} }
+function playing(){ return !!S && S.state==='playing' && !S.locked && $('gExit').hidden; }
+function gate(id){ for(const g of ['gLogin','gLock','gResult','gExit']) $(g).hidden=g!==id; }
+function mmss(ms){ const t=Math.max(0,Math.ceil(ms/1000)); return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+function setWho(){ $('who').textContent=S?`${S.name} · ${S.cls} · SBD ${S.sbd}`:''; }
+function goFull(){ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(()=>{}); }
+
+const ACC='rbivhq', accessOk=v=>{let x=2166136261>>>0;for(const ch of 'dn-access:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===ACC;};
+const SBD_PREFIX={'9D01':'260901','9D03':'260903'};
+function syncSbd(){ const pre=SBD_PREFIX[$('fClass').value]; $('sbdPre').textContent=pre||'——————'; $('fSbd').disabled=!pre; if(!pre) $('fSbd').value=''; }
+$('fClass').addEventListener('change',()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
+$('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,2); if(v!==$('fSbd').value) $('fSbd').value=v; });
+function showLogin(){ $('fName').value=''; $('fClass').value=''; $('fSbd').value=''; $('fAccess').value=''; syncSbd(); $('loginErr').textContent=''; gate('gLogin'); $('timer').textContent='05:00'; $('timer').classList.remove('warn'); setWho(); setTimeout(()=>$('fName').focus(),50); }
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const name=$('fName').value.trim().replace(/\s+/g,' '), cls=$('fClass').value, last=$('fSbd').value.trim(), sbd=(SBD_PREFIX[cls]||'')+last;
+  if(!name){ $('loginErr').textContent='Hãy nhập họ và tên.'; $('fName').focus(); return; }
+  if(!cls){ $('loginErr').textContent='Hãy chọn lớp.'; $('fClass').focus(); return; }
+  if(!/^\d{2}$/.test(last)){ $('loginErr').textContent='Hãy nhập đủ 2 số cuối của SBD.'; $('fSbd').focus(); return; }
+  const access=$('fAccess').value.trim();
+  if(!access){ $('loginErr').textContent='Hãy nhập mã vào chơi do giáo viên cấp.'; $('fAccess').focus(); return; }
+  let j={ok:true,ticket:''};
+  if(!SHEET_URL && !accessOk(access)){ $('loginErr').textContent='Mã vào chơi không đúng.'; $('fAccess').select(); return; }
+  if(SHEET_URL){
+  const btn=$('bStart'); btn.disabled=true; btn.textContent='Đang kiểm tra mã…'; $('loginErr').textContent='';
+  j=null;
+  try{
+    const res=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'check',code:access,cls,sbd}),redirect:'follow'});
+    j=await res.json();
+  }catch(err){ j={ok:false,error:navigator.onLine===false?'Máy đang mất mạng.':'Không kết nối được máy chủ kiểm tra mã. Báo giáo viên.'}; }
+  btn.disabled=false; btn.textContent='Bắt đầu';
+  if(!j || !j.ok || !j.ticket){ $('loginErr').textContent=(j&&j.error)||'Mã vào chơi không đúng.'; $('fAccess').select(); return; }
+  }
+  $('fAccess').value='';
+  const now=Date.now();
+  S={id:now.toString(36)+Math.random().toString(36).slice(2,8),name,cls,sbd,ticket:j.ticket,started:now,deadline:now+LIMIT,picks:deal(),status:Array(10).fill(null),ans:Array(10).fill(null),state:'playing',locked:false,violations:0,sent:false};
+  applyPicks(S.picks); resetWorld(); saveS(); setWho();
+  gate(null); graceUntil=performance.now()+2000; goFull(); canvas.focus({preventScroll:true}); intro();
+});
+
+function lock(msg){
+  if(!S || S.state!=='playing' || S.locked) return;
+  S.violations=(S.violations||0)+1; keys.clear();
+  if(S.violations>=2){
+    if(active){ clearTimeout(endTimer); active=null; answered=false; hideStrip(); restoreCam(); }
+    endGame('violation'); return;
+  }
+  S.locked=true; saveS();
+  $('lockMsg').textContent=(msg||'Bạn đã rời khỏi màn hình chơi.')+' Mời giáo viên nhập mã để tiếp tục. Đồng hồ vẫn tiếp tục chạy. Lưu ý: nếu rời màn hình thêm 1 lần nữa, bài làm sẽ tự kết thúc và tính điểm.';
+  $('fCode').value=''; $('lockErr').textContent=''; gate('gLock'); setTimeout(()=>$('fCode').focus(),50);
+}
+$('lockForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!isTeacher($('fCode').value)){ $('lockErr').textContent='Mã không đúng. Hãy nhờ giáo viên nhập lại.'; $('fCode').select(); return; }
+  if(!S) return; S.locked=false; saveS(); gate(null); graceUntil=performance.now()+1500; goFull(); canvas.focus({preventScroll:true});
+  if(Date.now()>=S.deadline) timeUp(); else say('Đã mở khóa. Tiếp tục hành trình nhé – nhớ không rời khỏi màn hình!');
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) lock('Bạn đã chuyển sang thẻ hoặc cửa sổ khác.'); });
+addEventListener('blur',()=>{ keys.clear(); if(performance.now()>graceUntil) lock('Bạn đã rời khỏi cửa sổ trò chơi.'); });
+document.addEventListener('fullscreenchange',()=>{ const f=!!document.fullscreenElement; if(wasFull && !f && performance.now()>graceUntil) lock('Bạn đã thoát chế độ toàn màn hình.'); wasFull=f; });
+
+$('bQuit').addEventListener('click',()=>{ if(!S||S.state!=='playing'||S.locked) return; keys.clear(); gate('gExit'); $('bStay').focus(); });
+$('bStay').addEventListener('click',()=>{ gate(null); graceUntil=performance.now()+800; canvas.focus({preventScroll:true}); });
+$('bSubmit').addEventListener('click',()=>{ if(active){ clearTimeout(endTimer); active=null; answered=false; hideStrip(); restoreCam(); } $('gExit').hidden=true; endGame('exit'); });
+$('bLeave').addEventListener('click',()=>{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); $('leaveMsg').hidden=false; try{ window.close(); }catch(_){} });
+function timeUp(){
+  if(!S || S.state!=='playing') return;
+  if(active){ clearTimeout(endTimer); active=null; answered=false; hideStrip(); restoreCam(); }
+  endGame('time');
+}
+function endGame(reason){
+  if(!S) return;
+  if(S.state==='playing'){ S.state='done'; S.endedAt=Math.min(Date.now(),S.deadline); S.reason=reason; S.locked=false; saveS(); }
+  keys.clear(); showResult(); if(S.sent!==true) sendResult();
+  const ok=S.status.filter(x=>x==='ok').length;
+  say(S.reason==='violation'?'Bạn đã rời màn hình lần thứ 2 nên bài làm kết thúc tại đây.':S.reason==='time'?'Hết giờ rồi! Cảm ơn bạn đã cùng Thảo tham quan Đại Nội.':ok>=8?'Tuyệt vời, bạn nắm rất chắc Bài 18 và 19!':ok>=5?'Khá lắm! Hãy xem lại những câu chưa đúng nhé.':'Cảm ơn bạn! Hãy ôn lại Bài 18–19 nhé.',true);
+}
+function resultText(){
+  const ok=S.status.filter(x=>x==='ok').length, bad=S.status.filter(x=>x==='bad').length, none=10-ok-bad;
+  return {ok,bad,none,used:mmss(S.endedAt-S.started)};
+}
+function showResult(){
+  const r=resultText();
+  $('resEyebrow').textContent={time:'Hết thời gian',violation:'Kết thúc do rời màn hình lần 2',exit:'Đã nộp bài và thoát'}[S.reason]||'Hoàn thành';
+  $('resEyebrow').classList.toggle('bad',S.reason==='violation');
+  $('resName').textContent=S.name;
+  $('resMeta').textContent=`Lớp ${S.cls} · SBD ${S.sbd}`;
+  $('resScore').textContent=r.ok;
+  const by=[1,2,3].map(L=>{ const ix=STATIONS.filter(s=>s.lesson===L).map(s=>s.n-1); return `${ix.filter(i=>S.status[i]==='ok').length}/${ix.length}`; });
+  $('resGrid').innerHTML=`<div><dt>Đúng</dt><dd>${r.ok}</dd></div><div><dt>Sai</dt><dd>${r.bad}</dd></div><div><dt>Chưa làm</dt><dd>${r.none}</dd></div>
+    <div class="wide"><dt>Thời gian ${r.used}</dt><dd>Rời màn hình: ${S.violations||0} lần</dd></div>`;
+  $('resErr').textContent=''; $('newForm').hidden=true; $('leaveMsg').hidden=true; $('bQuit').hidden=true; gate('gResult'); setSend(S.sent===true?'ok':S.sent==='maybe'?'maybe':SHEET_URL?'idle':'none');
+  $('timer').textContent=mmss(S.deadline-S.endedAt); $('timer').classList.remove('warn');
+}
+$('bCopy').addEventListener('click',()=>{
+  const r=resultText();
+  const txt=`${S.name}\t${S.cls}\t${S.sbd}\t${r.ok}/10\tĐúng ${r.ok}, sai ${r.bad}, chưa làm ${r.none}\tThời gian ${r.used}\tRời màn hình ${S.violations||0} lần`;
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>{$('resErr').style.color='#23805e';$('resErr').textContent='Đã sao chép kết quả.';},()=>{$('resErr').style.color='';$('resErr').textContent='Không sao chép được – hãy chụp màn hình kết quả.';});
+  else $('resErr').textContent='Không sao chép được – hãy chụp màn hình kết quả.';
+});
+$('bNew').addEventListener('click',()=>{ $('newForm').hidden=false; $('fCode2').value=''; $('fCode2').focus(); });
+$('newForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!isTeacher($('fCode2').value)){ $('resErr').style.color=''; $('resErr').textContent='Mã không đúng. Chỉ giáo viên mới mở được lượt chơi mới.'; return; }
+  clearS(); S=null; applyPicks(deal()); resetWorld(); $('bQuit').hidden=false; showLogin();
+});
+/* ---------- gửi kết quả + bài làm lên Google Sheet ---------- */
+const SUP={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'}, SUB={0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',5:'₅',6:'₆',7:'₇',8:'₈',9:'₉'};
+function textify(h){
+  return String(h)
+    .replace(/<svg[^>]*data-alt="([^"]*)"[\s\S]*?<\/svg>/g,' $1 ')
+    .replace(/<span class="iso"><span>(\d+)<\/span><span>(\d+)<\/span><\/span>/g,(m,a,z)=>a.replace(/\d/g,d=>SUP[d])+z.replace(/\d/g,d=>SUB[d]))
+    .replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();
+}
+function buildReport(){
+  const r=resultText(), d=new Date(S.endedAt);
+  return {action:'submit',title:'KHTN 9 – Bài 18, 19 (Kim loại, Dãy hoạt động hoá học)',game:'DAINOI-KHTN9',ticket:S.ticket||'',id:S.id,name:S.name,cls:S.cls,sbd:S.sbd,score:r.ok,correct:r.ok,wrong:r.bad,none:r.none,used:r.used,violations:S.violations||0,
+    reason:{time:'Hết thời gian',violation:'Rời màn hình lần 2',exit:'Nộp bài và thoát'}[S.reason]||'Hoàn thành',
+    finishedAt:d.toLocaleString('vi-VN'),
+    items:STATIONS.map((s,i)=>({n:s.n,place:s.place,lesson:s.lesson,q:textify(s.q),opts:s.o.map(textify),correct:s.a,chosen:(S.ans||[])[i]??null,point:S.status[i]==='ok'?1:0,explain:s.e}))};
+}
+function setSend(st,extra){
+  const el=$('sendSt'), b=$('bResend');
+  const msg={none:'Chưa cài địa chỉ Google Sheet nên kết quả chỉ lưu trên máy này. Hãy sao chép hoặc chụp màn hình.',
+    idle:'Kết quả chưa được gửi.', sending:'Đang gửi kết quả lên Google Sheet…',
+    ok:'Đã gửi kết quả và bài làm lên Google Sheet ✓',
+    maybe:'Đã gửi kết quả nhưng chưa nhận được xác nhận. Nếu trong Sheet chưa có dòng của em, hãy bấm Gửi lại.',
+    fail:'Chưa gửi được kết quả'+(extra?` (${extra})`:'')+'. Kiểm tra mạng rồi bấm Gửi lại.'}[st];
+  el.textContent=msg; el.className='sendst'+(st==='ok'?' ok':st==='fail'?' fail':'');
+  b.hidden=!(SHEET_URL && (st==='fail'||st==='maybe'||st==='idle'));
+}
+let sending=false;
+async function sendResult(){
+  if(!S || S.state!=='done') return;
+  if(!SHEET_URL){ setSend('none'); return; }
+  if(sending) return; sending=true; setSend('sending');
+  const body=JSON.stringify(buildReport()), headers={'Content-Type':'text/plain;charset=utf-8'};
+  let j=null;
+  try{
+    const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});
+    j=await res.json();
+  }catch(err){ j=null; }
+  if(j && j.ok){ S.sent=true; saveS(); setSend('ok'); sending=false; return; }
+  if(j && !j.ok){ setSend('fail',j.error||'máy chủ từ chối'); sending=false; return; }
+  try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers}); S.sent='maybe'; saveS(); setSend('maybe'); }
+  catch(e2){ setSend('fail',navigator.onLine===false?'máy đang mất mạng':''); }
+  sending=false;
+}
+$('bResend').addEventListener('click',()=>{ S.sent=false; sendResult(); });
+addEventListener('online',()=>{ if(S && S.state==='done' && S.sent!==true) sendResult(); });
+
+function tickSession(){
+  if(!S || S.state!=='playing') return;
+  const rem=S.deadline-Date.now(), txt=mmss(rem), el=$('timer');
+  if(el.textContent!==txt) el.textContent=txt;
+  el.classList.toggle('warn',rem<60000);
+  if(rem<=0) timeUp();
+}
+function boot(){
+  const old=loadS();
+  if(old && old.picks && old.status){
+    S=old; applyPicks(S.picks); STATIONS.forEach((s,i)=>{ s.status=S.status[i]; s.armed=true; }); refreshPanel(); setWho();
+    if(S.state==='done'){ showResult(); if(S.sent!==true) sendResult(); return; }
+    if(Date.now()>=S.deadline){ endGame('time'); return; }
+    S.locked=false; lock('Trang trò chơi đã bị tải lại hoặc đóng.'); return;
+  }
+  showLogin();
+}
+
+/* resize */
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage); resize();
+
+/* minimap */
+const mini=document.getElementById('mini'), mctx=mini.getContext('2d');
+const MX0=-205,MX1=205,MZ0=-185,MZ1=345;
+function drawMini(){
+  const cw=mini.clientWidth, ch=mini.clientHeight, dpr=Math.min(devicePixelRatio,2);
+  if(mini.width!==Math.round(cw*dpr)){ mini.width=Math.round(cw*dpr); mini.height=Math.round(ch*dpr); }
+  const sx=mini.width/(MX1-MX0), sz=mini.height/(MZ1-MZ0), P=(x,z)=>[(x-MX0)*sx,(z-MZ0)*sz];
+  const c=mctx; c.clearRect(0,0,mini.width,mini.height);
+  c.lineWidth=1.5*dpr; c.strokeStyle=miniCol.water; c.strokeRect(...P(-162,-172),324*sx,368*sz);
+  c.strokeStyle=miniCol.line; c.strokeRect(...P(-150,-160),300*sx,320*sz);
+  c.strokeStyle=miniCol.wall; c.strokeRect(...P(-62,-152),124*sx,152*sz);
+  c.fillStyle=miniCol.line; c.fillRect(...P(-32,151),64*sx,34*sz); c.fillRect(...P(-23,262-15),46*sx,30*sz);
+  c.fillRect(...P(-22,44),44*sx,28*sz); c.fillRect(...P(-128,4),56*sx,16*sz); c.fillRect(...P(72,12),56*sx,16*sz);
+  c.fillStyle=miniCol.water; c.fillRect(...P(-205,338),410*sx,7*sz);
+  c.fillStyle=miniCol.line; c.fillRect(...P(-205,298),410*sx,12*sz); c.fillRect(...P(-205,264),125*sx,12*sz); c.fillRect(...P(-60,264),265*sx,12*sz);
+  c.fillStyle=miniCol.water; c.fillRect(...P(-47,113),42*sx,34*sz); c.fillRect(...P(5,113),42*sx,34*sz);
+  for(const s of STATIONS){ const [x,y]=P(s.x,s.z); c.fillStyle=s.status?miniCol.line:miniCol.gold;
+    c.beginPath(); c.arc(x,y,4.2*dpr,0,7); c.fill(); }
+  const [px,py]=P(pos.x,pos.z); c.save(); c.translate(px,py); c.rotate(-yaw); c.fillStyle=miniCol.tim;
+  c.beginPath(); c.moveTo(0,7*dpr); c.lineTo(5*dpr,-5*dpr); c.lineTo(0,-2*dpr); c.lineTo(-5*dpr,-5*dpr); c.closePath(); c.fill(); c.restore();
+}
+
+/* ---------- loop ---------- */
+const v=new THREE.Vector3(), clock=new THREE.Clock(), reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const flagPos=flag.geometry.attributes.position, flagBase=flagPos.array.slice();
+let t=0;
+function tick(){
+  const dt=Math.min(clock.getDelta(),.05); t+=dt;
+  // input → camera-relative motion
+  let fwd=(keys.has('up')?1:0)-(keys.has('down')?1:0), str=(keys.has('right')?1:0)-(keys.has('left')?1:0);
+  let moving=false;
+  tickSession();
+  if(playing() && !active && (fwd||str)){
+    const f=controls.target.clone().sub(camera.position); f.y=0; f.normalize();
+    const mx=f.x*fwd-f.z*str, mz=f.z*fwd+f.x*str, len=Math.hypot(mx,mz)||1;
+    const sp=(keys.has('fast')?40:24)*dt, dx=mx/len*sp, dz=mz/len*sp;
+    const ox=pos.x, oz=pos.z;
+    if(!blocked(pos.x+dx,pos.z)) pos.x+=dx;
+    if(!blocked(pos.x,pos.z+dz)) pos.z+=dz;
+    const target=Math.atan2(mx,mz); let d=target-yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); yaw+=d*Math.min(1,dt*12);
+    moving=(pos.x!==ox||pos.z!==oz);
+  }
+  const gy=groundH(pos.x,pos.z); pos.y+= (gy-pos.y)*Math.min(1,dt*14);
+  const want=viewFar?FOCUS_FAR:FOCUS_TMP.set(pos.x,pos.y+6,pos.z), nf=controls.target.clone().lerp(want,Math.min(1,dt*(viewFar?3:9)));
+  camera.position.add(nf.clone().sub(controls.target)); controls.target.copy(nf);
+  sky.position.copy(camera.position); WATER_TEX.offset.x=(t*.006)%1;
+  sun.target.position.copy(controls.target); sun.position.copy(controls.target).addScaledVector(SUN_DIR,600);
+  if(offTween){ offTween.t=Math.min(1,offTween.t+dt/(reduce?.01:1.1)); const k=1-(1-offTween.t)**3;
+    camera.position.copy(controls.target).add(offTween.from.clone().lerp(offTween.to,k)); if(offTween.t>=1) offTween=null; }
+  controls.update();
+
+  if(active){ const fy=Math.atan2(camera.position.x-pos.x,camera.position.z-pos.z); let d=fy-yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); yaw+=d*Math.min(1,dt*6); }
+  // guide pose
+  guide.position.copy(pos); guide.rotation.y=yaw;
+  walkPhase+=moving?dt*(keys.has('fast')?13:9):0;
+  const sw=moving?Math.sin(walkPhase):0, amp=moving?1:0;
+  legs[0].rotation.x=.55*sw; legs[1].rotation.x=-.55*sw;
+  arms[0].rotation.x=-.45*sw; arms[1].rotation.x=.45*sw;
+  flaps[0].piv.rotation.x=-.14*Math.abs(sw)*amp-.04*Math.sin(t*2); flaps[1].piv.rotation.x=.2*Math.abs(sw)*amp+.04*Math.sin(t*2+1);
+  body.position.y=moving?Math.abs(Math.cos(walkPhase))*.12:Math.sin(t*2)*.02;
+  head.rotation.y=moving?0:Math.sin(t*.7)*.25;
+
+  // stations
+  for(const s of STATIONS){
+    const d2=(s.x-pos.x)**2+(s.z-pos.z)**2;
+    s.mesh.gem.rotation.y+=dt*1.5; s.mesh.gem.position.y=11+Math.sin(t*2+s.n)*.5;
+    if(playing() && !active && !s.status && s.armed && d2<49) openQ(s);
+    if(!s.armed && d2>144) s.armed=true;
+    s.chip.classList.toggle('near',d2<400);
+  }
+  // nearest site
+  let near=null, best=1e9; for(const s of SITES){ const d=Math.hypot(s.x-pos.x,s.z-pos.z); if(d<s.r && d<best){best=d;near=s;} } renderCard(near);
+
+  if(!reduce){ for(let i=0;i<flagPos.count;i++){ const x=flagBase[i*3]+6; flagPos.setZ(i,Math.sin(x*.6-t*4)*x*.06); } flagPos.needsUpdate=true; }
+  renderer.render(scene,camera);
+
+  const w=stage.clientWidth,h=stage.clientHeight;
+  for(const L of labels){ v.set(L.x,L.y,L.z).project(camera);
+    if(v.z>1||Math.abs(v.x)>1.1||Math.abs(v.y)>1.1){L.el.hidden=true;continue;} L.el.hidden=false;
+    L.el.style.transform=`translate(${(v.x*.5+.5)*w}px,${(-v.y*.5+.5)*h}px) translate(-50%,-100%)`; L.el.style.zIndex=String(1000-Math.round(v.z*1000)); }
+  drawMini();
+  requestAnimationFrame(tick);
+}
+refreshPanel(); renderCard(null); boot();
+tick();
+})();
+</script>
+
+</body>
+</html>
