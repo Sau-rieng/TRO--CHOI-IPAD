@@ -303,13 +303,9 @@ button{font:inherit}
     <div class="gactions">
       <button type="button" class="gbtn" id="bResend" hidden>Gửi lại</button>
       <button type="button" class="gbtn" id="bCopy">Sao chép</button>
-      <button type="button" class="gbtn" id="bNew">Lượt mới</button>
       <button type="button" class="gbtn" id="bLeave">Thoát</button>
     </div>
-    <p class="gnote" id="leaveMsg" hidden>Đã thoát. Em có thể đóng thẻ này.</p>
-    <form id="newForm" class="newform" hidden novalidate>
-      <div class="grow"><input id="fCode2" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Mã giáo viên để mở lượt mới" aria-label="Mã giáo viên để mở lượt mới"><button type="submit" class="gbtn primary">Xác nhận</button></div>
-    </form>
+    <p class="err" id="leaveMsg" hidden></p>
   </div>
 </div>
 
@@ -997,7 +993,23 @@ document.addEventListener('fullscreenchange',()=>{ const f=!!document.fullscreen
 $('bQuit').addEventListener('click',()=>{ if(!S||S.state!=='playing'||S.locked) return; keys.clear(); gate('gExit'); $('bStay').focus(); });
 $('bStay').addEventListener('click',()=>{ gate(null); graceUntil=performance.now()+800; canvas.focus({preventScroll:true}); });
 $('bSubmit').addEventListener('click',()=>{ if(active){ clearTimeout(endTimer); active=null; answered=false; hideStrip(); restoreCam(); } $('gExit').hidden=true; endGame('exit'); });
-$('bLeave').addEventListener('click',()=>{ if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{}); $('leaveMsg').hidden=false; try{ window.close(); }catch(_){} });
+let leaveWarned=false;
+$('bLeave').addEventListener('click',async()=>{
+  if(S && SHEET_URL && S.sent!==true && !leaveWarned){
+    $('bLeave').disabled=true; $('bLeave').textContent='Đang gửi…'; S.sent=false; await sendResult(); $('bLeave').disabled=false; $('bLeave').textContent='Thoát';
+    if(S.sent!==true && S.sent!=='maybe'){ leaveWarned=true; $('leaveMsg').hidden=false;
+      $('leaveMsg').textContent='Kết quả chưa gửi được lên Google Sheet. Hãy bấm Gửi lại hoặc báo giáo viên. Bấm Thoát lần nữa nếu vẫn muốn thoát.'; return; }
+  }
+  clearS(); S=null; graceUntil=Infinity;
+  try{ if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); }catch(_){}
+  try{ window.close(); }catch(_){}
+  // trình duyệt không cho đóng thẻ được mở từ đường link hoặc mã QR: xoá trang, không quay lại được
+  setTimeout(()=>{
+    try{ renderer.setAnimationLoop(null); }catch(_){}
+    document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#1d2623;color:#fff;font:600 18px system-ui,sans-serif;text-align:center;padding:24px">Em đã thoát trò chơi.<br>Muốn chơi lượt mới, hãy quét lại mã QR hoặc mở lại đường link.</div>';
+    try{ history.replaceState(null,'','#'); location.replace('about:blank'); }catch(_){}
+  },300);
+});
 function timeUp(){
   if(!S || S.state!=='playing') return;
   if(active){ clearTimeout(endTimer); active=null; answered=false; hideStrip(); restoreCam(); }
@@ -1024,7 +1036,7 @@ function showResult(){
   const by=[1,2,3].map(L=>{ const ix=STATIONS.filter(s=>s.lesson===L).map(s=>s.n-1); return `${ix.filter(i=>S.status[i]==='ok').length}/${ix.length}`; });
   $('resGrid').innerHTML=`<div><dt>Đúng</dt><dd>${r.ok}</dd></div><div><dt>Sai</dt><dd>${r.bad}</dd></div><div><dt>Chưa làm</dt><dd>${r.none}</dd></div>
     <div class="wide"><dt>Thời gian ${r.used}</dt><dd>Rời màn hình: ${S.violations||0} lần</dd></div>`;
-  $('resErr').textContent=''; $('newForm').hidden=true; $('leaveMsg').hidden=true; $('bQuit').hidden=true; gate('gResult'); setSend(S.sent===true?'ok':S.sent==='maybe'?'maybe':SHEET_URL?'idle':'none');
+  $('resErr').textContent=''; $('leaveMsg').hidden=true; $('bQuit').hidden=true; gate('gResult'); setSend(S.sent===true?'ok':S.sent==='maybe'?'maybe':SHEET_URL?'idle':'none');
   $('timer').textContent=mmss(S.deadline-S.endedAt); $('timer').classList.remove('warn');
 }
 $('bCopy').addEventListener('click',()=>{
@@ -1032,12 +1044,6 @@ $('bCopy').addEventListener('click',()=>{
   const txt=`${S.name}\t${S.cls}\t${S.sbd}\t${r.ok}/10\tĐúng ${r.ok}, sai ${r.bad}, chưa làm ${r.none}\tThời gian ${r.used}\tRời màn hình ${S.violations||0} lần`;
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>{$('resErr').style.color='#23805e';$('resErr').textContent='Đã sao chép kết quả.';},()=>{$('resErr').style.color='';$('resErr').textContent='Không sao chép được – hãy chụp màn hình kết quả.';});
   else $('resErr').textContent='Không sao chép được – hãy chụp màn hình kết quả.';
-});
-$('bNew').addEventListener('click',()=>{ $('newForm').hidden=false; $('fCode2').value=''; $('fCode2').focus(); });
-$('newForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  if(!isTeacher($('fCode2').value)){ $('resErr').style.color=''; $('resErr').textContent='Mã không đúng. Chỉ giáo viên mới mở được lượt chơi mới.'; return; }
-  clearS(); S=null; applyPicks(deal()); resetWorld(); $('bQuit').hidden=false; showLogin();
 });
 /* ---------- gửi kết quả + bài làm lên Google Sheet ---------- */
 const SUP={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'}, SUB={0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',5:'₅',6:'₆',7:'₇',8:'₈',9:'₉'};
