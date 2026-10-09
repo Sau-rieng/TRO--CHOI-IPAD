@@ -184,10 +184,8 @@ button{font-family:var(--f-body)}
     <div style="display:flex;align-items:baseline;gap:8px"><span class="big" id="finScore">0/10</span><span style="font-size:12.5px;color:var(--hud-muted)">điểm</span></div>
     <p class="sendst" id="sendSt" aria-live="polite"></p>
     <button type="button" class="btn ghost" id="bResend" hidden>Gửi lại kết quả</button>
-    <label class="field" for="newCode">Người chơi mới: giáo viên nhập mã
-      <input id="newCode" type="password" inputmode="numeric" autocomplete="off" placeholder="Mã giáo viên"></label>
-    <div class="err" id="newErr"></div>
-    <div class="q-actions"><button class="btn" id="newPlayer" type="button">Người chơi mới</button></div>
+    <p class="err" id="leaveMsg" hidden></p>
+    <div class="q-actions"><button class="btn" id="bLeave" type="button">Thoát</button></div>
   </div>
 </div>
 
@@ -200,6 +198,7 @@ button{font-family:var(--f-body)}
       <li>Kết thúc bài, điểm và bài làm tự động gửi cho giáo viên (cần có mạng).</li>
       <li>Thời gian làm bài: 5 phút.</li>
       <li>Rời khỏi màn hình chơi (chuyển tab, thu nhỏ, bấm ra ngoài, tải lại trang) là bài kết thúc và tính điểm ngay.</li>
+      <li>Mỗi lần mở đường link chỉ chơi một lượt. Muốn chơi lượt mới, bấm Thoát rồi quét lại mã QR hoặc mở lại đường link.</li>
     </ul>
     <label class="field" for="fName">Họ và tên<input id="fName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"></label>
     <label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
@@ -733,9 +732,24 @@ function showResults(){dpad.hidden=true;
   document.getElementById('finRes').innerHTML='<dt>Họ tên</dt><dd>'+esc(player.name)+'</dd><dt>Lớp</dt><dd>'+esc(player.cls)+'</dd><dt>SBD</dt><dd>'+esc(player.sbd)+'</dd>'+
     '<dt>Thời gian</dt><dd>'+mmss(endAt-startAt)+' / 5:00</dd>';
   finEl2.hidden=false;}
-document.getElementById('newPlayer').onclick=()=>{const c=document.getElementById('newCode');
-  if(c.value.trim()!==TEACHER_CODE){document.getElementById('newErr').textContent='Mã không đúng.';return;}
-  clearSave();location.reload();};
+/* ---- nút Thoát trên bảng điểm: gửi kết quả (nếu chưa gửi) rồi đóng thẻ; muốn chơi lại phải mở lại đường link / quét mã QR ---- */
+let leaveWarned=false,stopped=false;
+const bLeave=document.getElementById('bLeave'),leaveMsg=document.getElementById('leaveMsg');
+bLeave.addEventListener('click',async()=>{
+  if(player&&SHEET_URL&&submitted!==true&&!leaveWarned){
+    bLeave.disabled=true;bLeave.textContent='Đang gửi…';submitted=false;await sendResult();bLeave.disabled=false;bLeave.textContent='Thoát';
+    if(submitted!==true&&submitted!=='maybe'){leaveWarned=true;leaveMsg.hidden=false;
+      leaveMsg.textContent='Kết quả chưa gửi được cho giáo viên. Hãy bấm Gửi lại hoặc báo giáo viên. Bấm Thoát lần nữa nếu vẫn muốn thoát.';return;}
+  }
+  clearSave();
+  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen();}catch(_){}
+  try{window.close();}catch(_){}
+  // trình duyệt không cho trang tự đóng thẻ được mở từ đường link hoặc mã QR: xoá trang, không quay lại được
+  setTimeout(()=>{stopped=true;
+    document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#16211d;color:#fff;font:600 18px system-ui,sans-serif;text-align:center;padding:24px">Em đã thoát trò chơi.<br>Muốn chơi lượt mới, hãy quét lại mã QR hoặc mở lại đường link.</div>';
+    try{history.replaceState(null,'','#');location.replace('about:blank');}catch(_){}
+  },300);
+});
 
 /* ---- nút thoát ---- */
 const exitAskEl=document.getElementById('exitAsk');
@@ -815,7 +829,7 @@ function frame(){
   // tags
   STOPS.forEach(s=>{v.set(s.side[0],s.p.y+10,s.side[1]).project(camera);const vis=v.z<1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1;
     s.tag.hidden=!vis;if(vis){s.tag.style.left=((v.x+1)/2*innerWidth)+'px';s.tag.style.top=((1-v.y)/2*innerHeight)+'px';}});
-  renderer.render(scene,camera);requestAnimationFrame(frame);
+  if(stopped)return;renderer.render(scene,camera);requestAnimationFrame(frame);
 }
 frame();
 })();
