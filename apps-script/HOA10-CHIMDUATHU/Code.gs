@@ -9,10 +9,9 @@
  *       Thực thi với tư cách: Tôi
  *       Người có quyền truy cập: Bất kỳ ai
  *     → sao chép đường link kết thúc bằng /exec.
- *  5. Dùng link /exec theo MỘT trong hai cách:
- *     a) Gửi thẳng link /exec cho học sinh (trò chơi chạy trong Apps Script), hoặc
- *     b) Dán link vào dòng  const SHEET_URL=''  trong file trò chơi trên GitHub Pages;
- *        học sinh chơi bằng link GitHub, điểm vẫn về Sheet này.
+ *  5. Dán link /exec vào dòng  SHEET_URL:'…'  ở đầu file HOA10-CHIMDUATHU.html trên GitHub
+ *     (hoặc gửi link cho Claude để Claude sửa giúp). Học sinh chơi bằng link GitHub,
+ *     điểm và bài làm PDF về Sheet/Drive riêng này.
  *
  * Bảng tính và thư mục bài làm thuộc Drive của giáo viên, ở chế độ riêng tư.
  * Học sinh chỉ mở được trò chơi, không xem được bảng điểm hay file bài làm.
@@ -36,11 +35,26 @@ function doGet() {
 function doPost(e) {
   let out;
   try {
-    out = submitResult(JSON.parse(e.postData.contents));
+    out = submitResult(fromReport_(JSON.parse(e.postData.contents)));
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Chuyển dữ liệu dạng "báo cáo" (giống Đại Nội/Langbiang) sang dạng submitResult dùng. */
+function fromReport_(r) {
+  if (!r || !r.cls) return r;               // đã đúng dạng cũ
+  const R = { 'Hết thời gian': 'timeout', 'Rời màn hình 2 lần': 'violation', 'Nộp bài và thoát': 'quit', 'Hoàn thành': 'done' };
+  return {
+    sessionId: r.id, name: r.name, lop: r.cls, sbd: r.sbd, timeUsed: r.used,
+    leaves: r.violations, reason: R[r.reason] || 'done', startedAt: 0,
+    items: (r.items || []).map(function (it) {
+      return { bai: it.lesson, q: it.q, options: it.opts, explain: it.explain,
+        correct: 'ABCD'[it.correct] || '', chosen: (it.chosen === null || it.chosen === undefined) ? '' : ('ABCD'[it.chosen] || ''),
+        ok: it.point === 1 };
+    })
+  };
 }
 
 /** Chạy một lần để tạo trang tính, tiêu đề cột, thư mục bài làm và cấp quyền. */
@@ -63,7 +77,7 @@ function submitResult(p) {
     return {
       bai: clean_(it.bai, 80), q: clean_(it.q, 600),
       options: (Array.isArray(it.options) ? it.options : []).slice(0, 4).map(function (o) { return clean_(o, 300); }),
-      correct: clean_(it.correct, 1), chosen: clean_(it.chosen, 1), ok: it.ok === true
+      correct: clean_(it.correct, 1), chosen: clean_(it.chosen, 1), ok: it.ok === true, explain: clean_(it.explain, 600)
     };
   });
   const score = items.filter(function (it) { return it.ok; }).length;
@@ -144,7 +158,8 @@ function makePdf_(d) {
       '<div style="font-size:9pt;color:#555">' + esc_(it.bai) + '</div>' +
       '<div style="margin:2px 0 4px">' + esc_(it.q) + '</div>' + opts +
       '<div style="margin-top:4px">HS chọn: <b>' + (it.chosen || 'Không trả lời') + '</b> · Đáp án: <b>' + it.correct + '</b> · ' +
-      (it.ok ? '<b>Đúng – 1 điểm</b>' : '<b>Sai/Không làm – 0 điểm</b>') + '</div></td></tr>';
+      (it.ok ? '<b>Đúng – 1 điểm</b>' : '<b>Sai/Không làm – 0 điểm</b>') + '</div>' +
+      (it.explain ? '<div style="margin-top:3px;font-size:9.5pt;color:#333"><i>Lời giải:</i> ' + esc_(it.explain) + '</div>' : '') + '</td></tr>';
   }).join('');
   const html = '<html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;font-size:10.5pt;color:#000">' +
     '<h2 style="margin:0 0 4px">BÀI LÀM – CHIM ĐƯA THƯ HÓA 10</h2>' +
