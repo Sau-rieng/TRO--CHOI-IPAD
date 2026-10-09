@@ -191,7 +191,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
     <ul class="review" id="review"></ul>
     <p class="sendmsg" id="sendMsg" hidden></p>
     <p class="err" id="copyMsg" hidden></p>
-    <div class="row"><button class="btn ghost" id="resendBtn" hidden>Gửi lại</button><button class="btn ghost" id="copyBtn">Sao chép kết quả</button><button class="btn" id="again">Người chơi mới</button></div>
+    <div class="row"><button class="btn ghost" id="resendBtn" hidden>Gửi lại</button><button class="btn ghost" id="copyBtn">Sao chép kết quả</button><button class="btn" id="leaveBtn">Thoát</button></div>
+    <p class="err" id="leaveMsg" hidden></p>
   </div>
 </div>
 
@@ -839,11 +840,25 @@ function showLock(){
 document.addEventListener('visibilitychange',()=>{if(document.hidden)lockGame();});
 addEventListener('blur',()=>lockGame());
 addEventListener('pagehide',()=>lockGame());
-$('again').onclick=()=>{
-  lockPurpose='new';$('lockTitle').textContent='Lượt chơi mới';
-  const gs=SHEET_URL||(window.google&&google.script&&google.script.run);
-  $('lockMsg').textContent='Giáo viên nhập mã để mở lượt chơi cho học sinh tiếp theo. Kết quả hiện tại sẽ bị xóa khỏi máy này.'+(gs&&submitted!==true?' Lưu ý: kết quả này CHƯA gửi được về Google Sheet, hãy bấm Gửi lại hoặc ghi lại trước.':'');
-  $('lockCancel').hidden=false;$('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;$('code').focus();
+/* ---- nút Thoát trên bảng điểm: gửi kết quả (nếu chưa gửi) rồi đóng thẻ; muốn chơi lại phải quét lại mã QR / mở lại đường link ---- */
+let leaveWarned=false,stopped=false;
+$('leaveBtn').onclick=async()=>{
+  const b=$('leaveBtn'),gs=SHEET_URL||(window.google&&google.script&&google.script.run);
+  if(player&&gs&&submitted!==true&&!leaveWarned){
+    b.disabled=true;b.textContent='Đang gửi…';submitted=false;await sendResult();
+    for(let i=0;i<40&&submitted!==true&&/Đang gửi/.test($('sendMsg').textContent);i++)await new Promise(r=>setTimeout(r,200));
+    b.disabled=false;b.textContent='Thoát';
+    if(submitted!==true&&submitted!=='maybe'){leaveWarned=true;$('leaveMsg').hidden=false;
+      $('leaveMsg').textContent='Kết quả chưa gửi được cho giáo viên. Hãy bấm Gửi lại hoặc báo giáo viên. Bấm Thoát lần nữa nếu vẫn muốn thoát.';return;}
+  }
+  clearSave();
+  try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen();}catch(_){}
+  try{window.close();}catch(_){}
+  // trình duyệt không cho trang tự đóng thẻ được mở từ đường link hoặc mã QR: xoá trang, không quay lại được
+  setTimeout(()=>{stopped=true;
+    document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#16211d;color:#fff;font:600 18px system-ui,sans-serif;text-align:center;padding:24px">Em đã thoát trò chơi.<br>Muốn chơi lượt mới, hãy quét lại mã QR hoặc mở lại đường link.</div>';
+    try{history.replaceState(null,'','#');location.replace('about:blank');}catch(_){}
+  },300);
 };
 $('lockCancel').onclick=()=>{$('lock').hidden=true;};
 $('unlockForm').addEventListener('submit',e=>{
@@ -989,6 +1004,7 @@ function loop(){
   }
   camera.position.lerp(camTarget,state==='free'?0.1:state==='flying'?0.08:0.05);
   camera.lookAt(camLook);
+  if(stopped)return;
   renderer.render(scene,camera);
   requestAnimationFrame(loop);
 }
