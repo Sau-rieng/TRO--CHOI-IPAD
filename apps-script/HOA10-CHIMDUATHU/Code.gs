@@ -19,10 +19,10 @@
 
 const SHEET_NAME = 'KetQua';
 const ROOT_FOLDER_NAME = 'Bài làm Chim Đưa Thư Hóa 10';
-const HEADERS = ['Thời điểm nộp', 'Họ và tên', 'Lớp', 'SBD', 'Điểm (/10)', 'Số câu đúng',
+const HEADERS = ['Thời điểm nộp', 'Họ và tên', 'Lớp', 'Nhóm', 'SBD', 'Điểm (/10)', 'Số câu đúng',
   'Thời gian làm', 'Kết thúc', 'Số lần rời màn hình', 'Bài làm (PDF)', 'Bắt đầu lúc', 'Mã lượt chơi'];
 const REASONS = { done: 'Hoàn thành 10 câu', timeout: 'Hết 5 phút', violation: 'Rời màn hình 2 lần', quit: 'Tự thoát' };
-const CLASSES = ['9D01', '9D03', '10E01', '12G01', '12G02'];
+const CLASSES = ['9D01', '9D02', '9D03', '10E01', '12G01', '12G02'];
 
 /** Mở trò chơi khi học sinh truy cập đường link ứng dụng web. */
 function doGet() {
@@ -47,7 +47,7 @@ function fromReport_(r) {
   if (!r || !r.cls) return r;               // đã đúng dạng cũ
   const R = { 'Hết thời gian': 'timeout', 'Rời màn hình 2 lần': 'violation', 'Nộp bài và thoát': 'quit', 'Hoàn thành': 'done' };
   return {
-    sessionId: r.id, name: r.name, lop: r.cls, sbd: r.sbd, timeUsed: r.used,
+    sessionId: r.id, name: r.member || r.name, lop: r.cls, group: r.group || '', sbd: r.sbd, timeUsed: r.used,
     leaves: r.violations, reason: R[r.reason] || 'done', startedAt: 0,
     items: (r.items || []).map(function (it) {
       return { bai: it.lesson, q: it.q, options: it.opts, explain: it.explain,
@@ -70,6 +70,7 @@ function submitResult(p) {
   const name = clean_(p.name, 60);
   const lop = clean_(p.lop, 10);
   const sbd = clean_(p.sbd, 12);
+  const group = clean_(p.group, 20);
   const sessionId = clean_(p.sessionId, 40);
   if (!name || CLASSES.indexOf(lop) < 0 || !/^\d{8}$/.test(sbd) || !sessionId) throw new Error('Dữ liệu không hợp lệ');
 
@@ -93,9 +94,9 @@ function submitResult(p) {
       const ids = sh.getRange(2, HEADERS.length, last - 1, 1).getValues();
       for (let i = 0; i < ids.length; i++) if (ids[i][0] === sessionId) return { ok: true, duplicate: true };
     }
-    const pdf = makePdf_({ name: name, lop: lop, sbd: sbd, score: score, timeUsed: clean_(p.timeUsed, 8),
+    const pdf = makePdf_({ name: name, lop: lop, group: group, sbd: sbd, score: score, timeUsed: clean_(p.timeUsed, 8),
       reason: reason, leaves: Number(p.leaves) || 0, startedAt: Number(p.startedAt) || 0, items: items });
-    sh.appendRow([new Date(), name, lop, "'" + sbd, score, score + '/10', clean_(p.timeUsed, 8), reason,
+    sh.appendRow([new Date(), name, lop, group, "'" + sbd, score, score + '/10', clean_(p.timeUsed, 8), reason,
       Number(p.leaves) || 0, pdf.getUrl(), p.startedAt ? new Date(Number(p.startedAt)) : '', sessionId]);
     return { ok: true };
   } finally {
@@ -114,8 +115,8 @@ function getSheet_() {
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#eeeeee');
     sh.setFrozenRows(1);
     sh.getRange('A:A').setNumberFormat('dd/MM/yyyy HH:mm:ss');
-    sh.getRange('K:K').setNumberFormat('dd/MM/yyyy HH:mm:ss');
-    sh.getRange('D:D').setNumberFormat('@');
+    sh.getRange('L:L').setNumberFormat('dd/MM/yyyy HH:mm:ss');
+    sh.getRange('E:E').setNumberFormat('@');
   }
   return sh;
 }
@@ -164,13 +165,13 @@ function makePdf_(d) {
   const html = '<html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;font-size:10.5pt;color:#000">' +
     '<h2 style="margin:0 0 4px">BÀI LÀM – CHIM ĐƯA THƯ HÓA 10</h2>' +
     '<table style="border-collapse:collapse;margin-bottom:10px" cellpadding="3">' +
-    '<tr><td>Họ và tên:</td><td><b>' + esc_(d.name) + '</b></td><td style="padding-left:24px">Lớp:</td><td><b>' + esc_(d.lop) + '</b></td></tr>' +
+    '<tr><td>Họ và tên:</td><td><b>' + esc_(d.name) + '</b></td><td style="padding-left:24px">Lớp:</td><td><b>' + esc_(d.lop) + (d.group ? ' – ' + esc_(d.group) : '') + '</b></td></tr>' +
     '<tr><td>SBD:</td><td><b>' + esc_(d.sbd) + '</b></td><td style="padding-left:24px">Bắt đầu:</td><td>' + esc_(when) + '</td></tr>' +
     '<tr><td>Điểm:</td><td><b>' + d.score + '/10</b></td><td style="padding-left:24px">Thời gian làm:</td><td>' + esc_(d.timeUsed) + '</td></tr>' +
     '<tr><td>Kết thúc:</td><td>' + esc_(d.reason) + '</td><td style="padding-left:24px">Rời màn hình:</td><td>' + d.leaves + ' lần</td></tr></table>' +
     '<table style="border-collapse:collapse;width:100%" cellpadding="6" border="1">' + rows + '</table>' +
     '</body></html>';
-  const fileName = d.lop + '_' + d.sbd + '_' + d.name + '.pdf';
+  const fileName = d.lop + '_' + (d.group ? d.group.replace(/\s+/g, '') + '_' : '') + d.sbd + '_' + d.name + '.pdf';
   const blob = Utilities.newBlob(html, 'text/html', 'bai-lam.html').getAs('application/pdf').setName(fileName);
   return getClassFolder_(d.lop).createFile(blob);
 }
