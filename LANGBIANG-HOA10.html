@@ -17,6 +17,7 @@ window.CAU_HINH = {
 </head>
 <body>
 <title>Langbiang 3D</title>
+<title>Langbiang 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -84,12 +85,15 @@ button{font-family:var(--f-body)}
 #kUp{grid-column:2;grid-row:1}#kLeft{grid-column:1;grid-row:2}#kDown{grid-column:2;grid-row:2}#kRight{grid-column:3;grid-row:2}
 
 /* quiz card: a bit denser glass so the text stays readable over bright sky */
-.quiz{position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 24px));max-height:min(62vh,520px);overflow:auto;padding:11px 13px;display:flex;flex-direction:column;gap:8px;z-index:5;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.quiz{position:fixed;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 120px);overflow:auto;padding:11px 13px;display:flex;flex-direction:column;gap:8px;z-index:5;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .q-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .q-num{font-family:var(--f-data);font-weight:700;font-size:11.5px;color:var(--accent)}
 .q-bai{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--hud-muted)}
 #qText{margin:0;font-size:14.5px;line-height:1.45;font-weight:600;text-wrap:pretty}
 .q-opts{display:grid;gap:5px}
+.q-opts.grid2{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.q-opts.grid2 .q-opt{align-items:center}
+@media (max-height:560px){.quiz{padding:8px 10px;gap:5px}#qText{font-size:13px}.q-opt{padding:4px 8px;font-size:12.5px}.q-feed{font-size:12px;padding:5px 8px}.btn{padding:5px 10px}.q-opt .fig{max-height:44px;width:auto}}
 .q-opt{display:flex;gap:8px;align-items:flex-start;text-align:left;font-size:13.5px;line-height:1.4;color:var(--hud);background:rgba(255,255,255,.06);border:1px solid var(--glass-line);border-radius:7px;padding:6px 9px;cursor:pointer;text-shadow:var(--shadow)}
 .quiz:focus{outline:none}
 .q-opt:focus-visible{outline:2px dashed var(--hud);outline-offset:1px}
@@ -119,9 +123,9 @@ button{font-family:var(--f-body)}
 .timer{font-family:var(--f-data);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;padding-right:7px;margin-right:1px;border-right:1px solid var(--glass-line)}
 .timer.low{color:var(--bad)}
 .exit{flex:none;font-size:11.5px;font-weight:700;color:#fff;background:rgba(168,68,58,.75);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 9px;cursor:pointer}
-.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(8,14,12,.28)}
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:12px;background:rgba(8,14,12,.28)}
 .overlay.lock{background:rgba(8,14,12,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.card{width:min(380px,100%);padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card{width:min(400px,100%);max-height:calc(100dvh - 24px);overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--glass-strong);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .card h2{margin:0;font-size:17px;font-weight:800;text-wrap:balance}
 .card p{margin:0;font-size:12.5px;line-height:1.5;color:var(--hud-muted)}
 .field{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--hud-muted)}
@@ -133,7 +137,9 @@ button{font-family:var(--f-body)}
 .sbd input{flex:1;min-width:0;width:3.2em;font:700 15px var(--f-data)!important;letter-spacing:.08em;border:0!important;border-radius:0!important;background:transparent!important;padding:7px 8px 7px 2px!important}
 .sbd input:disabled{opacity:.5}
 .err{font-size:12px;color:var(--bad);min-height:1em}
-.rules{margin:0;padding-left:16px;font-size:12px;line-height:1.55;color:var(--hud)}
+.rules{margin:0;padding-left:16px;font-size:12px;line-height:1.45;color:var(--hud)}
+.frow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:8px}
+@media (max-height:560px){.card{gap:6px;padding:10px 12px}.card h2{font-size:15px}.rules{font-size:11px;line-height:1.35}.field input,.field select{padding:5px 8px;font-size:13px}#sbdPrefix,.sbd input{padding-top:5px!important;padding-bottom:5px!important}.big{font-size:24px}}
 .res{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
 .res dt{color:var(--hud-muted)}.res dd{margin:0;font-weight:600}
 .big{font-family:var(--f-data);font-size:30px;font-weight:700;color:var(--accent);line-height:1}
@@ -194,16 +200,14 @@ button{font-family:var(--f-body)}
   <form class="card panel" id="loginForm" novalidate aria-labelledby="loginTitle">
     <h2 id="loginTitle">Chinh phục Langbiang · Hóa 10</h2>
     <ul class="rules">
-      <li>10 trạm câu hỏi Bài 1–3 (KNTT), rút ngẫu nhiên từ bộ 61 câu (có câu hình ô orbital, dạng AO, mô hình lớp electron), mỗi câu 1 điểm.</li>
-      <li>Chỉ được chọn một lần: đúng 1 điểm, sai 0 điểm, rồi đi tiếp. Trò chơi không báo đúng sai từng câu.</li>
-      <li>Kết thúc bài, điểm và bài làm tự động gửi cho giáo viên (cần có mạng).</li>
-      <li>Thời gian làm bài: 5 phút.</li>
-      <li>Rời khỏi màn hình chơi (chuyển tab, thu nhỏ, bấm ra ngoài, tải lại trang) là bài kết thúc và tính điểm ngay.</li>
-      <li>Mỗi lần mở đường link chỉ chơi một lượt. Muốn chơi lượt mới, bấm Thoát rồi quét lại mã QR hoặc mở lại đường link.</li>
+      <li>10 trạm câu hỏi Bài 1–3, mỗi câu 1 điểm, chỉ chọn một lần. Thời gian 5 phút.</li>
+      <li>Kết thúc bài, điểm tự động gửi cho giáo viên (cần có mạng).</li>
+      <li>Rời màn hình chơi (chuyển tab, thu nhỏ, tải lại trang) là bài kết thúc ngay.</li>
+      <li>Mỗi lần mở đường link chỉ chơi một lượt.</li>
     </ul>
     <label class="field" for="fName">Họ và tên<input id="fName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"></label>
-    <label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
-    <label class="field" for="fSbd">Số báo danh (chọn lớp trước, rồi nhập 2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label>
+    <div class="frow"><label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
+    <label class="field" for="fSbd">Số báo danh (2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label></div>
     <div class="err" id="loginErr"></div>
     <div class="q-actions"><button class="btn" type="submit">Bắt đầu leo núi</button></div>
   </form>
@@ -593,6 +597,48 @@ const lockT=()=>{for(const q of stations)if(!q.done)return q.t;return 1;};
 let quizOpen=false,activeQ=-1,finished=false,loggedIn=false,locked=false;
 const paused=()=>quizOpen||finished||!loggedIn||locked||!document.getElementById('exitAsk').hidden;
 
+/* ---------- hoa ven đường: cẩm tú cầu (xanh, tím, hồng, trắng) và dã quỳ vàng ---------- */
+(function flowers(){
+  const fr=(()=>{let s2=12345;return()=>(s2=(s2*16807)%2147483647)/2147483647;})();
+  const HY=['#5f86d6','#7d9be3','#9a86d8','#b48fd9','#e292bd','#f0b3cf','#eef1f7'];
+  const blooms=[],leaves=[],daquy=[];
+  const avoid=[];stations.forEach(q=>{const p=pathPoint(q.t);avoid.push([p.x,p.z,5]);});STOPS.forEach(s3=>avoid.push([s3.side[0],s3.side[1],3]));
+  const blocked=(x,z)=>avoid.some(([ax,az,r])=>(ax-x)**2+(az-z)**2<r*r);
+  const step=1.15/ROUTE_LEN;
+  for(let t=0.004;t<0.998;t+=step){
+    const asphalt=t<tRadar,half=asphalt?2.3:1.4;
+    // các mảng hoa: bật/tắt theo nhiễu dọc đường để thành từng cụm, không phủ kín
+    const patch=fbm(t*90,3.7,2);
+    for(const side of[-1,1]){
+      if(patch*side>0.32-(asphalt?0:0.1)||fr()<0.35)continue;
+      const p=flat.getPointAt(t),tg=flat.getTangentAt(t),nx=-tg.z*side,nz=tg.x*side;
+      const off=half+0.7+fr()*1.8,x=p.x+nx*off+(fr()-.5)*0.6,z=p.z+nz*off+(fr()-.5)*0.6;
+      if(blocked(x,z))continue;
+      const y=groundY(x,z),e=elevRaw(x,z);
+      if(e>1980&&fr()<0.5){ // dã quỳ trên sườn cao
+        for(let k=0;k<5;k++)daquy.push([x+(fr()-.5)*1.2,y,z+(fr()-.5)*1.2,0.55+fr()*0.5]);continue;}
+      const col=HY[Math.floor(fr()*HY.length)],n=3+Math.floor(fr()*3),r0=0.85+fr()*0.4;
+      leaves.push([x,y+0.35*r0,z,r0]);
+      for(let k=0;k<n;k++){const a=fr()*6.28,d=0.35*r0;
+        blooms.push([x+Math.cos(a)*d,y+0.62*r0+fr()*0.15,z+Math.sin(a)*d,0.32*r0+fr()*0.08,col]);}
+    }
+  }
+  const m4=new THREE.Object3D(),c4=new THREE.Color();
+  const leafMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:'#3f6b3a'}),leaves.length);
+  leaves.forEach(([x,y,z,r],i)=>{m4.position.set(x,y,z);m4.scale.set(r*0.75,r*0.45,r*0.75);m4.rotation.set(0,fr()*6,0);m4.updateMatrix();leafMesh.setMatrixAt(i,m4.matrix);
+    leafMesh.setColorAt(i,c4.setHSL(.3+fr()*.04,.35,.24+fr()*.06));});
+  const bloomMesh=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshLambertMaterial({color:'#ffffff'}),blooms.length);
+  blooms.forEach(([x,y,z,r,col],i)=>{m4.position.set(x,y,z);m4.scale.setScalar(r);m4.rotation.set(fr()*3,fr()*3,0);m4.updateMatrix();bloomMesh.setMatrixAt(i,m4.matrix);
+    bloomMesh.setColorAt(i,c4.set(col).offsetHSL(0,0,(fr()-.5)*0.08));});
+  const stem=new THREE.InstancedMesh(new THREE.CylinderGeometry(.025,.03,1,4),new THREE.MeshLambertMaterial({color:'#4a6b2e'}),daquy.length);
+  const head=new THREE.InstancedMesh(new THREE.CylinderGeometry(1,1,.25,9),new THREE.MeshLambertMaterial({color:'#f2c21b'}),daquy.length);
+  daquy.forEach(([x,y,z,h],i)=>{m4.rotation.set(0,0,0);m4.position.set(x,y+h/2,z);m4.scale.set(1,h,1);m4.updateMatrix();stem.setMatrixAt(i,m4.matrix);
+    m4.position.set(x,y+h,z);m4.scale.set(.12,1,.12);m4.rotation.set((fr()-.5)*.6,0,(fr()-.5)*.6);m4.updateMatrix();head.setMatrixAt(i,m4.matrix);
+    head.setColorAt(i,c4.set('#f2c21b').offsetHSL((fr()-.5)*.02,0,(fr()-.5)*.08));});
+  scene.add(leafMesh,bloomMesh,stem,head);
+  window.__flowers={hy:leaves.length,blooms:blooms.length,daquy:daquy.length};
+})();
+
 /* ---------- camera control ---------- */
 const CAM_DIST=4.2,CAM_PITCH=.16;
 const st={target:new THREE.Vector3(),yaw:0,pitch:CAM_PITCH,dist:CAM_DIST};
@@ -662,7 +708,7 @@ function checkStations(){if(paused())return;
   else if(i<0&&progress>=1-1e-6)finishGame('peak');}
 function openQuiz(i){const q=stations[i];quizOpen=true;activeQ=i;playing=false;flyTo=null;playBtn.textContent='▶ Leo núi';
   for(const k in keys)keys[k]=0;document.querySelectorAll('#dpad button').forEach(b=>b.classList.remove('held'));
-  qNum.textContent='Trạm '+(i+1)+'/'+stations.length+' · 1 điểm';qBai.textContent=q.bai;qText.innerHTML=q.q;qFeed.hidden=true;qNext.hidden=true;qOpts.innerHTML='';
+  qNum.textContent='Trạm '+(i+1)+'/'+stations.length+' · 1 điểm';qBai.textContent=q.bai;qText.innerHTML=q.q;qFeed.hidden=true;qNext.hidden=true;qOpts.innerHTML='';qOpts.classList.toggle('grid2',q.o.some(t=>/<svg/.test(t)));
   q.o.forEach((txt,j)=>{const b=document.createElement('button');b.type='button';b.className='q-opt';b.id='q'+i+'o'+j;
     b.innerHTML='<kbd>'+'ABCD'[j]+'</kbd><span>'+txt+'</span>';b.onclick=()=>answer(j);qOpts.appendChild(b);});
   dpad.hidden=true;quizEl.hidden=false;placeDpad();setTimeout(()=>quizEl.focus({preventScroll:true}),30);}
@@ -783,7 +829,7 @@ addEventListener('blur',()=>{setTimeout(()=>{if(!document.hasFocus())lockGame();
   loggedIn=true;loginEl.hidden=true;renderCount();setProgress(Math.min(d.progress||0,lockT()),true);
   if(d.finished){finished=true;tickTimer();showResults();return;}
   lockGame();})();
-function placeDpad(){const b='calc('+(rail.offsetHeight+20)+'px + env(safe-area-inset-bottom,0px))';dpad.style.bottom=b;quizEl.style.bottom=b;}
+function placeDpad(){const b='calc('+(rail.offsetHeight+20)+'px + env(safe-area-inset-bottom,0px))';dpad.style.bottom=b;quizEl.style.bottom=b;quizEl.style.maxHeight='calc(100dvh - '+(rail.offsetHeight+44)+'px - env(safe-area-inset-bottom,0px) - env(safe-area-inset-top,0px))';}
 
 function resize(){placeDpad();const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
