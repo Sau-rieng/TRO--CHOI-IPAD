@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
-     Kết quả mỗi lượt chơi ghi vào trang tính "RuongLua_ChuKi" (mỗi thành viên một dòng). -->
-<script>window.CAU_HINH={SHEET_URL:'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'};</script>
+<!-- ĐỊA CHỈ GOOGLE SHEET RIÊNG CỦA TRÒ NÀY: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Cài máy chủ theo hướng dẫn ở apps-script/RUONGLUA-CHUKI/Code.gs. Mã giáo viên và mã mở khoá nằm trong Sheet đó,
+     không nằm trong file này. -->
+<script>window.CAU_HINH={SHEET_URL:''};</script>
 <title>Ruộng lúa Chu kì</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -205,6 +206,12 @@ summary{cursor:pointer;font-weight:700}
 .sendmsg.ok{color:var(--good)}
 .sendmsg.bad{color:var(--warn)}
 .modal.lock{background:rgba(20,35,20,.82);z-index:8}
+.iconbtn.exit{color:var(--warn)}
+.rank li.info{grid-template-columns:minmax(0,1fr) auto;padding:7px 14px}
+.rank li.info span{color:var(--muted);font-weight:600}
+.rank li.info:first-child{border-color:var(--line);background:#fff}
+#setupForm{gap:12px}
+.fields input:disabled{opacity:.5}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -219,6 +226,7 @@ summary{cursor:pointer;font-weight:700}
       <span class="meta"><span>Đã mở <b id="qi">0</b>/10 ô</span><span class="bar"><i id="tbar"></i></span></span>
     </div>
     <span class="panel who" id="who"></span>
+    <button class="panel iconbtn exit" id="exitBtn" type="button">Thoát</button>
     <span class="zoom" id="zoom" hidden><button class="panel iconbtn" id="zin" type="button" aria-label="Phóng to">＋</button><button class="panel iconbtn" id="zout" type="button" aria-label="Thu nhỏ">－</button></span>
     </div>
     <div class="teams" id="teams"></div>
@@ -244,53 +252,35 @@ summary{cursor:pointer;font-weight:700}
 
 
   <div class="modal" id="setup">
-    <form class="card setup narrow" id="setupForm" novalidate>
-      <div><p class="eyebrow">Hoá học 10 · Bảng tuần hoàn · Chơi theo nhóm</p><h2>Ruộng lúa Chu kì</h2></div>
-      <p>Mỗi nhóm 4–6 học sinh chơi chung một iPad. Giáo viên chọn lớp, nhóm, thời gian và nhập mã để mở trò chơi.</p>
-      <div class="fields">
-        <label for="fClass">Lớp</label>
-        <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
-        <label for="fGroup">Nhóm</label>
-        <select id="fGroup"><option value="">Chọn nhóm</option><option>Nhóm 1</option><option>Nhóm 2</option><option>Nhóm 3</option><option>Nhóm 4</option><option>Nhóm 5</option><option>Nhóm 6</option><option>Nhóm 7</option><option>Nhóm 8</option></select>
-        <label for="fMin">Thời gian</label>
-        <select id="fMin"><option value="5">5 phút</option><option value="7">7 phút</option><option value="10">10 phút</option><option value="15">15 phút</option></select>
-        <label for="fCode">Mã giáo viên</label>
-        <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
-      </div>
-      <p class="err" id="setupErr" hidden></p>
-      <div class="row"><button class="go alt" type="submit">Mở trò chơi</button></div>
-    </form>
-  </div>
-
-  <div class="modal" id="join" hidden>
     <div class="card setup">
-      <div><p class="eyebrow" id="joinInfo"></p><h2>Ruộng lúa Chu kì</h2></div>
+      <div><p class="eyebrow">Hoá học 10 · Bảng tuần hoàn · Chơi theo nhóm</p><h2>Ruộng lúa Chu kì</h2></div>
       <div class="sgrid">
         <div class="scol">
           <p>Cánh đồng là <b>bảng tuần hoàn</b>: mỗi tầng ruộng là một <b>chu kì</b>, mỗi cột là một <b>nhóm</b>, mỗi thửa là một <b>ô nguyên tố</b>. Kí hiệu, số chu kì và số nhóm đang <b>bị che</b>. Trả lời câu hỏi để mở ra.</p>
           <ol class="rules">
-            <li>Các thành viên lần lượt điều khiển anh nông dân (<b>← ↑ ↓ →</b>) đến thửa có cọc <b>?</b>, bấm <b>E</b> để mở câu hỏi rồi chạm vào đáp án.</li>
-            <li>Đúng thì người trả lời được điểm của ô đó. Sau mỗi câu, lượt chuyển sang bạn tiếp theo.</li>
-            <li>Lên tầng ở bậc gỗ hoặc đường dốc hai bên. Chu kì càng lớn, câu càng khó, điểm càng cao.</li>
+            <li>Điều khiển anh nông dân (<b>← ↑ ↓ →</b> hoặc cần điều khiển) đến thửa có cọc <b>?</b>, bấm <b>E</b> hoặc nút <b>Mở ô</b>, rồi chạm vào đáp án.</li>
+            <li>Mở 10 ô lúa. Đúng thì được điểm của ô đó. Lên tầng ở bậc gỗ hoặc đường dốc hai bên.</li>
+            <li>Chu kì càng lớn, câu càng khó, điểm càng cao.</li>
             <li class="warn">Không rời màn hình chơi. Rời lần 1: trò chơi bị khoá, cần giáo viên nhập mã. Rời lần 2: trò chơi kết thúc và gửi điểm.</li>
           </ol>
           <div class="growth" id="growth"></div>
         </div>
-        <div class="scol">
-          <form id="joinForm" class="fields" novalidate>
-            <label for="jName">Họ và tên</label><input id="jName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A">
-            <label for="jSbd">Số báo danh</label><div class="sbd"><span class="sbdpre" id="sbdPre"></span><input id="jSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__"></div>
-            <span></span><button class="go" type="submit">Vào nhóm</button>
-          </form>
-          <p class="err" id="joinErr" hidden></p>
-          <p class="eyebrow">Thành viên đã vào <span id="memberCount">0/6</span></p>
-          <ul class="memberlist" id="memberList"></ul>
-          <form id="startForm" class="startrow" novalidate>
-            <label for="sCode">Khi học sinh cuối cùng đã vào, giáo viên nhập mã bắt đầu</label>
-            <div class="row"><input id="sCode" type="password" inputmode="numeric" autocomplete="off" maxlength="4"><button class="go alt" type="submit">Bắt đầu tính giờ</button></div>
-          </form>
-          <p class="err" id="startErr" hidden></p>
-        </div>
+        <form class="scol" id="setupForm" novalidate>
+          <div class="fields">
+            <label for="fClass">Lớp</label>
+            <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
+            <label for="fGroup">Nhóm</label>
+            <select id="fGroup"><option value="">Chọn nhóm</option><option>Nhóm 1</option><option>Nhóm 2</option><option>Nhóm 3</option><option>Nhóm 4</option><option>Nhóm 5</option><option>Nhóm 6</option><option>Nhóm 7</option><option>Nhóm 8</option></select>
+            <label for="fName">Họ và tên</label>
+            <input id="fName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A">
+            <label for="fSbd">Số báo danh</label>
+            <div class="sbd"><span class="sbdpre" id="sbdPre">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled></div>
+            <label for="fCode">Mã giáo viên</label>
+            <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
+          </div>
+          <p class="err" id="setupErr" hidden></p>
+          <div class="row"><button class="go alt" type="submit" id="goBtn">Vào chơi</button></div>
+        </form>
       </div>
     </div>
   </div>
@@ -311,6 +301,14 @@ summary{cursor:pointer;font-weight:700}
     </div>
   </div>
 
+  <div class="modal lock" id="quit" hidden>
+    <div class="card narrow">
+      <h2>Thoát trò chơi?</h2>
+      <p>Trò chơi sẽ kết thúc ngay và gửi điểm cho giáo viên. Các ô chưa mở được 0 điểm.</p>
+      <div class="row"><button class="ghost" type="button" id="quitNo">Chơi tiếp</button><button class="go" type="button" id="quitYes">Thoát và gửi điểm</button></div>
+    </div>
+  </div>
+
   <div class="modal lock" id="lock" hidden>
     <form class="card narrow" id="unlockForm" novalidate>
       <h2>Trò chơi đã bị khoá</h2>
@@ -318,7 +316,7 @@ summary{cursor:pointer;font-weight:700}
       <label for="uCode" class="eyebrow">Mã của giáo viên</label>
       <input id="uCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
       <p class="err" id="lockErr" hidden>Mã không đúng. Chỉ giáo viên mới có mã mở khoá.</p>
-      <div class="row"><button class="go alt" type="submit">Mở khoá</button></div>
+      <div class="row"><button class="go alt" type="submit" id="unlockBtn">Mở khoá</button></div>
     </form>
   </div>
 </div>
@@ -738,7 +736,7 @@ function drawStake(c, cell){
   c.fillStyle = cell.done ? '#e1f3e6' : '#f6ecd2'; rrect(c,22,22,468,256,18); c.fill();
   c.fillStyle = '#1e2b1c'; c.textAlign='center'; c.textBaseline='middle';
   if(!cell.done){ c.font = `800 110px ${FONT}`; c.fillText('?',110,150); c.textAlign='left'; c.font = `800 64px ${FONT}`; c.fillText(`${st.pts} điểm`,190,112); c.font = `600 40px ${FONT}`; c.fillText(st.name,190,190); }
-  else { c.fillStyle = '#23824f'; c.font = `800 100px ${FONT}`; c.fillText('✓',105,150); c.fillStyle = '#1e2b1c'; c.textAlign='left'; c.font = `800 52px ${FONT}`; c.fillText(`Câu ${cell.order}`,185,105); c.font = `700 46px ${FONT}`; c.fillText(cell.winners.length ? cell.winners.map(i=>teams[i].s).join(' ') : 'chưa đội nào',185,185); }
+  else { c.fillStyle = '#23824f'; c.font = `800 100px ${FONT}`; c.fillText('✓',105,150); c.fillStyle = '#1e2b1c'; c.textAlign='left'; c.font = `800 52px ${FONT}`; c.fillText(`Câu ${cell.order}`,185,105); c.font = `700 46px ${FONT}`; c.fillText(cell.ok ? 'Trả lời đúng' : 'Trả lời sai',185,185); }
 }
 function makeStake(cell){
   const e = cell.el, x = colX(e.c) + W/2 - 0.9, z = zb(e.p) - 1.7;   // far side of the paddy, so it never hides the symbol
@@ -976,13 +974,13 @@ function drawTurn(){
   c.fillStyle = '#1e2b1c'; c.textAlign='center'; c.textBaseline='middle'; const txt = `${t.s} ${t.name}`; fitText(c, txt, 220, 44, 800); c.fillText(txt,128,52); turnTex.needsUpdate = true;
 }
 
-/* ================= Game: one iPad per group, members take turns ================= */
-const CODE_OPEN = '7070', CODE_UNLOCK = '7979', CODE_START = '00', SAVE_KEY = 'ruonglua-chuki-nhom-v1';
+/* ================= Game: each student logs in on an iPad; teacher code is checked by the Google Sheet ================= */
+const SAVE_KEY = 'ruonglua-chuki-v2';
 const SBD_PREFIX = {'9D01':'260901','9D02':'260902','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
-const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần'};
-let cfg = null;                 // {lop, group, minutes}
-let teams = [];                 // members of this group: {name, sbd, c, s, score, correct, answered, joinedAt}
+const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần', quit:'Tự thoát'};
+let player = null;              // {lop, group, name, sbd}
+let teams = [];                 // the player, shaped for the score chip and the badge above the farmer
 let turn = 0, opened = 0, history = [];
 let startedAt = 0, deadline = 0, endedAt = 0, TOTAL = 300;
 let phase = 'setup', running = false, current = null, locked = false, leaves = 0, reason = '', sessionId = '', submitted = false;
@@ -990,11 +988,19 @@ const START = {x: colX(1), z: rowZ(1) - 1.6};
 const fmt = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
 const clock24 = ms => ms ? new Date(ms).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '—';
 
+/* ---------- talking to the teacher's Google Sheet ---------- */
+async function api(data){
+  if(!SHEET_URL) throw new Error('nourl');
+  const res = await fetch(SHEET_URL, {method:'POST', body:JSON.stringify(data), headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow'});
+  return res.json();
+}
+const netMsg = err => err && err.message==='nourl' ? 'Trò chơi chưa được nối với Google Sheet của giáo viên.' : 'Không kết nối được máy chủ kiểm tra mã. Kiểm tra mạng rồi thử lại.';
+
 /* ---------- saving on this iPad, so a reload cannot reset the game ---------- */
 function save(){
   try{
-    localStorage.setItem(SAVE_KEY, JSON.stringify({cfg, teams, turn, opened, startedAt, deadline, endedAt, phase: phase==='ask'||phase==='reveal' ? 'walk' : phase,
-      running, locked, leaves, reason, sessionId, submitted, TOTAL, fx:farmer.position.x, fz:farmer.position.z, cur: current ? qCells.indexOf(current) : -1,
+    localStorage.setItem(SAVE_KEY, JSON.stringify({player, teams, opened, startedAt, deadline, endedAt, running, locked, leaves, reason, sessionId, submitted, TOTAL,
+      fx:farmer.position.x, fz:farmer.position.z,
       cells: qCells.map(c=>({sym:c.el.sym, stage:c.stage, q:c.q, done:c.done, by:c.by, chosen:c.chosen, ok:c.ok, order:c.order}))}));
   }catch(_){}
 }
@@ -1006,7 +1012,7 @@ function setupRound(saved){
   qCells = [];
   if(saved){
     saved.forEach(s=>{
-      const cell = {el:BY_SYM[s.sym], stage:s.stage, q:s.q, done:s.done, by:s.by, chosen:s.chosen, ok:s.ok, order:s.order, winners: s.done && s.ok ? [s.by] : []};
+      const cell = {el:BY_SYM[s.sym], stage:s.stage, q:s.q, done:s.done, by:s.by, chosen:s.chosen, ok:s.ok, order:s.order, winners: s.done && s.ok ? [0] : []};
       makeStake(cell); qCells.push(cell);
     });
     return;
@@ -1036,77 +1042,53 @@ function hideAll(){
 }
 
 /* ---------- screens ---------- */
-function showOnly(id){ ['setup','join','result','lock','deck'].forEach(m=> $(m).hidden = m!==id); }
+function showOnly(id){ ['setup','result','lock','deck','quit'].forEach(m=> $(m).hidden = m!==id); }
 function showHud(on){ ['top','mapbox','hint','joy','zoom'].forEach(m=> $(m).hidden = !on); if(!on) $('act').hidden = true; }
 
-// 1) teacher opens the game for a class and group
-(function initSetup(){
-  $('fMin').value = '5';
-})();
-$('setupForm').addEventListener('submit', e=>{
+/* ---------- login: lớp, nhóm, họ tên, SBD + mã giáo viên (checked in Google Drive) ---------- */
+function syncSbd(){
+  const pre = SBD_PREFIX[$('fClass').value], inp = $('fSbd');
+  $('sbdPre').textContent = pre || '••••••'; inp.disabled = !pre;
+}
+$('fClass').addEventListener('change', ()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
+$('fSbd').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/\D/g,'').slice(0,2); });
+syncSbd();
+$('setupForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const lop = $('fClass').value, group = $('fGroup').value, minutes = +$('fMin').value, code = $('fCode').value.trim();
-  const miss = [!lop && 'lớp', !group && 'nhóm', !minutes && 'thời gian'].filter(Boolean);
-  const err = $('setupErr');
-  if(miss.length){ err.textContent = 'Cần chọn ' + miss.join(', ') + '.'; err.hidden = false; return; }
-  if(code !== CODE_OPEN){ err.textContent = 'Mã giáo viên không đúng.'; err.hidden = false; $('fCode').select(); return; }
-  err.hidden = true; $('fCode').value = '';
-  cfg = {lop, group, minutes}; teams = []; phase = 'join';
-  openJoin(); save();
+  const lop = $('fClass').value, group = $('fGroup').value, name = $('fName').value.trim().replace(/\s+/g,' '), tail = $('fSbd').value.trim(), code = $('fCode').value.trim();
+  const err = $('setupErr'), btn = $('goBtn');
+  const fail = t => { err.textContent = t; err.hidden = false; };
+  const miss = [!lop && 'lớp', !group && 'nhóm', !name && 'họ và tên', !tail && '2 số cuối của số báo danh', !code && 'mã giáo viên'].filter(Boolean);
+  if(miss.length) return fail('Cần nhập ' + miss.join(', ') + '.');
+  if(!/^\d{2}$/.test(tail)){ $('fSbd').focus(); return fail('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.'); }
+  err.hidden = true; btn.disabled = true; btn.textContent = 'Đang kiểm tra mã…';
+  try{
+    const r = await api({kind:'login', code, lop, group, name, sbd:SBD_PREFIX[lop]+tail});
+    if(!r.ok){ $('fCode').value = ''; $('fCode').focus(); return fail(r.error==='code' ? 'Mã giáo viên không đúng.' : (r.error || 'Máy chủ từ chối đăng nhập.')); }
+    $('fCode').value = '';
+    player = {lop, group, name, sbd:SBD_PREFIX[lop]+tail};
+    startGame(Number(r.minutes) || 5);
+  }catch(ex){ fail(netMsg(ex)); }
+  finally{ btn.disabled = false; btn.textContent = 'Vào chơi'; }
 });
 
-// 2) members join one by one on this iPad, then the teacher types 00
-function openJoin(){
-  showOnly('join'); showHud(false);
-  $('joinInfo').textContent = `${cfg.lop} · ${cfg.group} · ${cfg.minutes} phút`;
-  $('sbdPre').textContent = SBD_PREFIX[cfg.lop] || '';
-  renderMembers(); $('jName').focus();
-}
-function renderMembers(){
-  $('memberList').innerHTML = teams.length ? teams.map((t,i)=>`<li><span class="sh" style="--c:${t.c}">${t.s}</span><span class="mn">${esc(t.name)}<small>SBD ${esc(t.sbd)} · vào lúc ${clock24(t.joinedAt)}</small></span>${phase==='join' ? `<button type="button" class="x" data-i="${i}" aria-label="Xoá ${esc(t.name)}">✕</button>` : ''}</li>`).join('')
-    : '<li class="empty">Chưa có thành viên nào. Mỗi nhóm 4–6 học sinh.</li>';
-  $('memberList').querySelectorAll('.x').forEach(b=> b.onclick = ()=>{ teams.splice(+b.dataset.i,1); teams.forEach((t,i)=> Object.assign(t, TEAM_STYLE[i])); renderMembers(); save(); });
-  $('memberCount').textContent = `${teams.length}/6`;
-  $('joinForm').querySelector('button').disabled = teams.length >= 6;
-}
-$('jSbd').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/\D/g,'').slice(0,2); });
-$('joinForm').addEventListener('submit', e=>{
-  e.preventDefault();
-  const name = $('jName').value.trim().replace(/\s+/g,' '), tail = $('jSbd').value.trim(), err = $('joinErr');
-  if(teams.length >= 6){ err.textContent = 'Nhóm đã đủ 6 thành viên.'; err.hidden = false; return; }
-  if(!name){ err.textContent = 'Em cần nhập họ và tên.'; err.hidden = false; $('jName').focus(); return; }
-  if(!/^\d{2}$/.test(tail)){ err.textContent = 'Nhập đúng 2 số cuối của số báo danh, ví dụ 05 hoặc 17.'; err.hidden = false; $('jSbd').focus(); return; }
-  const sbd = (SBD_PREFIX[cfg.lop]||'') + tail;
-  if(teams.some(t=> t.sbd===sbd)){ err.textContent = `Số báo danh ${sbd} đã có trong nhóm.`; err.hidden = false; return; }
-  err.hidden = true;
-  teams.push({...TEAM_STYLE[teams.length], name, sbd, score:0, correct:0, answered:0, joinedAt:Date.now()});
-  $('jName').value = ''; $('jSbd').value = ''; renderMembers(); save(); $('jName').focus();
-});
-$('startForm').addEventListener('submit', e=>{
-  e.preventDefault();
-  const err = $('startErr');
-  if(!teams.length){ err.textContent = 'Chưa có thành viên nào vào nhóm.'; err.hidden = false; return; }
-  if($('sCode').value.trim() !== CODE_START){ err.textContent = 'Mã bắt đầu không đúng. Chỉ giáo viên nhập mã này.'; err.hidden = false; $('sCode').select(); return; }
-  err.hidden = true; $('sCode').value = '';
-  startGame();
-});
-
-// 3) play
-function startGame(){
+/* ---------- play ---------- */
+function startGame(minutes){
   sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
-  TOTAL = cfg.minutes*60; startedAt = Date.now(); deadline = startedAt + TOTAL*1000; endedAt = 0;
+  TOTAL = minutes*60; startedAt = Date.now(); deadline = startedAt + TOTAL*1000; endedAt = 0;
+  teams = [{...TEAM_STYLE[0], name:player.name, sbd:player.sbd, score:0, correct:0, answered:0, joinedAt:startedAt}];
   turn = 0; opened = 0; history = []; leaves = 0; reason = ''; submitted = false; locked = false;
   hideAll(); setupRound();
   running = true; phase = 'walk';
   farmer.position.set(START.x, H(START.x,START.z), START.z); fy = farmer.position.y; yaw = Math.PI/2;
-  showOnly(null); showHud(true);
-  $('who').textContent = `${cfg.lop} · ${cfg.group}`;
+  showOnly(null); showHud(true); $('exitBtn').hidden = false;
+  $('who').textContent = `${player.lop} · ${player.group}`;
   $('qi').textContent = 0;
   renderTeams(); drawTurn(); snapCam(); save();
   if(document.activeElement) document.activeElement.blur();
 }
 function renderTeams(){
-  $('teams').innerHTML = teams.map((t,i)=>`<div class="panel team ${i===turn && running ? 'turn':''}" id="tm${i}" style="--c:${t.c}"><span class="sh">${t.s}</span><span class="nm">${esc(t.name)}</span><span class="sc">${t.score}</span></div>`).join('');
+  $('teams').innerHTML = teams.map((t,i)=>`<div class="panel team" id="tm${i}" style="--c:${t.c}"><span class="sh">${t.s}</span><span class="nm">${esc(t.name)}</span><span class="sc">${t.score}</span></div>`).join('');
 }
 function shellsSVG(shells, sym){
   const n = shells.length, R0 = 14, step = (52-R0)/Math.max(1,n);
@@ -1117,11 +1099,11 @@ function shellsSVG(shells, sym){
 function openCell(cell){
   if(!cell || cell.done || phase!=='walk' || locked || reason) return;
   current = cell; phase = 'ask'; cell.order = opened + 1;
-  const q = cell.q, st = STAGES[cell.stage], t = teams[turn];
+  const q = cell.q, st = STAGES[cell.stage];
   $('qnum').textContent = `Câu ${cell.order}`;
   $('qplace').textContent = 'Ô bí ẩn';
   $('qstage').textContent = `${st.name} · ${st.pts} điểm`; $('qstage').style.setProperty('--c', st.css);
-  $('qwho').innerHTML = `<span class="sh" style="--c:${t.c}">${t.s}</span>${esc(t.name)} trả lời`;
+  $('qwho').textContent = '';
   $('qtext').textContent = q.q;
   $('opts').innerHTML = q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('');
   $('opts').querySelectorAll('.opt').forEach(b=> b.onclick = ()=> choose(+b.dataset.i));
@@ -1132,9 +1114,9 @@ function openCell(cell){
 function choose(i){
   if(phase!=='ask' || locked || reason) return;
   phase = 'reveal';
-  const cell = current, q = cell.q, st = STAGES[cell.stage], e = cell.el, t = teams[turn];
+  const cell = current, q = cell.q, st = STAGES[cell.stage], e = cell.el, t = teams[0];
   const ok = i === q.ans;
-  Object.assign(cell, {chosen:i, ok, by:turn, done:true, winners: ok ? [turn] : []});
+  Object.assign(cell, {chosen:i, ok, by:0, done:true, winners: ok ? [0] : []});
   t.answered++; if(ok){ t.score += st.pts; t.correct++; }
   opened++; history.push(cell); $('qi').textContent = opened;
   $('opts').querySelectorAll('.opt').forEach((b,j)=>{ b.disabled = true; b.classList.add(j===q.ans ? 'ok' : (j===i ? 'no' : 'dim')); });
@@ -1142,11 +1124,10 @@ function choose(i){
   $('why').innerHTML = shellsSVG(info.sh, e.sym) + `<p>${info.txt}<br>Thửa ruộng này đã mở: ô <b>${e.sym}</b>, tầng <b>Chu kì ${e.p}</b>, cột <b>nhóm ${GROUP[e.c]}</b>.</p>`; $('why').hidden = false;
   $('qplace').textContent = `Ô ${e.sym} · Chu kì ${e.p} · Nhóm ${GROUP[e.c]}`;
   revealCell(e); refreshStake(cell);
-  const pop = $('tm'+turn); if(ok && pop){ pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
-  turn = (turn+1) % teams.length;
-  renderTeams(); drawTurn();
-  $('ctrl').innerHTML = `<span class="verdict ${ok ? 'good' : 'bad'}">${ok ? `Chính xác! +${st.pts} điểm cho ${esc(t.name)}` : `Chưa đúng. Đáp án đúng là ${'ABCD'[q.ans]}.`}</span>` +
-    `<button class="go" type="button" id="btnNext">${opened>=10 ? 'Xem kết quả' : `Tiếp tục · lượt của ${esc(teams[turn].name)} ›`}</button>`;
+  const pop = $('tm0'); if(ok && pop){ pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
+  renderTeams();
+  $('ctrl').innerHTML = `<span class="verdict ${ok ? 'good' : 'bad'}">${ok ? `Chính xác! +${st.pts} điểm` : `Chưa đúng. Đáp án đúng là ${'ABCD'[q.ans]}.`}</span>` +
+    `<button class="go" type="button" id="btnNext">${opened>=10 ? 'Xem kết quả' : 'Tiếp tục ›'}</button>`;
   $('btnNext').onclick = closeCell; $('btnNext').focus();
   save();
 }
@@ -1156,34 +1137,38 @@ function closeCell(){
   if(opened >= 10) finish('done'); else save();
 }
 
-// 4) end: results go to the teacher's Google Sheet; "Lượt chơi mới" leaves a blank page
+/* ---------- exit button ---------- */
+$('exitBtn').onclick = ()=>{ if(!running || reason || locked) return; clearKeys(); $('quit').hidden = false; $('quitNo').focus(); };
+$('quitNo').onclick = ()=>{ $('quit').hidden = true; $('quitNo').blur(); };
+$('quitYes').onclick = ()=> finish('quit');
+
+/* ---------- end: results go to the teacher's Google Sheet; "Lượt chơi mới" leaves a blank page ---------- */
 function finish(why){
   if(reason) return;
   reason = why; endedAt = Math.min(Date.now(), deadline || Date.now());
   running = false; phase = 'end'; current = null; locked = false;
-  revealAll(); showHud(false); $('top').hidden = false; $('mapbox').hidden = false;
+  revealAll(); showHud(false); $('top').hidden = false; $('mapbox').hidden = false; $('exitBtn').hidden = true;
   renderTeams(); showEnd(); save(); sendResult();
 }
 function showEnd(){
   showOnly('result');
-  const total = teams.reduce((a,t)=> a+t.score, 0), corr = teams.reduce((a,t)=> a+t.correct, 0);
-  $('rEyebrow').textContent = `${cfg.lop} · ${cfg.group} · ${REASONS[reason] || ''}`;
-  $('rTitle').textContent = reason==='violation' ? 'Trò chơi kết thúc vì rời màn hình lần 2' : (reason==='timeout' ? 'Hết giờ! Mùa gặt kết thúc' : 'Nhóm đã mở đủ 10 ô lúa');
-  $('rTotal').innerHTML = `<b>${total}</b> điểm · ${corr}/${opened} câu đúng · ${fmt((endedAt-startedAt)/1000)} phút chơi`;
-  const sorted = teams.map((t,i)=>({...t,i})).sort((a,b)=> b.score-a.score);
-  $('rank').innerHTML = sorted.map((t,k)=>`<li><span class="pos">${k+1}</span><span class="who"><span class="sh" style="--c:${t.c}">${t.s}</span><span>${esc(t.name)}<small>SBD ${esc(t.sbd)} · đúng ${t.correct}/${t.answered} câu · vào lúc ${clock24(t.joinedAt)}</small></span></span><span class="pts">${t.score}</span></li>`).join('');
+  const t = teams[0];
+  $('rEyebrow').textContent = `${player.lop} · ${player.group} · ${REASONS[reason] || ''}`;
+  $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Em đã thoát trò chơi'}[reason] || 'Em đã mở đủ 10 ô lúa';
+  $('rTotal').innerHTML = `<b>${t.score}</b> điểm · ${t.correct}/${opened} câu đúng`;
+  $('rank').innerHTML = `<li class="info"><span>Họ và tên</span><b>${esc(t.name)}</b></li><li class="info"><span>Lớp · Nhóm</span><b>${esc(player.lop)} · ${esc(player.group)}</b></li>`+
+    `<li class="info"><span>Số báo danh</span><b>${esc(t.sbd)}</b></li><li class="info"><span>Đăng nhập lúc</span><b>${clock24(startedAt)}</b></li>`+
+    `<li class="info"><span>Thoát lúc</span><b>${clock24(endedAt)}</b></li><li class="info"><span>Thời gian chơi</span><b>${fmt((endedAt-startedAt)/1000)}</b></li>`;
   const ordered = history.concat(qCells.filter(c=>!c.done).sort((a,b)=>a.stage-b.stage));
-  $('review').innerHTML = ordered.map(c=>{ const q = c.q, st = STAGES[c.stage], who = c.done ? teams[c.by] : null;
-    return `<li><i>Ô ${esc(c.el.sym)} (chu kì ${c.el.p}, nhóm ${GROUP[c.el.c]}) · ${st.pts} điểm.</i> ${esc(q.q)}<br>Đáp án: <b>${esc(q.opts[q.ans])}</b>${who ? ` · ${esc(who.name)} chọn ${'ABCD'[c.chosen]} (${c.ok ? 'đúng' : 'sai'})` : ' <span class="skip">· chưa mở</span>'}</li>`; }).join('');
+  $('review').innerHTML = ordered.map(c=>{ const q = c.q, st = STAGES[c.stage];
+    return `<li><i>Ô ${esc(c.el.sym)} (chu kì ${c.el.p}, nhóm ${GROUP[c.el.c]}) · ${st.pts} điểm.</i> ${esc(q.q)}<br>Đáp án: <b>${esc(q.opts[q.ans])}</b>${c.done ? ` · em chọn ${'ABCD'[c.chosen]} (${c.ok ? 'đúng' : 'sai'})` : ' <span class="skip">· chưa mở</span>'}</li>`; }).join('');
   $('newConfirm').hidden = true; $('btnNew').textContent = 'Lượt chơi mới';
 }
 function buildReport(){
-  const total = teams.reduce((a,t)=> a+t.score, 0), corr = teams.reduce((a,t)=> a+t.correct, 0);
-  return {kind:'ruonglua-chuki', game:'Ruộng lúa Chu kì', id:sessionId, lop:cfg.lop, group:cfg.group, minutes:cfg.minutes,
-    startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves, groupScore:total, groupCorrect:corr, opened,
-    members: teams.map((t,i)=>({name:t.name, sbd:t.sbd, score:t.score, correct:t.correct, answered:t.answered, joinedAt:t.joinedAt,
-      detail: history.filter(c=> c.by===i).map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): ${c.ok ? 'đúng' : 'sai'}`).join('; ')})),
-    items: history.map(c=>({n:c.order, el:c.el.sym, pts:STAGES[c.stage].pts, q:c.q.q, opts:c.q.opts, correct:c.q.ans, chosen:c.chosen, by:teams[c.by] ? teams[c.by].name : '', ok:c.ok}))};
+  const t = teams[0];
+  return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group, name:player.name, sbd:player.sbd,
+    score:t.score, correct:t.correct, answered:t.answered, startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves,
+    detail: history.map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): chọn ${'ABCD'[c.chosen]}, ${c.ok ? 'đúng' : 'sai'}`).join('; ')};
 }
 let sending = false;
 async function sendResult(){
@@ -1191,7 +1176,7 @@ async function sendResult(){
   const show = (t, cls, resend)=>{ m.textContent = t; m.className = 'sendmsg ' + (cls||''); m.hidden = false; rb.hidden = !resend; };
   if(!reason) return;
   if(submitted === true){ show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok'); return; }
-  if(!SHEET_URL){ show('Chưa cài địa chỉ Google Sheet nên kết quả chỉ nằm trên máy này. Hãy chụp màn hình gửi giáo viên.'); return; }
+  if(!SHEET_URL){ show('Chưa nối với Google Sheet nên kết quả chỉ nằm trên máy này. Hãy chụp màn hình gửi giáo viên.'); return; }
   if(sending) return; sending = true; show('Đang gửi kết quả cho giáo viên…');
   const body = JSON.stringify(buildReport()), headers = {'Content-Type':'text/plain;charset=utf-8'};
   try{
@@ -1200,7 +1185,7 @@ async function sendResult(){
     submitted = true; save(); show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok');
   }catch(err){
     try{ await fetch(SHEET_URL, {method:'POST', mode:'no-cors', body, headers}); submitted = 'maybe'; save();
-      show('Đã gửi nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy kết quả của nhóm, hãy bấm Gửi lại.', '', true); }
+      show('Đã gửi nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy kết quả của em, hãy bấm Gửi lại.', '', true); }
     catch(e2){ show('Chưa gửi được kết quả' + (navigator.onLine===false ? ' (máy đang mất mạng)' : '') + '. Kiểm tra mạng rồi bấm Gửi lại.', 'bad', true); }
   }finally{ sending = false; }
 }
@@ -1224,36 +1209,41 @@ function lockGame(){
   showLock();
 }
 function showLock(){
-  locked = true; clearKeys();
-  $('lockMsg').textContent = `${cfg.lop} · ${cfg.group} đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để chơi tiếp. Đồng hồ vẫn chạy. Nếu rời màn hình thêm lần nữa, trò chơi sẽ kết thúc ngay và gửi điểm.`;
+  locked = true; clearKeys(); $('quit').hidden = true;
+  $('lockMsg').textContent = `${player.name} (${player.lop}, ${player.group}) đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để chơi tiếp. Đồng hồ vẫn chạy. Nếu rời màn hình thêm lần nữa, trò chơi sẽ kết thúc ngay và gửi điểm.`;
   $('uCode').value = ''; $('lockErr').hidden = true; $('lock').hidden = false;
   save();
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) lockGame(); });
 addEventListener('blur', ()=> lockGame());
 addEventListener('pagehide', ()=> lockGame());
-$('unlockForm').addEventListener('submit', e=>{
+$('unlockForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  if($('uCode').value.trim() !== CODE_UNLOCK){ $('lockErr').hidden = false; $('uCode').select(); return; }
-  $('uCode').value = ''; locked = false; $('lock').hidden = true; save();
-  if(document.activeElement) document.activeElement.blur();
-  if(Date.now() >= deadline) finish('timeout');
+  const code = $('uCode').value.trim(), err = $('lockErr'), btn = $('unlockBtn');
+  if(!code){ err.textContent = 'Giáo viên nhập mã mở khoá.'; err.hidden = false; return; }
+  btn.disabled = true; btn.textContent = 'Đang kiểm tra…';
+  try{
+    const r = await api({kind:'unlock', code});
+    if(!r.ok){ err.textContent = 'Mã không đúng. Chỉ giáo viên mới có mã mở khoá.'; err.hidden = false; $('uCode').select(); return; }
+    $('uCode').value = ''; err.hidden = true; locked = false; $('lock').hidden = true; save();
+    if(document.activeElement) document.activeElement.blur();
+    if(Date.now() >= deadline) finish('timeout');
+  }catch(ex){ err.textContent = netMsg(ex); err.hidden = false; }
+  finally{ btn.disabled = false; btn.textContent = 'Mở khoá'; }
 });
 
 /* ---------- restore after a reload (counts as leaving the screen) ---------- */
 function restore(){
   let d = null; try{ d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); }catch(_){}
-  if(!d || !d.cfg) return false;
-  cfg = d.cfg; teams = d.teams || []; turn = d.turn || 0; opened = d.opened || 0; startedAt = d.startedAt || 0; deadline = d.deadline || 0;
-  endedAt = d.endedAt || 0; leaves = d.leaves || 0; reason = d.reason || ''; sessionId = d.sessionId || ''; submitted = d.submitted || false; TOTAL = d.TOTAL || cfg.minutes*60;
-  if(d.phase === 'join' && !d.running && !reason){ phase = 'join'; openJoin(); return true; }
-  if(!d.cells || !d.cells.length) return false;
+  if(!d || !d.player || !d.cells || !d.cells.length) return false;
+  player = d.player; teams = d.teams || []; opened = d.opened || 0; startedAt = d.startedAt || 0; deadline = d.deadline || 0;
+  endedAt = d.endedAt || 0; leaves = d.leaves || 0; reason = d.reason || ''; sessionId = d.sessionId || ''; submitted = d.submitted || false; TOTAL = d.TOTAL || 300;
   hideAll(); setupRound(d.cells);
   history = qCells.filter(c=> c.done).sort((a,b)=> a.order-b.order);
   history.forEach(c=> revealCell(c.el));
-  $('who').textContent = `${cfg.lop} · ${cfg.group}`; $('qi').textContent = opened;
+  $('who').textContent = `${player.lop} · ${player.group}`; $('qi').textContent = opened;
   const fx = d.fx ?? START.x, fz = d.fz ?? START.z; farmer.position.set(fx, H(fx,fz), fz); fy = farmer.position.y;
-  if(reason){ phase = 'end'; running = false; revealAll(); showOnly('result'); $('top').hidden = false; $('mapbox').hidden = false; renderTeams(); showEnd(); sendResult(); return true; }
+  if(reason){ phase = 'end'; running = false; revealAll(); showOnly('result'); $('top').hidden = false; $('mapbox').hidden = false; $('exitBtn').hidden = true; renderTeams(); showEnd(); sendResult(); return true; }
   running = true; phase = 'walk'; showOnly(null); showHud(true); renderTeams(); drawTurn(); snapCam();
   if(opened >= 10){ finish('done'); return true; }
   if(Date.now() >= deadline){ finish('timeout'); return true; }
@@ -1337,7 +1327,7 @@ function drawMap(){
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), want = new THREE.Vector3(), wantLook = new THREE.Vector3();
 let orbitT = 0;
 function computeWant(){
-  if(phase==='setup' || phase==='join'){
+  if(phase==='setup'){
     orbitT += RM ? 0 : 0.0012;
     wantLook.set(0, 3, 0); want.set(Math.sin(orbitT)*30, 72, -92 - Math.cos(orbitT)*8); return;
   }
@@ -1406,7 +1396,7 @@ function tick(){
   updateLife(dt, t);
   sun.position.set(p.x+18, p.y+34, p.z-22); sun.target.position.set(p.x, p.y, p.z+4);
   computeWant();
-  const k = 1 - Math.exp(-dt*(phase==='setup' || phase==='join' ? 1 : 4));
+  const k = 1 - Math.exp(-dt*(phase==='setup' ? 1 : 4));
   camPos.lerp(want,k); camLook.lerp(wantLook,k); camera.position.copy(camPos); camera.lookAt(camLook);
   if(running || phase==='end') drawMap();
   renderer.render(scene, camera);
