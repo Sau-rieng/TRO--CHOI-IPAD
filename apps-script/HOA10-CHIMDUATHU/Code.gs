@@ -13,6 +13,11 @@
  *     (hoặc gửi link cho Claude để Claude sửa giúp). Học sinh chơi bằng link GitHub,
  *     điểm và bài làm PDF về Sheet/Drive riêng này.
  *
+ * Cùng địa chỉ /exec này còn nhận kết quả trò "Ruộng lúa Chu kì" (RUONGLUA-CHUKI-NHOM.html):
+ * mỗi lượt chơi của một nhóm ghi vào trang tính "RuongLua_ChuKi", mỗi thành viên một dòng.
+ * Khi cập nhật file này: Triển khai → Quản lý các bản triển khai → bút chì → Phiên bản: Phiên bản mới
+ * → Triển khai. Địa chỉ /exec giữ nguyên, không phải sửa link trong các trò chơi.
+ *
  * Bảng tính và thư mục bài làm thuộc Drive của giáo viên, ở chế độ riêng tư.
  * Học sinh chỉ mở được trò chơi, không xem được bảng điểm hay file bài làm.
  */
@@ -35,7 +40,8 @@ function doGet() {
 function doPost(e) {
   let out;
   try {
-    out = submitResult(fromReport_(JSON.parse(e.postData.contents)));
+    const data = JSON.parse(e.postData.contents);
+    out = (data && data.kind === 'ruonglua-chuki') ? submitRuongLua_(data) : submitResult(fromReport_(data));
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
   }
@@ -174,4 +180,55 @@ function makePdf_(d) {
   const fileName = d.lop + '_' + (d.group ? d.group.replace(/\s+/g, '') + '_' : '') + d.sbd + '_' + d.name + '.pdf';
   const blob = Utilities.newBlob(html, 'text/html', 'bai-lam.html').getAs('application/pdf').setName(fileName);
   return getClassFolder_(d.lop).createFile(blob);
+}
+
+/* ---------------- Ruộng lúa Chu kì (chơi theo nhóm, mỗi nhóm một iPad) ---------------- */
+
+const RL_SHEET = 'RuongLua_ChuKi';
+const RL_HEADERS = ['Thời điểm gửi', 'Lớp', 'Nhóm', 'Họ và tên', 'SBD', 'Điểm', 'Số câu đúng', 'Số câu đã trả lời',
+  'Tổng điểm nhóm', 'Số câu đúng của nhóm', 'Đăng nhập lúc', 'Bắt đầu tính giờ', 'Thoát lúc', 'Thời gian chơi',
+  'Thời lượng cài đặt (phút)', 'Kết thúc', 'Số lần rời màn hình', 'Chi tiết câu trả lời', 'Mã lượt chơi'];
+
+function getRuongLuaSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(RL_SHEET);
+  if (!sh) sh = ss.insertSheet(RL_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(RL_HEADERS);
+    sh.getRange(1, 1, 1, RL_HEADERS.length).setFontWeight('bold').setBackground('#eeeeee');
+    sh.setFrozenRows(1);
+    ['A:A', 'K:K', 'L:L', 'M:M'].forEach(function (c) { sh.getRange(c).setNumberFormat('dd/MM/yyyy HH:mm:ss'); });
+    sh.getRange('E:E').setNumberFormat('@');
+  }
+  return sh;
+}
+
+function submitRuongLua_(p) {
+  const lop = clean_(p.lop, 10), group = clean_(p.group, 20), id = clean_(p.id, 40);
+  const members = (Array.isArray(p.members) ? p.members : []).slice(0, 6);
+  if (CLASSES.indexOf(lop) < 0 || !group || !id || !members.length) throw new Error('Dữ liệu không hợp lệ');
+  const start = Number(p.startedAt) || 0, end = Number(p.endedAt) || 0;
+  const secs = start && end ? Math.max(0, Math.round((end - start) / 1000)) : 0;
+  const used = Math.floor(secs / 60) + ':' + ('0' + secs % 60).slice(-2);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sh = getRuongLuaSheet_();
+    const last = sh.getLastRow();
+    if (last > 1) {
+      const ids = sh.getRange(2, RL_HEADERS.length, last - 1, 1).getValues();
+      for (let i = 0; i < ids.length; i++) if (ids[i][0] === id) return { ok: true, duplicate: true };
+    }
+    const now = new Date();
+    const rows = members.map(function (m) {
+      return [now, lop, group, clean_(m.name, 60), "'" + clean_(m.sbd, 12), Number(m.score) || 0, Number(m.correct) || 0,
+        Number(m.answered) || 0, Number(p.groupScore) || 0, Number(p.groupCorrect) || 0,
+        m.joinedAt ? new Date(Number(m.joinedAt)) : '', start ? new Date(start) : '', end ? new Date(end) : '', used,
+        Number(p.minutes) || '', clean_(p.reason, 40), Number(p.violations) || 0, clean_(m.detail, 900), id];
+    });
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, RL_HEADERS.length).setValues(rows);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
 }

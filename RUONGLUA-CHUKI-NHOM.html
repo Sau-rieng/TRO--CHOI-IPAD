@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Kết quả mỗi lượt chơi ghi vào trang tính "RuongLua_ChuKi" (mỗi thành viên một dòng). -->
+<script>window.CAU_HINH={SHEET_URL:'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'};</script>
+<title>Ruộng lúa Chu kì</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: full-screen 3D rice-terrace world; straw-white HUD cards (clock + team scores top, minimap bottom-right, question deck docked bottom). Single daylight look. */
+:root{
+  --sky:#9fc9e6;
+  --paper:#f8f6ee;
+  --ink:#1e2b1c;
+  --muted:#5f6b55;
+  --line:#d6d8c4;
+  --gold:#e9b736;
+  --good:#23824f;
+  --good-bg:#e1f3e6;
+  --warn:#d2492f;
+  --s0:#b5d86a; --s1:#6fb342; --s2:#3f8f3a; --s3:#b9b84a; --s4:#e3b23c;
+  --display:"Baloo 2","Be Vietnam Pro",system-ui,sans-serif;
+  --body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;-webkit-text-size-adjust:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);overflow:hidden}
+#app{position:relative;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none}
+#scene{display:block;width:100%;height:100%;touch-action:none}
+button{font-family:var(--body)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.panel{background:rgba(248,246,238,.96);color:var(--ink);border-radius:14px;box-shadow:0 6px 18px rgba(20,40,20,.25)}
+
+/* top */
+.top{position:absolute;top:0;left:0;right:0;display:flex;gap:8px;align-items:flex-start;padding:12px 16px;pointer-events:none;flex-wrap:nowrap}
+.tl{display:flex;gap:8px;align-items:stretch;flex:none}
+.top > *{pointer-events:auto}
+.clock{padding:6px 14px;display:flex;align-items:center;gap:12px}
+.clock .t{font-family:var(--display);font-weight:800;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;min-width:3.1ch}
+.clock.low .t{color:var(--warn)}
+.clock.hold .t{color:var(--muted)}
+.clock .meta{display:grid;gap:3px;font-size:12px;color:var(--muted);font-weight:600}
+.clock .meta b{color:var(--ink);font-size:15px}
+.bar{height:5px;width:96px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);transform-origin:left}
+.clock.low .bar i{background:var(--warn)}
+.iconbtn{border:0;font-weight:700;font-size:14px;padding:0 14px;cursor:pointer;min-height:44px}
+.teams{display:flex;gap:8px 8px;flex-wrap:wrap;margin-left:auto;justify-content:flex-end;min-width:0;flex:1 1 auto;row-gap:26px}
+.team{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border:3px solid transparent;position:relative}
+.team.turn{border-color:var(--ink)}
+.team.turn::after{content:"Đang điều khiển";position:absolute;left:50%;top:100%;transform:translate(-50%,4px);font-size:11px;font-weight:700;white-space:nowrap;background:var(--ink);color:var(--paper);padding:2px 8px;border-radius:999px}
+.sh{flex:none;width:28px;height:28px;border-radius:8px;background:var(--c);color:var(--ink);display:grid;place-items:center;font-size:15px;font-weight:800}
+.team .nm{font-size:13px;font-weight:600;color:var(--muted);max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team .sc{font-family:var(--display);font-weight:800;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.team.pop{animation:pop .6s ease}
+@keyframes pop{30%{transform:scale(1.15)}}
+
+/* map */
+.mapbox{position:absolute;left:16px;top:calc(80px + env(safe-area-inset-top,0px));padding:8px;display:grid;gap:6px;width:260px;z-index:1}
+.mapbox canvas{width:100%;height:auto;aspect-ratio:400/240;border-radius:6px;display:block}
+.zoom{display:flex;gap:6px}
+.zoom button{width:44px}
+.stages{display:grid;grid-template-columns:auto 1fr auto;gap:2px 6px;font-size:11px;align-items:center;margin:0}
+.stages i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.stages b{font-variant-numeric:tabular-nums}
+#act{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));border:0;border-radius:14px;padding:12px 18px;background:var(--gold);color:var(--ink);font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 6px 18px rgba(20,40,20,.3);max-width:calc(100% - 32px)}
+.hint{position:absolute;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));font-size:13px;padding:8px 12px;max-width:calc(100% - 330px)}
+.hint kbd{font:700 12px var(--body);background:var(--line);border-radius:5px;padding:1px 6px}
+.joy{display:none;position:absolute;left:20px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:124px;height:124px;border-radius:50%;background:rgba(248,246,238,.35);border:2px solid rgba(248,246,238,.8);touch-action:none}
+.knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(248,246,238,.95);box-shadow:0 2px 10px rgba(0,0,0,.3)}
+@media (pointer:coarse){ .joy{display:block} .hint{display:none} }
+@media (max-width:640px){
+  .top{flex-wrap:wrap}
+  .tl{flex-wrap:wrap;flex:1 1 100%}
+  .mapbox{width:160px;padding:6px;top:calc(196px + env(safe-area-inset-top,0px))}
+  .stages{display:none}
+  .hint{display:none}
+  #act{font-size:14px}
+  .clock .t{font-size:26px}
+  .bar{width:60px}
+  .team .nm{display:none}
+  .team .sc{font-size:20px}
+  .team.turn::after{content:"Lượt"}
+}
+
+/* question deck */
+.deck{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(20,35,20,.5),rgba(20,35,20,0) 70%);z-index:3}
+.qcard{width:100%;max-width:1120px;max-height:calc(100% - 90px);overflow:auto;background:rgba(248,246,238,.98);border-radius:20px;padding:16px 20px;box-shadow:0 14px 40px rgba(0,0,0,.4);display:grid;gap:12px}
+.qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{font-family:var(--display);font-weight:800;font-size:17px;border-radius:10px;padding:2px 10px;background:var(--c);color:var(--ink)}
+.tag.n{background:var(--ink);color:var(--paper)}
+.qtext{font-weight:700;font-size:clamp(18px,2.3vw,28px);line-height:1.3;margin:0;text-wrap:balance}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:clamp(15px,1.7vw,21px);font-weight:600;line-height:1.3;min-width:0}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt .k{flex:none;width:34px;height:34px;border-radius:10px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--good);background:var(--good-bg)}
+.opt.ok .k{background:var(--good)}
+.opt.dim{opacity:.4}
+.why{display:flex;gap:14px;align-items:center;background:var(--good-bg);border-radius:12px;padding:10px 14px}
+.why p{margin:0;font-size:clamp(14px,1.5vw,18px);line-height:1.45;min-width:0;flex:1}
+.why b{color:var(--good)}
+.why svg{flex:none;width:110px;height:110px}
+.ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctrl .lab{font-size:14px;font-weight:700;color:var(--muted)}
+.mark{display:flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:5px 14px 5px 5px;font-weight:700;font-size:15px;cursor:pointer;min-height:40px}
+.mark .sh{width:26px;height:26px;border-radius:50%;font-size:13px}
+.mark[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.mark[aria-pressed="true"]::after{content:attr(data-p);font-size:12px;color:var(--gold)}
+.go{margin-left:auto;border:0;border-radius:14px;padding:12px 22px;background:var(--ink);color:var(--paper);font-weight:800;font-size:17px;cursor:pointer;min-height:48px}
+.go.alt{background:var(--gold);color:var(--ink)}
+.kbd{font-size:12px;color:var(--muted)}
+
+/* modals */
+.modal{position:absolute;inset:0;background:rgba(20,35,20,.45);display:grid;place-items:center;padding:16px;z-index:5}
+.card{background:var(--paper);width:100%;max-width:680px;max-height:calc(100% - 8px);overflow:auto;border-radius:22px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:14px}
+.card.wide{max-width:820px}
+.card.setup{max-width:1000px;padding:20px 24px;gap:12px}
+.card.setup h2{font-size:clamp(26px,3.4vw,36px)}
+.card.setup p{font-size:15px;line-height:1.5}
+.sgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px}
+.scol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.setup .rules{font-size:14.5px;line-height:1.45;gap:5px}
+.card.setup .names{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.card.setup .names input{padding:4px 2px;font-size:15px}
+.card.setup .seg button{height:38px}
+@media (max-width:760px){ .sgrid{grid-template-columns:minmax(0,1fr)} }
+.eyebrow{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card h2{margin:0;font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,40px);line-height:1.05;text-wrap:balance}
+.card p{margin:0;line-height:1.55;font-size:16px;max-width:65ch}
+.rules{margin:0;padding-left:20px;display:grid;gap:4px;line-height:1.5}
+.growth{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.growth div{border-radius:10px;background:var(--c);padding:5px 7px;font-size:11.5px;font-weight:700;line-height:1.25}
+.growth b{display:block;font-family:var(--display);font-size:16px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:2px solid var(--line);background:#fff;border-radius:10px;min-width:46px;height:42px;padding:0 12px;font-weight:700;font-size:15px;cursor:pointer;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.names label{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:12px;padding:4px 8px 4px 4px;background:#fff}
+.names input{border:0;font:600 16px var(--body);color:var(--ink);width:100%;min-width:0;background:transparent;padding:6px 2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.row .go{margin-left:0}
+.ghost{border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:10px 18px;font-weight:700;font-size:15px;cursor:pointer;min-height:48px}
+.rank{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.rank li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px 14px}
+.rank li:first-child{border-color:var(--gold);background:#fff6dc}
+.rank .pos{font-family:var(--display);font-weight:800;font-size:26px;text-align:center}
+.rank .who{display:flex;align-items:center;gap:10px;min-width:0;font-weight:700;font-size:17px}
+.rank .pts{font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums}
+details{border-top:2px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:700}
+.review{margin:10px 0 0;padding-left:22px;display:grid;gap:8px;font-size:15px;line-height:1.45}
+.review b{color:var(--good)}
+.review .skip{color:var(--muted)}
+.pausebox{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,35,20,.6);z-index:6;cursor:pointer}
+.pausebox div{font-family:var(--display);font-size:44px;font-weight:800;color:var(--paper);text-align:center}
+.pausebox small{display:block;font-family:var(--body);font-size:16px;font-weight:500}
+@media (max-width:640px){
+  .opts{grid-template-columns:minmax(0,1fr)}
+  .qcard{padding:12px 14px;gap:8px}
+  .opt{padding:8px 10px}
+  .opt .k{width:28px;height:28px;font-size:17px}
+  .why svg{width:80px;height:80px}
+  .growth{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kbd{display:none}
+}
+.who{display:flex;align-items:center;padding:0 14px;font-weight:800;font-size:15px;min-height:44px;white-space:nowrap}
+.card.narrow{max-width:460px}
+.fields{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 12px;align-items:center}
+.fields label{font-weight:700;font-size:14px}
+.fields input,.fields select,#sCode,#uCode{font:600 16px var(--body);color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0;width:100%}
+.sbd{display:flex;min-width:0}
+.sbdpre{display:flex;align-items:center;padding:0 10px;border:2px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:var(--line);font:700 16px ui-monospace,Menlo,monospace;letter-spacing:.06em}
+.sbd input{border-radius:0 10px 10px 0;width:5em;flex:none;font-family:ui-monospace,Menlo,monospace;letter-spacing:.12em}
+.err{color:var(--warn);font-weight:700;font-size:14px;margin:0}
+.rules .warn{color:var(--warn);font-weight:600}
+.memberlist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:210px;overflow:auto}
+.memberlist li{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:6px 8px}
+.memberlist li.empty{color:var(--muted);font-size:14px;justify-content:center}
+.memberlist .mn{flex:1;min-width:0;font-weight:700}
+.memberlist small,.rank small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.memberlist .x{border:0;background:none;font-size:16px;cursor:pointer;color:var(--muted);padding:4px 8px}
+.startrow{display:grid;gap:6px;border-top:2px solid var(--line);padding-top:10px}
+.startrow label{font-weight:700;font-size:14px}
+.startrow .row{flex-wrap:nowrap}
+.startrow .row #sCode{width:8em;flex:none}
+.startrow .go{white-space:nowrap}
+.qwho{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin-left:auto}
+.qwho .sh{width:26px;height:26px}
+.opt.no{border-color:var(--warn);background:#fbe5df}
+.opt.no .k{background:var(--warn)}
+.verdict{font-weight:800;font-size:17px}
+.verdict.good{color:var(--good)}
+.verdict.bad{color:var(--warn)}
+.total{font-size:18px}
+.total b{font-family:var(--display);font-size:34px}
+.sendmsg{margin:0;font-weight:700;font-size:14px;color:var(--muted)}
+.sendmsg.ok{color:var(--good)}
+.sendmsg.bad{color:var(--warn)}
+.modal.lock{background:rgba(20,35,20,.82);z-index:8}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" aria-label="Cánh đồng ruộng bậc thang 3D xếp theo bảng tuần hoàn, với anh nông dân miền Tây"></canvas>
+
+  <div class="top" id="top" hidden>
+    <div class="tl">
+    <div class="panel clock" id="clock">
+      <span class="t" id="time">5:00</span>
+      <span class="meta"><span>Đã mở <b id="qi">0</b>/10 ô</span><span class="bar"><i id="tbar"></i></span></span>
+    </div>
+    <span class="panel who" id="who"></span>
+    <span class="zoom" id="zoom" hidden><button class="panel iconbtn" id="zin" type="button" aria-label="Phóng to">＋</button><button class="panel iconbtn" id="zout" type="button" aria-label="Thu nhỏ">－</button></span>
+    </div>
+    <div class="teams" id="teams"></div>
+  </div>
+
+  <div class="panel mapbox" id="mapbox" hidden>
+    <canvas id="map" width="400" height="240" aria-label="Bản đồ cánh đồng theo bảng tuần hoàn"></canvas>
+    <div class="stages" id="stages"></div>
+  </div>
+  <div class="panel hint" id="hint" hidden>Đi: <kbd>← ↑ ↓ →</kbd> hoặc <kbd>W A S D</kbd> · Xuống tầng: đi thẳng · Lên tầng: đi ở <b>bậc gỗ</b> hoặc <b>đường dốc</b> hai bên · Ô có cọc <b>?</b>: bấm <kbd>E</kbd> · <kbd>+</kbd> <kbd>−</kbd> phóng to/thu nhỏ</div>
+  <button id="act" type="button" hidden></button>
+  <div class="joy" id="joy" aria-hidden="true" hidden><div class="knob" id="knob"></div></div>
+
+  <div class="deck" id="deck" hidden>
+    <div class="qcard" role="dialog" aria-labelledby="qtext">
+      <div class="qhead"><span class="tag n" id="qnum">Câu 1</span><span class="tag n" id="qplace"></span><span class="tag" id="qstage"></span><span class="qwho" id="qwho"></span></div>
+      <p class="qtext" id="qtext"></p>
+      <div class="opts" id="opts"></div>
+      <div class="why" id="why" hidden></div>
+      <div class="ctrl" id="ctrl"></div>
+    </div>
+  </div>
+
+
+  <div class="modal" id="setup">
+    <form class="card setup narrow" id="setupForm" novalidate>
+      <div><p class="eyebrow">Hoá học 10 · Bảng tuần hoàn · Chơi theo nhóm</p><h2>Ruộng lúa Chu kì</h2></div>
+      <p>Mỗi nhóm 4–6 học sinh chơi chung một iPad. Giáo viên chọn lớp, nhóm, thời gian và nhập mã để mở trò chơi.</p>
+      <div class="fields">
+        <label for="fClass">Lớp</label>
+        <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
+        <label for="fGroup">Nhóm</label>
+        <select id="fGroup"><option value="">Chọn nhóm</option><option>Nhóm 1</option><option>Nhóm 2</option><option>Nhóm 3</option><option>Nhóm 4</option><option>Nhóm 5</option><option>Nhóm 6</option><option>Nhóm 7</option><option>Nhóm 8</option></select>
+        <label for="fMin">Thời gian</label>
+        <select id="fMin"><option value="5">5 phút</option><option value="7">7 phút</option><option value="10">10 phút</option><option value="15">15 phút</option></select>
+        <label for="fCode">Mã giáo viên</label>
+        <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+      </div>
+      <p class="err" id="setupErr" hidden></p>
+      <div class="row"><button class="go alt" type="submit">Mở trò chơi</button></div>
+    </form>
+  </div>
+
+  <div class="modal" id="join" hidden>
+    <div class="card setup">
+      <div><p class="eyebrow" id="joinInfo"></p><h2>Ruộng lúa Chu kì</h2></div>
+      <div class="sgrid">
+        <div class="scol">
+          <p>Cánh đồng là <b>bảng tuần hoàn</b>: mỗi tầng ruộng là một <b>chu kì</b>, mỗi cột là một <b>nhóm</b>, mỗi thửa là một <b>ô nguyên tố</b>. Kí hiệu, số chu kì và số nhóm đang <b>bị che</b>. Trả lời câu hỏi để mở ra.</p>
+          <ol class="rules">
+            <li>Các thành viên lần lượt điều khiển anh nông dân (<b>← ↑ ↓ →</b>) đến thửa có cọc <b>?</b>, bấm <b>E</b> để mở câu hỏi rồi chạm vào đáp án.</li>
+            <li>Đúng thì người trả lời được điểm của ô đó. Sau mỗi câu, lượt chuyển sang bạn tiếp theo.</li>
+            <li>Lên tầng ở bậc gỗ hoặc đường dốc hai bên. Chu kì càng lớn, câu càng khó, điểm càng cao.</li>
+            <li class="warn">Không rời màn hình chơi. Rời lần 1: trò chơi bị khoá, cần giáo viên nhập mã. Rời lần 2: trò chơi kết thúc và gửi điểm.</li>
+          </ol>
+          <div class="growth" id="growth"></div>
+        </div>
+        <div class="scol">
+          <form id="joinForm" class="fields" novalidate>
+            <label for="jName">Họ và tên</label><input id="jName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A">
+            <label for="jSbd">Số báo danh</label><div class="sbd"><span class="sbdpre" id="sbdPre"></span><input id="jSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__"></div>
+            <span></span><button class="go" type="submit">Vào nhóm</button>
+          </form>
+          <p class="err" id="joinErr" hidden></p>
+          <p class="eyebrow">Thành viên đã vào <span id="memberCount">0/6</span></p>
+          <ul class="memberlist" id="memberList"></ul>
+          <form id="startForm" class="startrow" novalidate>
+            <label for="sCode">Khi học sinh cuối cùng đã vào, giáo viên nhập mã bắt đầu</label>
+            <div class="row"><input id="sCode" type="password" inputmode="numeric" autocomplete="off" maxlength="4"><button class="go alt" type="submit">Bắt đầu tính giờ</button></div>
+          </form>
+          <p class="err" id="startErr" hidden></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="result" hidden>
+    <div class="card wide">
+      <p class="eyebrow" id="rEyebrow">Kết thúc</p>
+      <h2 id="rTitle"></h2>
+      <p class="total" id="rTotal"></p>
+      <ol class="rank" id="rank"></ol>
+      <details>
+        <summary>Xem lại từng câu hỏi</summary>
+        <ol class="review" id="review"></ol>
+      </details>
+      <p class="sendmsg" id="sendMsg" hidden></p>
+      <p class="err" id="newConfirm" hidden>Kết quả của nhóm chưa gửi được về Google Sheet. Hãy chụp màn hình bảng điểm này trước khi mở lượt chơi mới.</p>
+      <div class="row"><button class="ghost" id="resendBtn" type="button" hidden>Gửi lại</button><button class="go alt" id="btnNew" type="button">Lượt chơi mới</button></div>
+    </div>
+  </div>
+
+  <div class="modal lock" id="lock" hidden>
+    <form class="card narrow" id="unlockForm" novalidate>
+      <h2>Trò chơi đã bị khoá</h2>
+      <p id="lockMsg"></p>
+      <label for="uCode" class="eyebrow">Mã của giáo viên</label>
+      <input id="uCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+      <p class="err" id="lockErr" hidden>Mã không đúng. Chỉ giáo viên mới có mã mở khoá.</p>
+      <div class="row"><button class="go alt" type="submit">Mở khoá</button></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FONT = '"Be Vietnam Pro", Arial, sans-serif';
+const shuffle = a => { a = a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]} return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sm = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
+const R = (a,b) => a + Math.random()*(b-a);
+
+/* ================= Periodic table data ================= */
+const SYM = 'H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'.split(' ');
+const STARTS = [1,3,11,19,37,55,87,119];
+const GROUP = ['','IA','IIA','IIIB','IVB','VB','VIB','VIIB','VIIIB','VIIIB','VIIIB','IB','IIB','IIIA','IVA','VA','VIA','VIIA','VIIIA'];
+const ELS = []; // main-table cells only (La–Lu / Ac–Lr shown as one placeholder each, like the textbook)
+SYM.forEach((s,i)=>{
+  const z = i+1; let p = 0; while(z >= STARTS[p+1]) p++; const period = p+1, idx = z - STARTS[p];
+  let col;
+  if(period===1) col = z===1 ? 1 : 18;
+  else if(period<=3) col = idx<2 ? idx+1 : idx+11;
+  else if(period<=5) col = idx+1;
+  else { if(idx<2) col = idx+1; else if(idx<=16) return; else col = idx-13; }
+  ELS.push({z, sym:s, p:period, c:col});
+});
+ELS.push({z:0, sym:'La–Lu', label:'57–71', p:6, c:3}, {z:0, sym:'Ac–Lr', label:'89–103', p:7, c:3});
+const GRID = Array.from({length:8}, ()=> Array(19).fill(null));
+ELS.forEach(e=> GRID[e.p][e.c] = e);
+const BY_SYM = {}; ELS.forEach(e=> BY_SYM[e.sym] = e);
+const REV = {el:new Set(), p:new Set(), c:new Set()};   // what the class has uncovered so far
+
+/* ================= Rice stages & questions ================= */
+const STAGES = [
+  {name:'Mạ 1–2 lá', pts:10, css:'var(--s0)', hex:'#b5d86a', rows:'Chu kì 1'},
+  {name:'Lúa 5–6 lá', pts:20, css:'var(--s1)', hex:'#6fb342', rows:'Chu kì 2'},
+  {name:'Lúa trổ bông', pts:30, css:'var(--s2)', hex:'#3f8f3a', rows:'Chu kì 3'},
+  {name:'Lúa đậu hạt', pts:40, css:'var(--s3)', hex:'#b9b84a', rows:'Chu kì 4'},
+  {name:'Lúa chín', pts:50, css:'var(--s4)', hex:'#e3b23c', rows:'Chu kì 5, 6, 7'},
+];
+const STAGE_OF_P = [0,0,1,2,3,4,4,4];
+ELS.forEach(e=> e.stage = STAGE_OF_P[e.p]);
+/* Facts for the elements that can hold a question (names follow IUPAC, as in SGK Hoá 10 Kết nối tri thức) */
+const INFO = {
+  H:{name:'hydrogen', cfg:'1s¹', desc:'nhẹ nhất trong các nguyên tố, cùng oxygen tạo nên nước', wrong:['He','Hy','O']},
+  He:{name:'helium', cfg:'1s²', desc:'khí hiếm rất nhẹ, dùng bơm bóng bay', wrong:['H','Hl','Ne']},
+  Li:{name:'lithium', cfg:'1s²2s¹', desc:'kim loại nhẹ nhất, dùng làm pin điện thoại, xe điện', wrong:['L','Ln','Na']},
+  Be:{name:'beryllium', cfg:'1s²2s²', desc:'kim loại nhẹ và cứng, dùng trong hợp kim chế tạo máy bay', wrong:['B','Br','Ba']},
+  B:{name:'boron', cfg:'1s²2s²2p¹', desc:'nguyên tố có trong hàn the, dùng làm thuỷ tinh chịu nhiệt', wrong:['Be','Bo','Br']},
+  C:{name:'carbon', cfg:'1s²2s²2p²', desc:'có trong than chì, kim cương và mọi hợp chất hữu cơ', wrong:['Ca','Cb','Cl']},
+  N:{name:'nitrogen', cfg:'1s²2s²2p³', desc:'khí chiếm khoảng 78% thể tích không khí', wrong:['Ni','Na','Ne']},
+  O:{name:'oxygen', cfg:'1s²2s²2p⁴', desc:'khí duy trì sự sống và sự cháy', wrong:['Ox','Os','Og']},
+  F:{name:'fluorine', cfg:'1s²2s²2p⁵', desc:'phi kim hoạt động mạnh nhất, hợp chất của nó có trong kem đánh răng chống sâu răng', wrong:['Fl','Fe','Fr']},
+  Ne:{name:'neon', cfg:'1s²2s²2p⁶', desc:'khí hiếm phát ánh sáng đỏ cam trong đèn quảng cáo', wrong:['N','Ni','Na']},
+  Na:{name:'sodium', cfg:'1s²2s²2p⁶3s¹', desc:'kim loại mềm, hợp chất chloride của nó là muối ăn', wrong:['S','So','N']},
+  Mg:{name:'magnesium', cfg:'1s²2s²2p⁶3s²', desc:'kim loại cháy cho ánh sáng trắng chói, dùng làm pháo sáng', wrong:['Mn','Ma','M']},
+  Al:{name:'aluminium', cfg:'1s²2s²2p⁶3s²3p¹', desc:'kim loại nhẹ dùng làm nồi, khung cửa, vỏ lon nước', wrong:['Am','A','Ag']},
+  Si:{name:'silicon', cfg:'1s²2s²2p⁶3s²3p²', desc:'nguyên tố làm chip bán dẫn, pin mặt trời, có nhiều trong cát', wrong:['S','Sn','Sc']},
+  P:{name:'phosphorus', cfg:'1s²2s²2p⁶3s²3p³', desc:'có trong đầu que diêm và phân lân', wrong:['Ph','Po','K']},
+  S:{name:'sulfur', cfg:'1s²2s²2p⁶3s²3p⁴', desc:'chất rắn màu vàng, dùng sản xuất sulfuric acid', wrong:['Su','Sn','Si']},
+  Cl:{name:'chlorine', cfg:'1s²2s²2p⁶3s²3p⁵', desc:'khí màu vàng lục dùng khử trùng nước sinh hoạt', wrong:['C','Ch','Ca']},
+  Ar:{name:'argon', cfg:'1s²2s²2p⁶3s²3p⁶', desc:'khí hiếm chiếm gần 1% thể tích không khí', wrong:['Ag','Au','Al']},
+  K:{name:'potassium', cfg:'1s²2s²2p⁶3s²3p⁶4s¹', short:'[Ar]4s¹', desc:'kim loại có trong phân kali', wrong:['P','Po','Ka']},
+  Ca:{name:'calcium', cfg:'1s²2s²2p⁶3s²3p⁶4s²', short:'[Ar]4s²', desc:'có trong đá vôi, vỏ sò, xương và răng', wrong:['C','Cl','Cu']},
+  Fe:{name:'iron', cfg:'1s²2s²2p⁶3s²3p⁶3d⁶4s²', short:'[Ar]3d⁶4s²', desc:'kim loại dùng làm thép, có trong hemoglobin của máu', wrong:['F','Ir','Fr'], bWhy:'electron cuối điền vào phân lớp 3d, có 6 + 2 = 8 electron hoá trị (3d⁶4s²)', bWrong:['VIB','IIA','VIIIA']},
+  Zn:{name:'zinc', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²', short:'[Ar]3d¹⁰4s²', desc:'kim loại dùng mạ tôn chống gỉ', wrong:['Z','Zi','Sn'], bWhy:'cấu hình kết thúc bằng 3d¹⁰4s², phân lớp d đã bão hoà, 2 electron ở 4s', bWrong:['IIA','VIIIB','IB']},
+  Br:{name:'bromine', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²4p⁵', short:'[Ar]3d¹⁰4s²4p⁵', desc:'phi kim duy nhất ở thể lỏng, màu nâu đỏ', wrong:['B','Bo','Ba']},
+  Kr:{name:'krypton', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²4p⁶', short:'[Ar]3d¹⁰4s²4p⁶', desc:'khí hiếm', wrong:['K','Cr','Kp']},
+  Rb:{name:'rubidium', short:'[Kr]5s¹'}, Sr:{name:'strontium', short:'[Kr]5s²'}, Sn:{name:'tin', short:'[Kr]4d¹⁰5s²5p²'},
+  I:{name:'iodine', short:'[Kr]4d¹⁰5s²5p⁵'}, Xe:{name:'xenon', short:'[Kr]4d¹⁰5s²5p⁶'},
+  Cs:{name:'caesium', short:'[Xe]6s¹'}, Ba:{name:'barium', short:'[Xe]6s²'}, Pb:{name:'lead', short:'[Xe]4f¹⁴5d¹⁰6s²6p²'}, Rn:{name:'radon', short:'[Xe]4f¹⁴5d¹⁰6s²6p⁶'},
+  Fr:{name:'francium', short:'[Rn]7s¹'}, Ra:{name:'radium', short:'[Rn]7s²'},
+};
+// which elements and question types each rice stage uses: higher chu kì → harder question, more points
+const STAGE_PLAN = [
+  {els:['H','He'],                                   types:['sym','z']},
+  {els:['Li','Be','B','C','N','O','F','Ne'],           types:['sym','z','p']},
+  {els:['Na','Mg','Al','Si','P','S','Cl','Ar'],        types:['p','g','sym','pg']},
+  {els:['K','Ca','Fe','Zn','Br','Kr'],                 types:['pg','g']},
+  {els:['Rb','Sr','Sn','I','Xe','Cs','Ba','Pb','Rn','Fr','Ra'], types:['pgz']},
+];
+const ROMAN = ['','I','II','III','IV','V','VI','VII','VIII'];
+const A_GROUPS = ['IA','IIA','IIIA','IVA','VA','VIA','VIIA','VIIIA'];
+const SUP = {'⁰':0,'¹':1,'²':2,'³':3,'⁴':4,'⁵':5,'⁶':6,'⁷':7,'⁸':8,'⁹':9};
+const CORE = {He:[2], Ne:[2,8], Ar:[2,8,8], Kr:[2,8,18,8], Xe:[2,8,18,18,8], Rn:[2,8,18,32,18,8]};
+function shellsOf(cfg){
+  let sh = [], rest = cfg;
+  const m = cfg.match(/^\[(\w+)\]/); if(m){ sh = CORE[m[1]].slice(); rest = cfg.slice(m[0].length); }
+  for(const t of rest.matchAll(/(\d)([spdf])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g)){
+    const n = +t[1], k = +[...t[3]].map(c=>SUP[c]).join('');
+    while(sh.length < n) sh.push(0); sh[n-1] += k;
+  }
+  return sh;
+}
+function placeText(e){
+  const f = INFO[e.sym], g = GROUP[e.c], cfg = f.cfg || f.short, sh = shellsOf(cfg), v = sh[sh.length-1];
+  let grp;
+  if(f.bWhy) grp = `${f.bWhy} → <b>nhóm ${g}</b>`;
+  else if(e.sym==='He') grp = `lớp ngoài cùng có 2 electron đã bão hoà (khí hiếm) → <b>nhóm VIIIA</b>`;
+  else grp = `lớp ngoài cùng có ${v} electron, electron cuối điền vào phân lớp ${g==='IA'||g==='IIA' ? 's' : 'p'} → <b>nhóm ${g}</b>`;
+  return {cfg, sh, txt:`<b>${f.name} (${e.sym})</b>, Z = ${e.z}: ${cfg}${f.short && f.cfg ? ` (viết gọn ${f.short})` : ''}. Có <b>${sh.length} lớp electron → chu kì ${e.p}</b>; ${grp}.`};
+}
+function pick3(correct, cands){ return shuffle([...new Set(cands.filter(x=> x!==correct))]).slice(0,3); }
+function groupWrongs(e){
+  const f = INFO[e.sym], g = GROUP[e.c];
+  if(f.bWrong) return f.bWrong;
+  const i = A_GROUPS.indexOf(g), n = i+1, c = [];
+  if(i>0) c.push(A_GROUPS[i-1]); if(i<7) c.push(A_GROUPS[i+1]);
+  if(n<=8) c.push(ROMAN[n]+'B');
+  c.push(ROMAN[Math.min(8,e.p)]+'A');
+  if(i>1) c.push(A_GROUPS[i-2]); if(i<6) c.push(A_GROUPS[i+2]);
+  return pick3(g, c);
+}
+function periodWrongs(e){
+  const v = shellsOf(INFO[e.sym].cfg || INFO[e.sym].short).slice(-1)[0];
+  return pick3(e.p, [e.p-1, e.p+1, v, e.p+2, e.p-2].filter(x=> x>=1 && x<=7));
+}
+function makeQuestion(e, type){
+  const f = INFO[e.sym], cfg = f.cfg || f.short, g = GROUP[e.c];
+  let q, right, wrong;
+  if(type==='sym'){ q = `Nguyên tố ${f.name} (${f.desc}) có kí hiệu hoá học là gì?`; right = e.sym; wrong = f.wrong; }
+  else if(type==='z'){ q = `Nguyên tử X có cấu hình electron ${cfg}. Số hiệu nguyên tử của X là bao nhiêu?`; right = String(e.z); wrong = pick3(e.z, [e.z+1, e.z-1, e.z+2, e.z-2, e.z+3].filter(x=>x>0)).map(String); }
+  else if(type==='p'){ q = `Nguyên tử X có cấu hình electron ${cfg}. X thuộc chu kì nào?`; right = `Chu kì ${e.p}`; wrong = periodWrongs(e).map(n=>`Chu kì ${n}`); }
+  else if(type==='g'){ q = `Nguyên tử X có cấu hình electron ${cfg}. X thuộc nhóm nào?`; right = `Nhóm ${g}`; wrong = groupWrongs(e).map(x=>`Nhóm ${x}`); }
+  else {
+    const given = type==='pgz' ? `số hiệu nguyên tử Z = ${e.z}` : `cấu hình electron ${cfg}`;
+    q = `Nguyên tử X có ${given}. Vị trí của X trong bảng tuần hoàn là:`;
+    right = `Chu kì ${e.p}, nhóm ${g}`;
+    const ps = periodWrongs(e), gs = groupWrongs(e);
+    wrong = [`Chu kì ${ps[0]}, nhóm ${g}`, `Chu kì ${e.p}, nhóm ${gs[0]}`, `Chu kì ${ps[1] ?? ps[0]}, nhóm ${gs[1] ?? gs[0]}`];
+  }
+  const opts = shuffle([right, ...wrong.slice(0,3)]);
+  return {q, opts, ans:opts.indexOf(right), type};
+}
+const TEAM_STYLE = [{c:'#ff8a7a',s:'▲'},{c:'#7cc4ff',s:'●'},{c:'#ffd64d',s:'■'},{c:'#86e08f',s:'◆'},{c:'#d9a6ff',s:'★'},{c:'#ffb067',s:'✚'}];
+
+/* ================= World layout: the field IS the periodic table =================
+   column c (1..18) = nhóm, row p (1..7) = chu kì, each row is one terrace.
+   Chu kì 1 is the top terrace at the back; terraces step down toward the canal.
+   Column 0 (left) and 19 (right) are dirt paths with the row signs and stairs. */
+const W = 6.5, D = 7, TH = 2.4;   // each chu kì sits 2.4 m above the next
+const colX = c => (c-9.5)*W;
+const rowZ = p => (p-4)*D;
+const zb = k => (k-3.5)*D;          // front edge of row k (k=0: back edge of chu kì 1)
+const RAMP_X = [(colX(2)+colX(3))/2, (colX(9)+colX(10))/2, (colX(12)+colX(13))/2];   // wooden stairs between paddies
+const PATH_X = [colX(0), colX(19)];                                                       // long dirt slopes on both sides
+const XLIM = colX(19) + W/2 - 0.8, ZBACK = zb(0) - 5.5, ZFRONT = zb(7) + 2.5;
+function rampF(x){
+  let f = 0;
+  for(const rx of RAMP_X) f = Math.max(f, 1 - sm(1.0, 1.7, Math.abs(x-rx)));
+  for(const px of PATH_X) f = Math.max(f, 1 - sm(2.2, 3.0, Math.abs(x-px)));
+  return f;
+}
+const rowOf = z => { for(let p=1;p<=7;p++) if(z >= zb(p-1) && z < zb(p)) return p; return 0; };
+const colOf = x => Math.round(x/W + 9.5);
+function terrain(x,z){
+  const r = rampF(x), w = 0.3 + 3.3*r, ax = Math.abs(x);
+  let h = 0;
+  for(let k=0;k<7;k++) h += TH*sm(zb(k)-w, zb(k)+w, z);        // chu kì 1 lowest, chu kì 7 highest
+  const out = sm(XLIM+2, XLIM+10, ax);
+  if(out > 0) h = h*(1-out) + out*TH*Math.min(7, Math.max(0, (z-zb(0))/D + 0.5));
+  if(z > zb(7)+3) h += (z-zb(7)-3)*0.5 + 3*Math.sin(x*0.06)*sm(zb(7)+3, zb(7)+22, z);
+  if(ax > XLIM+6){                                                 // ridge, valley with a stream, then mountains
+    const dx = ax-(XLIM+6), ph = x<0 ? 1.7 : 0.3, vg = Math.exp(-((dx-23)**2)/28);
+    h += 13*sm(0,15,dx) - 9.5*vg + 30*sm(30,70,dx) + (2.5*Math.sin(z*0.09+ph) + 1.5*Math.sin(z*0.21+dx*0.1))*sm(4,14,dx)*(1-Math.exp(-((dx-23)**2)/12));
+  }
+  const p = rowOf(z), c = colOf(x), el = (p && c>=1 && c<=18) ? GRID[p][c] : null;
+  let bund = 0;
+  if(el){
+    const dx = W/2 - Math.abs(x - colX(c));
+    bund = 0.2*(1 - sm(0.15, 0.4, dx));
+    bund = Math.max(bund, 0.22*(1-r)*(1 - sm(0.15, 0.4, Math.abs(z - (zb(p-1) + w + 0.6)))));
+    bund = Math.max(bund, 0.2*(1 - sm(0.15, 0.4, Math.abs(z - (zb(p) - 0.75)))));
+  }
+  const canal = 1.7*sm(zb(0)-6.5, zb(0)-8, z)*(1 - sm(zb(0)-14, zb(0)-15.5, z));
+  return {h: h + bund - canal, bund, p, c, el, r, canal};
+}
+const H = (x,z) => terrain(x,z).h;
+
+/* ================= Three ================= */
+const app = $('app'), canvas = $('scene');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+{
+  const m = new THREE.ShaderMaterial({side:THREE.BackSide, depthWrite:false,
+    vertexShader:'varying vec3 v;void main(){v=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'varying vec3 v;void main(){float h=clamp(v.y,0.,1.);vec3 hor=vec3(.96,.93,.84);vec3 mid=vec3(.62,.8,.92);vec3 top=vec3(.32,.58,.86);vec3 c=h<.18?mix(hor,mid,h/.18):mix(mid,top,(h-.18)/.82);gl_FragColor=vec4(c,1.);}'});
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(320, 32, 16), m));
+}
+scene.fog = new THREE.Fog(0xd9e6e2, 110, 300);
+scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x5a6b3a, 0.78));
+const sun = new THREE.DirectionalLight(0xfff0d6, 0.9);
+sun.castShadow = true; sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:140});
+scene.add(sun, sun.target);
+
+/* ---------- terrain ---------- */
+const STREAM_DX = XLIM + 29;
+{
+  const WATER = ['#3f6d64','#46736b','#56877a','#6a9c86','#80b090','#98c49b','#b0d4a5','#c6e2b2'].map(lin);
+  const BUND = ['#4a722c','#507a30','#62903a','#76a643','#8cba4e','#a3cb5c','#b9da6c','#cbe57e'].map(lin);
+  const GRASS = ['#446d2b','#4a752f','#5a8737','#6c9a40','#80ad4a','#95bf56','#a9cf63','#bcdc72'].map(lin);
+  const WALL_HI = lin('#d8b47c'), WALL_LO = lin('#6e4f31'), TOPH = 7*TH;
+  const C = {grass:lin('#6ea044'), grass2:lin('#5d8f3b'), mud:lin('#6f5a3c'), stone:lin('#b09670'), path:lin('#c4a778'), path2:lin('#b59868'),
+             hillLo:lin('#3f7a34'), hillHi:lin('#9cc565'), rock:lin('#8c7c62'), meadow:lin('#7fb54e')};
+  const tmp = new THREE.Color();
+  function paint(x, z, t, slope){
+    const n = (Math.sin(x*1.7)*Math.sin(z*1.3)+1)*0.5, ax = Math.abs(x);
+    if(t.canal > 0.3) return tmp.copy(C.mud);
+    if(ax > XLIM+4){
+      if(slope > 1.1) return tmp.copy(C.rock).multiplyScalar(0.9+n*0.2);
+      const valley = Math.exp(-((ax-STREAM_DX)**2)/40);
+      return tmp.copy(C.hillLo).lerp(C.hillHi, Math.min(1, Math.max(0, (t.h - 2)/40))).lerp(C.meadow, valley*0.6).multiplyScalar(0.93+n*0.12);
+    }
+    const pathCol = ((t.c===0 || t.c===19) && z > ZBACK-1 && z < zb(7)+1) || (z < zb(0) && z > zb(0)-6.5);
+    const lv = t.p || (z < zb(0) ? 0 : 7);
+    if(slope > 0.25 && t.r > 0.2 && z > zb(0)-4 && z < zb(7)+3) return tmp.copy(C.stone);
+    if(slope > 0.9 && t.bund < 0.1){ tmp.copy(WALL_LO).lerp(WALL_HI, Math.min(1, Math.max(0, t.h/TOPH))); if(Math.sin(t.h*9) > 0.6) tmp.multiplyScalar(0.88); return tmp; }
+    if(t.bund > 0.08) return tmp.copy(BUND[lv]);
+    if(t.el) return tmp.copy(WATER[lv]).multiplyScalar(0.94 + n*0.08);
+    if(pathCol) return tmp.copy(C.path).lerp(C.path2, n);
+    if(lv) return tmp.copy(GRASS[lv]).multiplyScalar(0.95 + n*0.08);
+    return tmp.copy(C.grass).lerp(C.grass2, n);
+  }
+  function build(Wd, Dd, cz, sx, sz, back){
+    const g = new THREE.PlaneGeometry(Wd, Dd, sx, sz); g.rotateX(-Math.PI/2);
+    const pos = g.attributes.position, col = new Float32Array(pos.count*3);
+    for(let i=0;i<pos.count;i++){
+      const x = pos.getX(i), z = pos.getZ(i) + cz; pos.setZ(i, z);
+      const t = terrain(x,z); pos.setY(i, t.h);
+      const e = 0.3, slope = Math.hypot(H(x+e,z)-H(x-e,z), H(x,z+e)-H(x,z-e))/(2*e);
+      const c = paint(x, z, t, slope); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col,3)); g.computeVertexNormals();
+    const mat = new THREE.MeshLambertMaterial({vertexColors:true});
+    if(back){ mat.polygonOffset = true; mat.polygonOffsetFactor = 2; mat.polygonOffsetUnits = 2; }
+    const m = new THREE.Mesh(g, mat); m.receiveShadow = true; scene.add(m);
+  }
+  build(156, 132, 4, 312, 264, false);      // the rice field, fine detail
+  build(300, 240, 15, 200, 160, true);      // hills and valleys around it
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(300, 10), new THREE.MeshStandardMaterial({color:0x5f9eaa, roughness:.15, metalness:.1, transparent:true, opacity:.88}));
+  water.rotation.x = -Math.PI/2; water.position.set(0, -0.75, zb(0)-10.75); scene.add(water);
+  // streams winding down both valleys
+  [-1,1].forEach(sd=>{
+    const g = new THREE.PlaneGeometry(2.4, 150, 1, 150); g.rotateX(-Math.PI/2);
+    const ps = g.attributes.position;
+    for(let i=0;i<ps.count;i++){ const z = ps.getZ(i) + 25, x = sd*STREAM_DX + ps.getX(i) + Math.sin(z*0.12)*1.2; ps.setXYZ(i, x, H(x,z)+0.12, z); }
+    g.computeVertexNormals();
+    scene.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x6fb3c4, roughness:.2, metalness:.1, transparent:true, opacity:.9})));
+  });
+}
+
+/* ---------- helpers ---------- */
+function strip(out, o){
+  const {len, wid, yaw=0, tilt=0, bend=0, c0, c1, ox=0, oy=0, oz=0, segs=3, taper=0.9} = o;
+  const dx = Math.sin(yaw), dz = Math.cos(yaw), px = Math.cos(yaw), pz = -Math.sin(yaw);
+  const pts = []; let x=ox, y=oy, z=oz;
+  for(let i=0;i<=segs;i++){ const t = i/segs; pts.push([x,y,z,t]); const a = tilt + bend*t, ds = len/segs; x += dx*Math.sin(a)*ds; y += Math.cos(a)*ds; z += dz*Math.sin(a)*ds; }
+  const A = new THREE.Color(), Bc = new THREE.Color();
+  for(let i=0;i<segs;i++){
+    const [x0,y0,z0,t0] = pts[i], [x1,y1,z1,t1] = pts[i+1];
+    const w0 = wid*(1-t0*taper)/2, w1 = wid*(1-t1*taper)/2;
+    const L0 = [x0-px*w0,y0,z0-pz*w0], R0 = [x0+px*w0,y0,z0+pz*w0], L1 = [x1-px*w1,y1,z1-pz*w1], R1 = [x1+px*w1,y1,z1+pz*w1];
+    A.copy(c0).lerp(c1,t0); Bc.copy(c0).lerp(c1,t1);
+    for(const [v,c] of [[L0,A],[R0,A],[R1,Bc],[L0,A],[R1,Bc],[L1,Bc]]){ out.p.push(...v); out.c.push(c.r,c.g,c.b); }
+  }
+}
+function toGeo(out){ const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(out.p,3)); g.setAttribute('color', new THREE.Float32BufferAttribute(out.c,3)); g.computeVertexNormals(); return g; }
+function canvasTex(w,h,draw){ const cv = document.createElement('canvas'); cv.width=w; cv.height=h; const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.userData = {cv, draw}; draw(cv.getContext('2d'), cv); t.needsUpdate = true; return t; }
+function redraw(t){ t.userData.draw(t.userData.cv.getContext('2d'), t.userData.cv); t.needsUpdate = true; }
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function fitText(c, txt, maxW, size, weight){ let s = size; c.font = `${weight} ${s}px ${FONT}`; while(c.measureText(txt).width > maxW && s > 12){ s -= 2; c.font = `${weight} ${s}px ${FONT}`; } }
+
+/* ---------- rice plants ---------- */
+function plantGeo(stage){
+  const out = {p:[], c:[]};
+  const L = [
+    {n:2, len:[.24,.32], wid:.045, tilt:[.2,.45], bend:[.4,.7], c0:'#7dae3a', c1:'#c4e47a'},
+    {n:6, len:[.5,.72], wid:.05, tilt:[.1,.6], bend:[.7,1.2], c0:'#3f7f2a', c1:'#7cc04a'},
+    {n:6, len:[.75,.95], wid:.055, tilt:[.08,.45], bend:[.8,1.2], c0:'#376f26', c1:'#69ad3e'},
+    {n:6, len:[.75,.92], wid:.055, tilt:[.1,.5], bend:[.9,1.3], c0:'#5b7f2a', c1:'#a7b24a'},
+    {n:5, len:[.7,.88], wid:.05, tilt:[.15,.55], bend:[1,1.4], c0:'#8f7a35', c1:'#d6b45a'},
+  ][stage];
+  const c0 = lin(L.c0), c1 = lin(L.c1);
+  for(let i=0;i<L.n;i++) strip(out, {len:R(...L.len), wid:L.wid, yaw:i/L.n*Math.PI*2+R(-.3,.3), tilt:R(...L.tilt), bend:R(...L.bend), c0, c1});
+  if(stage >= 2){
+    const pan = [null,null,{len:.3,bend:.35,wid:.07,c:'#e6efb2'},{len:.36,bend:1.4,wid:.08,c:'#d3d46a'},{len:.42,bend:2.3,wid:.09,c:'#f0be3c'}][stage];
+    const stemC = lin(stage===4 ? '#c9a548' : '#5d9a35');
+    for(let j=0;j<3;j++){
+      const yaw = j*2.1+R(-.3,.3), lean = R(.05,.18), sl = R(.95,1.1);
+      strip(out, {len:sl, wid:.025, yaw, tilt:lean, c0:stemC, c1:stemC, segs:1, taper:0});
+      const ox = Math.sin(yaw)*Math.sin(lean)*sl, oz = Math.cos(yaw)*Math.sin(lean)*sl, oy = Math.cos(lean)*sl;
+      const pc = lin(pan.c), pc2 = lin(pan.c).multiplyScalar(.8);
+      strip(out, {len:pan.len, wid:pan.wid, yaw, tilt:lean, bend:pan.bend, c0:pc2, c1:pc, ox, oy, oz, taper:.6});
+      strip(out, {len:pan.len*.9, wid:pan.wid, yaw:yaw+.35, tilt:lean+.1, bend:pan.bend, c0:pc2, c1:pc, ox, oy, oz, taper:.6});
+    }
+  }
+  return toGeo(out);
+}
+const plantMat = new THREE.MeshLambertMaterial({vertexColors:true, side:THREE.DoubleSide});
+{
+  const byStage = [[],[],[],[],[]], DEC = 1.85;
+  ELS.forEach(e=>{
+    const cx = colX(e.c), cz = rowZ(e.p);
+    for(let x = cx-W/2+0.45; x < cx+W/2-0.3; x += 0.62) for(let z = zb(e.p-1)+1.0; z < zb(e.p)-1.0; z += 0.62){
+      const jx = x+R(-.12,.12), jz = z+R(-.12,.12);
+      if(rampF(jx) > 0.01 && (jz < zb(e.p-1)+3.6 || jz > zb(e.p)-3.6)) continue;  // keep stairs clear
+      byStage[e.stage].push([jx, H(jx,jz), jz]);
+    }
+  });
+  const d = new THREE.Object3D();
+  byStage.forEach((pts,s)=>{
+    const m = new THREE.InstancedMesh(plantGeo(s), plantMat, pts.length);
+    pts.forEach((p,i)=>{ d.position.set(p[0],p[1]-0.02,p[2]); d.rotation.set(R(-.05,.05),R(0,6.3),R(-.05,.05)); const k = R(.85,1.15); d.scale.set(k,k*R(.9,1.1),k); d.updateMatrix(); m.setMatrixAt(i,d.matrix); });
+    m.instanceMatrix.needsUpdate = true; scene.add(m);
+  });
+}
+
+/* ---------- element symbols painted under the water of each paddy ---------- */
+const PERIOD_INK = ['','#4c7a2a','#3f7d38','#2f6b33','#7a7a2a','#9a6b16','#9a6b16','#9a6b16'];
+const decalGeo = new THREE.PlaneGeometry(4.6, 4.6); decalGeo.rotateX(-Math.PI/2);
+ELS.forEach(e=>{
+  const tex = canvasTex(256,256,(c)=>{
+    c.clearRect(0,0,256,256);
+    if(!REV.el.has(e)){   // covered: muddy patch with a question mark
+      c.fillStyle = 'rgba(92,74,46,0.62)'; rrect(c,10,10,236,236,40); c.fill();
+      c.fillStyle = 'rgba(250,244,224,0.85)'; c.textAlign='center'; c.textBaseline='middle'; c.font = `800 150px ${FONT}`; c.fillText('?',128,138);
+      return;
+    }
+    c.fillStyle = 'rgba(250,247,232,0.92)'; rrect(c,6,6,244,244,26); c.fill();
+    c.lineWidth = 10; c.strokeStyle = PERIOD_INK[e.p]; rrect(c,6,6,244,244,26); c.stroke();
+    c.fillStyle = '#1e2b1c'; c.textBaseline = 'middle';
+    if(e.label){ c.textAlign='center'; fitText(c, e.label, 220, 64, 800); c.fillText(e.label,128,100); fitText(c, e.sym, 220, 56, 700); c.fillText(e.sym,128,170); }
+    else {
+      c.textAlign='left'; c.font = `700 46px ${FONT}`; c.fillText(e.z, 26, 44);
+      c.textAlign='center'; c.font = `800 ${e.sym.length>1?120:136}px ${FONT}`; c.fillText(e.sym, 128, 150);
+      c.font = `600 26px ${FONT}`; c.fillStyle = '#5f6b55'; c.fillText(`chu kì ${e.p} · ${GROUP[e.c]}`, 128, 222);
+    }
+  });
+  const m = new THREE.Mesh(decalGeo, new THREE.MeshLambertMaterial({map:tex, transparent:true}));
+  m.position.set(colX(e.c), H(colX(e.c), rowZ(e.p)) + 0.03, rowZ(e.p)); m.rotation.y = Math.PI; m.receiveShadow = true; scene.add(m);
+  e.tex = tex;
+});
+
+/* ---------- signs: chu kì gates on the side paths, nhóm boards at the head of each column ---------- */
+const poleMat = new THREE.MeshLambertMaterial({color:0x9c7a45});
+const BOARD_TEX = [];
+function board(w, h, draw, {postH=2, gap=null, tilt=-0.3, y=null}={}){
+  const g = new THREE.Group();
+  const tex = canvasTex(512, Math.round(512*h/w), draw); BOARD_TEX.push(tex);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshBasicMaterial({map:tex, side:THREE.DoubleSide}));
+  mesh.position.y = y ?? postH; mesh.rotation.x = tilt; g.add(mesh);
+  const gx = gap ?? w/2 - 0.15;
+  [-gx, gx].forEach(s=>{ const p = new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,postH+h/2,8), poleMat); p.position.set(s,(postH+h/2)/2,0); p.castShadow = true; g.add(p); });
+  return {g, mesh, tex};
+}
+const CHUKI_TEX = [], GROUP_TEX = [];
+function chuKiTex(p){
+  const st = STAGES[STAGE_OF_P[p]];
+  const tex = canvasTex(512,170,(cx,cv)=>{
+    cx.clearRect(0,0,512,170);
+    cx.fillStyle = 'rgba(250,244,224,0.94)'; rrect(cx,4,4,504,162,24); cx.fill();
+    cx.fillStyle = STAGES[STAGE_OF_P[p]].hex; rrect(cx,4,4,504,26,12); cx.fill();
+    cx.fillStyle = '#1e2b1c'; cx.textAlign='center'; cx.textBaseline='middle';
+    const on = REV.p.has(p);
+    cx.font = `800 82px ${FONT}`; cx.fillText(`CHU KÌ ${on ? p : '?'}`, 256, 92);
+    cx.font = `600 28px ${FONT}`; cx.fillStyle = '#4b5a43'; cx.fillText(on ? `${p} lớp electron · ${st.name}` : `${st.name} · ${st.pts} điểm`, 256, 146);
+  });
+  BOARD_TEX.push(tex); CHUKI_TEX[p] = tex; return tex;
+}
+const p0Of = c => { let p = 1; while(!GRID[p][c]) p++; return p; };
+for(let p=1;p<=7;p++){
+  const tex = chuKiTex(p), mat = new THREE.MeshBasicMaterial({map:tex, transparent:true});
+  // painted on the riser (the wall you climb to reach this chu kì)
+  let cols = [1,6,11,16].filter(c=> p0Of(c)!==p);
+  if(cols.length < 3) cols = cols.concat([4,7,14].filter(c=> p0Of(c)!==p)).slice(0,4);
+  cols.forEach(c=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.73), mat);
+    m.position.set(colX(c), (p-1)*TH + TH*0.52, zb(p-1) - 0.34); m.rotation.y = Math.PI; scene.add(m);
+  });
+  // painted along the two side slopes, following the ground
+  PATH_X.forEach(px=>{
+    const g = new THREE.PlaneGeometry(4.8, 1.6, 12, 6); g.rotateX(-Math.PI/2); g.rotateY(Math.PI);
+    const ps = g.attributes.position;
+    for(let i=0;i<ps.count;i++){ const x = ps.getX(i)+px, z = ps.getZ(i)+rowZ(p); ps.setXYZ(i, x, H(x,z)+0.07, z); }
+    g.computeVertexNormals(); scene.add(new THREE.Mesh(g, mat));
+  });
+}
+for(let c=1;c<=18;c++){
+  let p0 = 1; while(!GRID[p0][c]) p0++;
+  const z = zb(p0-1) - 1.6, x = colX(c);
+  const {g, tex:gt} = board(2.9, 1.5, (cx,cv)=>{
+    cx.clearRect(0,0,cv.width,cv.height);
+    cx.fillStyle = '#6b4a2a'; rrect(cx,4,4,cv.width-8,cv.height-8,22); cx.fill();
+    cx.fillStyle = '#fbe7a6'; rrect(cx,16,16,cv.width-32,cv.height-32,14); cx.fill();
+    cx.fillStyle = '#5f6b55'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.font = `700 40px ${FONT}`; cx.fillText('NHÓM', 256, 62);
+    cx.fillStyle = '#1e2b1c'; cx.font = `800 118px ${FONT}`; cx.fillText(REV.c.has(c) ? GROUP[c] : '?', 256, 170);
+  }, {postH:1.15, tilt:-0.5});
+  g.position.set(x, H(x,z), z); g.rotation.y = Math.PI; scene.add(g); GROUP_TEX[c] = gt;
+}
+
+/* ---------- question stakes ---------- */
+const signsGroup = new THREE.Group(); scene.add(signsGroup);
+let qCells = [];
+function drawStake(c, cell){
+  const st = STAGES[cell.stage]; c.clearRect(0,0,512,300);
+  c.fillStyle = '#7a5530'; rrect(c,6,6,500,288,26); c.fill();
+  c.fillStyle = cell.done ? '#e1f3e6' : '#f6ecd2'; rrect(c,22,22,468,256,18); c.fill();
+  c.fillStyle = '#1e2b1c'; c.textAlign='center'; c.textBaseline='middle';
+  if(!cell.done){ c.font = `800 110px ${FONT}`; c.fillText('?',110,150); c.textAlign='left'; c.font = `800 64px ${FONT}`; c.fillText(`${st.pts} điểm`,190,112); c.font = `600 40px ${FONT}`; c.fillText(st.name,190,190); }
+  else { c.fillStyle = '#23824f'; c.font = `800 100px ${FONT}`; c.fillText('✓',105,150); c.fillStyle = '#1e2b1c'; c.textAlign='left'; c.font = `800 52px ${FONT}`; c.fillText(`Câu ${cell.order}`,185,105); c.font = `700 46px ${FONT}`; c.fillText(cell.winners.length ? cell.winners.map(i=>teams[i].s).join(' ') : 'chưa đội nào',185,185); }
+}
+function makeStake(cell){
+  const e = cell.el, x = colX(e.c) + W/2 - 0.9, z = zb(e.p) - 1.7;   // far side of the paddy, so it never hides the symbol
+  const g = new THREE.Group(); g.position.set(x, H(x,z), z); g.rotation.y = Math.PI;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,3.2,8), poleMat); pole.position.y = 1.6; pole.castShadow = true; g.add(pole);
+  cell.boardTex = canvasTex(512,300,(c)=>drawStake(c,cell));
+  const b = new THREE.Mesh(new THREE.PlaneGeometry(2,1.17), new THREE.MeshBasicMaterial({map:cell.boardTex, side:THREE.DoubleSide})); b.position.set(-0.6,2.75,0); b.rotation.x = -0.3; g.add(b);
+  cell.badgeTex = canvasTex(128,128,(c)=>{ c.clearRect(0,0,128,128); c.fillStyle = cell.done ? '#23824f' : '#e9b736'; c.beginPath(); c.arc(64,64,58,0,7); c.fill(); c.lineWidth = 8; c.strokeStyle = '#1e2b1c'; c.stroke(); c.fillStyle = cell.done ? '#fff' : '#1e2b1c'; c.font = `800 80px ${FONT}`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(cell.done?'✓':'?',64,70); });
+  cell.badge = new THREE.Sprite(new THREE.SpriteMaterial({map:cell.badgeTex})); cell.badge.scale.set(1.3,1.3,1); cell.badge.position.set(-0.6,4.3,0); g.add(cell.badge);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(2.45, 2.75, 48), new THREE.MeshBasicMaterial({color:0xe9b736, transparent:true, opacity:.8, side:THREE.DoubleSide, depthWrite:false}));
+  ring.rotation.x = -Math.PI/2; ring.position.set(colX(e.c), H(colX(e.c),rowZ(e.p))+0.06, rowZ(e.p)); scene.add(ring); cell.ring = ring;
+  cell.stakeG = g; signsGroup.add(g);
+}
+function refreshStake(cell){ redraw(cell.boardTex); redraw(cell.badgeTex); cell.ring.visible = !cell.done; }
+
+/* ---------- stairs ---------- */
+{
+  const plank = new THREE.BoxGeometry(2.6,.12,.55), pm = new THREE.MeshLambertMaterial({color:0xa9834f});
+  for(let k=0;k<7;k++) for(const rx of RAMP_X.concat(PATH_X)){
+    for(let z = zb(k)-3.2; z <= zb(k)+3.2; z += 0.5){
+      const m = new THREE.Mesh(plank, pm); m.position.set(rx, Math.max(H(rx,z),H(rx,z+0.3))+0.05, z); m.receiveShadow = true; scene.add(m);
+    }
+  }
+}
+
+/* ---------- palms, hut, boat, tree line ---------- */
+const trunkMat = new THREE.MeshLambertMaterial({color:0x8a6e4f}), frondMat = new THREE.MeshLambertMaterial({vertexColors:true, side:THREE.DoubleSide}), nutMat = new THREE.MeshLambertMaterial({color:0x6b5a2a});
+function palm(x,z,hgt=8,lean=.5,dir=0){
+  const y = H(x,z), top = new THREE.Vector3(x+Math.sin(dir)*lean*hgt*.35, y+hgt, z+Math.cos(dir)*lean*hgt*.35);
+  const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x,y-.3,z), new THREE.Vector3(x+(top.x-x)*.2, y+hgt*.5, z+(top.z-z)*.2), top]);
+  const t = new THREE.Mesh(new THREE.TubeGeometry(curve,10,.2,6), trunkMat); t.castShadow = true; scene.add(t);
+  const out = {p:[],c:[]}, c0 = lin('#2f6a25'), c1 = lin('#6aa83c');
+  for(let i=0;i<10;i++) strip(out, {len:R(2.6,3.4), wid:.55, yaw:i/10*Math.PI*2+R(-.2,.2), tilt:R(.6,1.1), bend:R(1.2,1.7), c0, c1, ox:top.x, oy:top.y, oz:top.z, segs:5, taper:1});
+  const f = new THREE.Mesh(toGeo(out), frondMat); f.castShadow = true; scene.add(f);
+  for(let i=0;i<3;i++){ const n = new THREE.Mesh(new THREE.SphereGeometry(.2,8,6), nutMat); n.position.set(top.x+Math.cos(i*2.1)*.25, top.y-.25, top.z+Math.sin(i*2.1)*.25); scene.add(n); }
+}
+// rice-straw stacks (đụn rơm) in the empty middle of the table: low, so they never hide the farmer
+{
+  const strawM = new THREE.MeshLambertMaterial({color:0xd9b25a}), capM = new THREE.MeshLambertMaterial({color:0xb8913f});
+  [[5,1],[8,1],[12,1],[15,1],[4,2],[7,2],[10,2],[5,3],[9,3],[11,3]].forEach(([c,p])=>{
+    const x = colX(c)+R(-1.2,1.2), z = rowZ(p)+R(-1,1), y = H(x,z);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(.9,1.1,1.1,12), strawM); b.position.set(x,y+.55,z); b.castShadow = true; scene.add(b);
+    const t = new THREE.Mesh(new THREE.ConeGeometry(1.0,.9,12), capM); t.position.set(x,y+1.55,z); t.castShadow = true; scene.add(t);
+  });
+}
+for(let p=1;p<=7;p++) [-1,1].forEach(s=> palm(s*(XLIM+5.5), rowZ(p), R(6,9), R(.2,.5), s<0 ? -1 : 1));
+for(let i=0;i<10;i++){ const x = -64 + i*14.2 + R(-3,3); palm(x, zb(7)+R(6,16), R(7,10), R(.2,.5), R(0,6)); }
+for(let i=0;i<8;i++){ const x = -60 + i*17 + R(-3,3); palm(x, zb(0)-R(19,24), R(7,10), R(.3,.6), Math.PI); }
+{ // chòi canh on the hill above chu kì 7
+  const g = new THREE.Group(); const x = colX(10), z = zb(7)+6; g.position.set(x, H(x,z), z);
+  const post = new THREE.CylinderGeometry(.1,.12,2.6,6);
+  [[-1.3,-1.1],[1.3,-1.1],[-1.3,1.1],[1.3,1.1]].forEach(([a,b])=>{ const p = new THREE.Mesh(post, poleMat); p.position.set(a,1.3,b); p.castShadow = true; g.add(p); });
+  const fl = new THREE.Mesh(new THREE.BoxGeometry(3,.15,2.6), new THREE.MeshLambertMaterial({color:0xb08a5a})); fl.position.y = .9; g.add(fl);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.6,1.6,4), new THREE.MeshLambertMaterial({color:0xc9a265})); roof.position.y = 3.3; roof.rotation.y = Math.PI/4; roof.castShadow = true; g.add(roof);
+  scene.add(g);
+}
+const boat = new THREE.Group();
+{
+  boat.position.set(-8,-0.7,zb(0)-10.8); boat.rotation.y = .15;
+  const hm = new THREE.MeshLambertMaterial({color:0x6b4a2e});
+  boat.add(new THREE.Mesh(new THREE.BoxGeometry(3.6,.35,1), hm));
+  [-1,1].forEach(s=>{ const tip = new THREE.Mesh(new THREE.ConeGeometry(.5,1.2,4), hm); tip.rotation.z = -s*Math.PI/2; tip.rotation.x = Math.PI/4; tip.scale.set(1,1,.6); tip.position.x = s*2.3; boat.add(tip); });
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,3.5,6), poleMat); pole.position.set(1,1,0); pole.rotation.z = .5; boat.add(pole);
+  scene.add(boat);
+}
+
+/* ---------- life around the field: trâu, bò, cò, én, bụi cây ---------- */
+{ // bushes and trees on the hills
+  const g = new THREE.IcosahedronGeometry(1, 1), m = new THREE.MeshLambertMaterial({color:0x3f7432, flatShading:true});
+  const pts = [];
+  for(let i=0;i<900 && pts.length<420;i++){
+    const sd = Math.random()<.5 ? -1 : 1, ax = XLIM + R(9, 78), x = sd*ax, z = R(-95, 125);
+    if(Math.abs(ax - STREAM_DX) < 3.5) continue;
+    pts.push([x,z, R(1.2,3)]);
+  }
+  for(let i=0;i<80;i++) pts.push([R(-XLIM, XLIM), zb(7)+R(9,40), R(1.2,2.6)]);
+  const im = new THREE.InstancedMesh(g, m, pts.length), d = new THREE.Object3D();
+  pts.forEach((p,i)=>{ d.position.set(p[0], H(p[0],p[1]) + p[2]*0.5, p[1]); d.scale.set(p[2], p[2]*R(.8,1.3), p[2]); d.rotation.y = R(0,6); d.updateMatrix(); im.setMatrixAt(i, d.matrix); });
+  im.castShadow = true; scene.add(im);
+  for(let i=0;i<14;i++){ const sd = i%2 ? -1 : 1; palm(sd*(STREAM_DX + R(-6,6) + (Math.random()<.5?-4:4)), R(-20, 80), R(7,10), R(.2,.5), R(0,6)); }
+}
+const animals = [];
+function makeBovine(kind){
+  const trau = kind==='trau';
+  const bodyM = new THREE.MeshLambertMaterial({color: trau ? 0x3a3838 : 0xb8834d});
+  const darkM = new THREE.MeshLambertMaterial({color: trau ? 0x252323 : 0x7a5530});
+  const lightM = new THREE.MeshLambertMaterial({color: trau ? 0x6a6464 : 0xe8d2b0});
+  const hornM = new THREE.MeshLambertMaterial({color: 0xd9ceb4});
+  const g = new THREE.Group(), s = trau ? 1.1 : 1;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), bodyM); body.scale.set(.55*s,.5*s,1.05*s); body.position.y = 1.15*s; body.castShadow = true; g.add(body);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), lightM); belly.scale.set(.42*s,.3*s,.8*s); belly.position.y = .88*s; g.add(belly);
+  const legs = [];
+  [[-.3,.62],[.3,.62],[-.3,-.62],[.3,-.62]].forEach(([lx,lz])=>{
+    const pv = new THREE.Group(); pv.position.set(lx*s, .95*s, lz*s); g.add(pv);
+    const l = new THREE.Mesh(new THREE.CylinderGeometry(.1*s,.08*s,.95*s,8), bodyM); l.position.y = -.47*s; l.castShadow = true; pv.add(l);
+    const hoof = new THREE.Mesh(new THREE.CylinderGeometry(.09*s,.1*s,.1*s,8), darkM); hoof.position.y = -.95*s; pv.add(hoof);
+    legs.push(pv);
+  });
+  const neck = new THREE.Group(); neck.position.set(0, 1.35*s, .95*s); g.add(neck);
+  const nk = new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.28*s,.5*s,10), bodyM); nk.rotation.x = 1.0; nk.position.set(0,-.05*s,.18*s); neck.add(nk);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.4*s,.4*s,.62*s), bodyM); head.position.set(0,-.15*s,.5*s); head.castShadow = true; neck.add(head);
+  const muzzle = new THREE.Mesh(new THREE.BoxGeometry(.36*s,.26*s,.2*s), lightM); muzzle.position.set(0,-.22*s,.84*s); neck.add(muzzle);
+  [-1,1].forEach(sd=>{
+    const ear = new THREE.Mesh(new THREE.BoxGeometry(.22*s,.06*s,.12*s), darkM); ear.position.set(sd*.28*s,-.02*s,.36*s); ear.rotation.z = sd*-.3; neck.add(ear);
+    if(trau){
+      const horn = new THREE.Mesh(new THREE.TorusGeometry(.42*s,.055*s,6,14,Math.PI*.95), hornM);
+      horn.position.set(sd*.12*s,.12*s,.36*s); horn.rotation.set(-.3, sd>0 ? 0 : Math.PI, sd*.2); horn.scale.set(1,.7,1); neck.add(horn);
+    } else {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(.05*s,.22*s,6), hornM); horn.position.set(sd*.16*s,.13*s,.34*s); horn.rotation.z = sd*-.6; neck.add(horn);
+    }
+  });
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.02*s,.8*s,5), darkM); tail.position.set(0,.95*s,-1.05*s); tail.rotation.x = .25; g.add(tail);
+  scene.add(g);
+  return {g, legs, neck, tail};
+}
+[
+  {box:[-55,55, zb(0)-6, zb(0)-1.5], n:4},                          // bãi cỏ ven kênh
+  {box:[colX(3)+1, colX(16)-1, zb(0)+1.5, zb(1)-1.5], n:3},          // khoảng trống chu kì 1
+  {box:[colX(4), colX(11), zb(1)+1.5, zb(2)-1.5], n:2},              // khoảng trống chu kì 2
+  {box:[colX(4), colX(11), zb(2)+1.5, zb(3)-1.5], n:1},              // khoảng trống chu kì 3
+  {box:[STREAM_DX-6, STREAM_DX-2.5, zb(0), zb(7)+20], n:3},          // thung lũng phải
+  {box:[-STREAM_DX+2.5, -STREAM_DX+6, zb(0), zb(7)+20], n:3},        // thung lũng trái
+  {box:[-40, 40, zb(7)+6, zb(7)+16], n:2},                           // đồi phía trên
+].forEach((area,ai)=>{
+  for(let i=0;i<area.n;i++){
+    const a = makeBovine((ai+i)%2 ? 'bo' : 'trau'); const [x0,x1,z0,z1] = area.box;
+    Object.assign(a, {box:area.box, x:R(x0,x1), z:R(z0,z1), yaw:R(0,6.3), tx:0, tz:0, timer:R(0,6), walking:false, walkT:R(0,6), phase:R(0,6)});
+    animals.push(a);
+  }
+});
+// birds
+const birds = [], egretsStanding = [];
+function makeBird(white){
+  const g = new THREE.Group();
+  const m = new THREE.MeshLambertMaterial({color: white ? 0xf7f5ee : 0x2c3240, side:THREE.DoubleSide});
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1,10,8), m); body.scale.set(.13,.12,.42); g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.09,8,6), m); head.position.set(0,.05,.45); g.add(head);
+  if(white){ const beak = new THREE.Mesh(new THREE.ConeGeometry(.03,.22,5), new THREE.MeshLambertMaterial({color:0xe5b23a})); beak.rotation.x = Math.PI/2; beak.position.set(0,.05,.62); g.add(beak); }
+  const wings = [-1,1].map(sd=>{ const pv = new THREE.Group(); pv.position.set(sd*.1,.03,0); g.add(pv);
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(white ? .95 : .7, .32), m); w.rotation.x = -Math.PI/2; w.position.x = sd*(white ? .47 : .35); pv.add(w); return pv; });
+  scene.add(g); return {g, wings};
+}
+[
+  {cx:-10, cz:5, r:55, y:34, sp:.10, n:7, white:true},
+  {cx:20, cz:30, r:40, y:42, sp:-.13, n:5, white:true},
+  {cx:-STREAM_DX, cz:30, r:30, y:30, sp:.16, n:6, white:true},
+  {cx:STREAM_DX, cz:10, r:26, y:28, sp:-.22, n:8, white:false},
+  {cx:0, cz:-30, r:35, y:24, sp:.25, n:6, white:false},
+].forEach(f=>{
+  for(let i=0;i<f.n;i++){
+    const b = makeBird(f.white); const s = f.white ? 1.6 : 1.1; b.g.scale.setScalar(s);
+    const row = Math.ceil(i/2), side = i===0 ? 0 : (i%2 ? -1 : 1);
+    Object.assign(b, {f, off:[side*row*1.8, R(-.4,.4), -row*1.6], phase:R(0,6)}); birds.push(b);
+  }
+});
+// a few egrets standing in the paddies
+for(let i=0;i<8;i++){
+  const e = ELS[(Math.random()*ELS.length)|0]; if(e.label) continue;
+  const b = makeBird(true); b.g.scale.setScalar(1.3);
+  const x = colX(e.c) + R(-2,2), z = rowZ(e.p) + R(-2,2);
+  b.g.position.set(x, H(x,z) + .95, z); b.g.rotation.y = R(0,6.3);
+  b.wings.forEach((w,j)=> w.rotation.z = (j ? -1 : 1)*1.3);
+  const legM = new THREE.MeshLambertMaterial({color:0x2a2a2a});
+  [-.05,.05].forEach(lx=>{ const l = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.55,4), legM); l.position.set(lx,-.42,0); b.g.add(l); });
+  b.wings.forEach(w=> w.scale.set(.35,1,1));
+  egretsStanding.push({b, phase:R(0,6)});
+}
+function updateLife(dt, t){
+  animals.forEach(a=>{
+    const [x0,x1,z0,z1] = a.box;
+    a.timer -= dt;
+    if(a.timer <= 0){
+      if(a.walking){ a.walking = false; a.timer = R(4,10); }
+      else { a.walking = true; a.tx = R(x0,x1); a.tz = R(z0,z1); a.timer = 12; }
+    }
+    if(a.walking){
+      const dx = a.tx-a.x, dz = a.tz-a.z, d = Math.hypot(dx,dz);
+      if(d < .3){ a.walking = false; a.timer = R(4,10); }
+      else {
+        const ty = Math.atan2(dx,dz), diff = ((ty-a.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;
+        a.yaw += diff*Math.min(1, dt*2);
+        const sp = 0.9*dt*Math.max(0, Math.cos(diff));
+        a.x += Math.sin(a.yaw)*sp; a.z += Math.cos(a.yaw)*sp; a.walkT += dt*5;
+      }
+    }
+    a.g.position.set(a.x, H(a.x,a.z), a.z); a.g.rotation.y = a.yaw;
+    const sw = a.walking ? Math.sin(a.walkT) : 0;
+    a.legs[0].rotation.x = sw*.35; a.legs[3].rotation.x = sw*.35; a.legs[1].rotation.x = -sw*.35; a.legs[2].rotation.x = -sw*.35;
+    const graze = a.walking ? .1 : .95 + Math.sin(t*3 + a.phase)*.08;
+    a.neck.rotation.x += (graze - a.neck.rotation.x)*Math.min(1, dt*3);
+    a.tail.rotation.z = Math.sin(t*2.3 + a.phase)*.35;
+  });
+  birds.forEach(b=>{
+    const f = b.f, ang = t*f.sp + b.phase*0.02, cx = f.cx + Math.cos(ang)*f.r, cz = f.cz + Math.sin(ang)*f.r;
+    const heading = Math.atan2(-Math.sin(ang)*Math.sign(f.sp), Math.cos(ang)*Math.sign(f.sp));
+    const [ox,oy,oz] = b.off, ch = Math.cos(heading), shd = Math.sin(heading);
+    b.g.position.set(cx + ox*ch + oz*shd, f.y + oy + Math.sin(t*.7 + b.phase)*.6, cz - ox*shd + oz*ch);
+    b.g.rotation.y = heading;
+    const flap = Math.sin(t*(f.white ? 5 : 9) + b.phase)*(f.white ? .55 : .8);
+    b.wings[0].rotation.z = flap; b.wings[1].rotation.z = -flap;
+  });
+  egretsStanding.forEach(e=>{ e.b.g.rotation.x = Math.max(0, Math.sin(t*1.3 + e.phase))*0.5; });
+}
+
+/* ---------- farmer ---------- */
+const farmer = new THREE.Group(); scene.add(farmer);
+const fb = new THREE.Group(); farmer.add(fb);
+const M = c => new THREE.MeshStandardMaterial({color:c, roughness:.8});
+const skin = M(0xc68b5c), shirt = M(0x5a3a26), pants = M(0x262626), hatM = new THREE.MeshStandardMaterial({color:0xe9d59b, roughness:.9, side:THREE.DoubleSide});
+const scarfTex = canvasTex(64,64,(c)=>{ c.fillStyle='#f4f1e6'; c.fillRect(0,0,64,64); c.fillStyle='#1b1b1b'; for(let i=0;i<64;i+=16){ c.fillRect(i,0,8,64); c.fillRect(0,i,64,8); } });
+scarfTex.wrapS = scarfTex.wrapT = THREE.RepeatWrapping; scarfTex.repeat.set(4,1);
+const scarfM = new THREE.MeshStandardMaterial({map:scarfTex, roughness:.9, side:THREE.DoubleSide});
+function part(geo, mat, x,y,z, parent=fb){ const m = new THREE.Mesh(geo,mat); m.position.set(x,y,z); m.castShadow = true; parent.add(m); return m; }
+const legs = [-1,1].map(s=>{ const hip = new THREE.Group(); hip.position.set(s*.12,.86,0); fb.add(hip);
+  part(new THREE.CylinderGeometry(.1,.09,.5,10), pants, 0,-.25,0, hip); part(new THREE.CylinderGeometry(.07,.06,.34,8), skin, 0,-.66,0, hip); part(new THREE.BoxGeometry(.13,.06,.26), M(0x3a2a1e), 0,-.84,.05, hip); return hip; });
+part(new THREE.CylinderGeometry(.22,.27,.66,14), shirt, 0,1.18,0);
+for(let i=0;i<3;i++) part(new THREE.SphereGeometry(.022,6,4), M(0xe8e0c8), 0,1.36-i*.14,.235);
+[-1,1].forEach(s=> part(new THREE.BoxGeometry(.12,.1,.02), M(0x4b301f), s*.12,.98,.25));
+const arms = [-1,1].map(s=>{ const sh = new THREE.Group(); sh.position.set(s*.29,1.44,0); fb.add(sh);
+  part(new THREE.CylinderGeometry(.075,.08,.42,8), shirt, 0,-.2,0, sh); part(new THREE.CylinderGeometry(.055,.05,.2,8), skin, 0,-.5,0, sh); part(new THREE.SphereGeometry(.065,8,6), skin, 0,-.62,0, sh); sh.rotation.z = s*.12; return sh; });
+part(new THREE.CylinderGeometry(.07,.08,.1,8), skin, 0,1.55,0);
+part(new THREE.SphereGeometry(.17,16,12), skin, 0,1.72,0);
+[-1,1].forEach(s=> part(new THREE.SphereGeometry(.022,6,4), M(0x1a1a1a), s*.06,1.75,.155));
+part(new THREE.BoxGeometry(.07,.015,.01), M(0x7a3b2a), 0,1.65,.16);
+part(new THREE.TorusGeometry(.15,.055,8,20), scarfM, 0,1.52,0).rotation.x = Math.PI/2;
+part(new THREE.PlaneGeometry(.14,.42), scarfM, .1,1.32,.2).rotation.set(-.15,0,.18);
+const hat = part(new THREE.ConeGeometry(.58,.36,32,1,true), hatM, 0,2.0,0);
+part(new THREE.TorusGeometry(.565,.012,4,40), M(0xc9b27a), 0,1.82,0).rotation.x = Math.PI/2;
+farmer.scale.setScalar(1.25);
+const turnTex = canvasTex(256,96,()=>{});
+const turnSprite = new THREE.Sprite(new THREE.SpriteMaterial({map:turnTex, depthTest:false})); turnSprite.renderOrder = 5; turnSprite.scale.set(1.9,.71,1); turnSprite.position.y = 2.75; farmer.add(turnSprite);
+function drawTurn(){
+  const c = turnTex.userData.cv.getContext('2d'), t = teams[turn]; c.clearRect(0,0,256,96); if(!t) return;
+  c.fillStyle = t.c; rrect(c,4,4,248,88,40); c.fill(); c.lineWidth = 6; c.strokeStyle = '#1e2b1c'; c.stroke();
+  c.fillStyle = '#1e2b1c'; c.textAlign='center'; c.textBaseline='middle'; const txt = `${t.s} ${t.name}`; fitText(c, txt, 220, 44, 800); c.fillText(txt,128,52); turnTex.needsUpdate = true;
+}
+
+/* ================= Game: one iPad per group, members take turns ================= */
+const CODE_OPEN = '7070', CODE_UNLOCK = '7979', CODE_START = '00', SAVE_KEY = 'ruonglua-chuki-nhom-v1';
+const SBD_PREFIX = {'9D01':'260901','9D02':'260902','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
+const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
+const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần'};
+let cfg = null;                 // {lop, group, minutes}
+let teams = [];                 // members of this group: {name, sbd, c, s, score, correct, answered, joinedAt}
+let turn = 0, opened = 0, history = [];
+let startedAt = 0, deadline = 0, endedAt = 0, TOTAL = 300;
+let phase = 'setup', running = false, current = null, locked = false, leaves = 0, reason = '', sessionId = '', submitted = false;
+const START = {x: colX(1), z: rowZ(1) - 1.6};
+const fmt = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+const clock24 = ms => ms ? new Date(ms).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '—';
+
+/* ---------- saving on this iPad, so a reload cannot reset the game ---------- */
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({cfg, teams, turn, opened, startedAt, deadline, endedAt, phase: phase==='ask'||phase==='reveal' ? 'walk' : phase,
+      running, locked, leaves, reason, sessionId, submitted, TOTAL, fx:farmer.position.x, fz:farmer.position.z, cur: current ? qCells.indexOf(current) : -1,
+      cells: qCells.map(c=>({sym:c.el.sym, stage:c.stage, q:c.q, done:c.done, by:c.by, chosen:c.chosen, ok:c.ok, order:c.order}))}));
+  }catch(_){}
+}
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(_){} }
+
+/* ---------- question cells ---------- */
+function setupRound(saved){
+  qCells.forEach(c=>{ signsGroup.remove(c.stakeG); scene.remove(c.ring); c.boardTex.dispose(); c.badgeTex.dispose(); });
+  qCells = [];
+  if(saved){
+    saved.forEach(s=>{
+      const cell = {el:BY_SYM[s.sym], stage:s.stage, q:s.q, done:s.done, by:s.by, chosen:s.chosen, ok:s.ok, order:s.order, winners: s.done && s.ok ? [s.by] : []};
+      makeStake(cell); qCells.push(cell);
+    });
+    return;
+  }
+  STAGE_PLAN.forEach((plan, stage)=>{
+    const els = shuffle(plan.els).slice(0,2).map(sym=> BY_SYM[sym]);
+    const types = shuffle(plan.types);
+    els.forEach((el,i)=>{
+      let type = types[i % types.length];
+      if(type==='g' && el.sym==='He') type = 'z';
+      const cell = {el, stage, q:makeQuestion(el, type), done:false, winners:[]};
+      makeStake(cell); qCells.push(cell);
+    });
+  });
+}
+function revealCell(e){
+  REV.el.add(e); REV.p.add(e.p); REV.c.add(e.c);
+  redraw(e.tex); redraw(CHUKI_TEX[e.p]); redraw(GROUP_TEX[e.c]); buildMapBg();
+}
+function revealAll(){
+  ELS.forEach(e=>{ REV.el.add(e); REV.p.add(e.p); REV.c.add(e.c); });
+  ELS.forEach(e=> redraw(e.tex)); CHUKI_TEX.forEach(t=> t && redraw(t)); GROUP_TEX.forEach(t=> t && redraw(t)); buildMapBg();
+}
+function hideAll(){
+  REV.el.clear(); REV.p.clear(); REV.c.clear();
+  ELS.forEach(e=> redraw(e.tex)); CHUKI_TEX.forEach(t=> t && redraw(t)); GROUP_TEX.forEach(t=> t && redraw(t)); buildMapBg();
+}
+
+/* ---------- screens ---------- */
+function showOnly(id){ ['setup','join','result','lock','deck'].forEach(m=> $(m).hidden = m!==id); }
+function showHud(on){ ['top','mapbox','hint','joy','zoom'].forEach(m=> $(m).hidden = !on); if(!on) $('act').hidden = true; }
+
+// 1) teacher opens the game for a class and group
+(function initSetup(){
+  $('fMin').value = '5';
+})();
+$('setupForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const lop = $('fClass').value, group = $('fGroup').value, minutes = +$('fMin').value, code = $('fCode').value.trim();
+  const miss = [!lop && 'lớp', !group && 'nhóm', !minutes && 'thời gian'].filter(Boolean);
+  const err = $('setupErr');
+  if(miss.length){ err.textContent = 'Cần chọn ' + miss.join(', ') + '.'; err.hidden = false; return; }
+  if(code !== CODE_OPEN){ err.textContent = 'Mã giáo viên không đúng.'; err.hidden = false; $('fCode').select(); return; }
+  err.hidden = true; $('fCode').value = '';
+  cfg = {lop, group, minutes}; teams = []; phase = 'join';
+  openJoin(); save();
+});
+
+// 2) members join one by one on this iPad, then the teacher types 00
+function openJoin(){
+  showOnly('join'); showHud(false);
+  $('joinInfo').textContent = `${cfg.lop} · ${cfg.group} · ${cfg.minutes} phút`;
+  $('sbdPre').textContent = SBD_PREFIX[cfg.lop] || '';
+  renderMembers(); $('jName').focus();
+}
+function renderMembers(){
+  $('memberList').innerHTML = teams.length ? teams.map((t,i)=>`<li><span class="sh" style="--c:${t.c}">${t.s}</span><span class="mn">${esc(t.name)}<small>SBD ${esc(t.sbd)} · vào lúc ${clock24(t.joinedAt)}</small></span>${phase==='join' ? `<button type="button" class="x" data-i="${i}" aria-label="Xoá ${esc(t.name)}">✕</button>` : ''}</li>`).join('')
+    : '<li class="empty">Chưa có thành viên nào. Mỗi nhóm 4–6 học sinh.</li>';
+  $('memberList').querySelectorAll('.x').forEach(b=> b.onclick = ()=>{ teams.splice(+b.dataset.i,1); teams.forEach((t,i)=> Object.assign(t, TEAM_STYLE[i])); renderMembers(); save(); });
+  $('memberCount').textContent = `${teams.length}/6`;
+  $('joinForm').querySelector('button').disabled = teams.length >= 6;
+}
+$('jSbd').addEventListener('input', e=>{ e.target.value = e.target.value.replace(/\D/g,'').slice(0,2); });
+$('joinForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = $('jName').value.trim().replace(/\s+/g,' '), tail = $('jSbd').value.trim(), err = $('joinErr');
+  if(teams.length >= 6){ err.textContent = 'Nhóm đã đủ 6 thành viên.'; err.hidden = false; return; }
+  if(!name){ err.textContent = 'Em cần nhập họ và tên.'; err.hidden = false; $('jName').focus(); return; }
+  if(!/^\d{2}$/.test(tail)){ err.textContent = 'Nhập đúng 2 số cuối của số báo danh, ví dụ 05 hoặc 17.'; err.hidden = false; $('jSbd').focus(); return; }
+  const sbd = (SBD_PREFIX[cfg.lop]||'') + tail;
+  if(teams.some(t=> t.sbd===sbd)){ err.textContent = `Số báo danh ${sbd} đã có trong nhóm.`; err.hidden = false; return; }
+  err.hidden = true;
+  teams.push({...TEAM_STYLE[teams.length], name, sbd, score:0, correct:0, answered:0, joinedAt:Date.now()});
+  $('jName').value = ''; $('jSbd').value = ''; renderMembers(); save(); $('jName').focus();
+});
+$('startForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const err = $('startErr');
+  if(!teams.length){ err.textContent = 'Chưa có thành viên nào vào nhóm.'; err.hidden = false; return; }
+  if($('sCode').value.trim() !== CODE_START){ err.textContent = 'Mã bắt đầu không đúng. Chỉ giáo viên nhập mã này.'; err.hidden = false; $('sCode').select(); return; }
+  err.hidden = true; $('sCode').value = '';
+  startGame();
+});
+
+// 3) play
+function startGame(){
+  sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  TOTAL = cfg.minutes*60; startedAt = Date.now(); deadline = startedAt + TOTAL*1000; endedAt = 0;
+  turn = 0; opened = 0; history = []; leaves = 0; reason = ''; submitted = false; locked = false;
+  hideAll(); setupRound();
+  running = true; phase = 'walk';
+  farmer.position.set(START.x, H(START.x,START.z), START.z); fy = farmer.position.y; yaw = Math.PI/2;
+  showOnly(null); showHud(true);
+  $('who').textContent = `${cfg.lop} · ${cfg.group}`;
+  $('qi').textContent = 0;
+  renderTeams(); drawTurn(); snapCam(); save();
+  if(document.activeElement) document.activeElement.blur();
+}
+function renderTeams(){
+  $('teams').innerHTML = teams.map((t,i)=>`<div class="panel team ${i===turn && running ? 'turn':''}" id="tm${i}" style="--c:${t.c}"><span class="sh">${t.s}</span><span class="nm">${esc(t.name)}</span><span class="sc">${t.score}</span></div>`).join('');
+}
+function shellsSVG(shells, sym){
+  const n = shells.length, R0 = 14, step = (52-R0)/Math.max(1,n);
+  let s = `<svg viewBox="0 0 120 120" aria-label="Mô hình ${n} lớp electron của ${sym}"><circle cx="60" cy="60" r="12" fill="#e9b736" stroke="#1e2b1c" stroke-width="1.5"/><text x="60" y="64" text-anchor="middle" font-size="11" font-weight="800" fill="#1e2b1c" font-family="Be Vietnam Pro, Arial">${sym}</text>`;
+  shells.forEach((e,i)=>{ const r = R0 + step*(i+1); s += `<circle cx="60" cy="60" r="${r.toFixed(1)}" fill="none" stroke="#5f6b55" stroke-width="1"/>`; for(let k=0;k<e;k++){ const a = k/e*Math.PI*2 - Math.PI/2; s += `<circle cx="${(60+Math.cos(a)*r).toFixed(1)}" cy="${(60+Math.sin(a)*r).toFixed(1)}" r="${e>10?2.2:3}" fill="#23824f"/>`; } });
+  return s + '</svg>';
+}
+function openCell(cell){
+  if(!cell || cell.done || phase!=='walk' || locked || reason) return;
+  current = cell; phase = 'ask'; cell.order = opened + 1;
+  const q = cell.q, st = STAGES[cell.stage], t = teams[turn];
+  $('qnum').textContent = `Câu ${cell.order}`;
+  $('qplace').textContent = 'Ô bí ẩn';
+  $('qstage').textContent = `${st.name} · ${st.pts} điểm`; $('qstage').style.setProperty('--c', st.css);
+  $('qwho').innerHTML = `<span class="sh" style="--c:${t.c}">${t.s}</span>${esc(t.name)} trả lời`;
+  $('qtext').textContent = q.q;
+  $('opts').innerHTML = q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('');
+  $('opts').querySelectorAll('.opt').forEach(b=> b.onclick = ()=> choose(+b.dataset.i));
+  $('why').hidden = true;
+  $('ctrl').innerHTML = `<span class="kbd">Chạm vào đáp án em chọn (hoặc phím 1–4). Chỉ được chọn một lần.</span>`;
+  $('deck').hidden = false; $('act').hidden = true; clearKeys(); save();
+}
+function choose(i){
+  if(phase!=='ask' || locked || reason) return;
+  phase = 'reveal';
+  const cell = current, q = cell.q, st = STAGES[cell.stage], e = cell.el, t = teams[turn];
+  const ok = i === q.ans;
+  Object.assign(cell, {chosen:i, ok, by:turn, done:true, winners: ok ? [turn] : []});
+  t.answered++; if(ok){ t.score += st.pts; t.correct++; }
+  opened++; history.push(cell); $('qi').textContent = opened;
+  $('opts').querySelectorAll('.opt').forEach((b,j)=>{ b.disabled = true; b.classList.add(j===q.ans ? 'ok' : (j===i ? 'no' : 'dim')); });
+  const info = placeText(e);
+  $('why').innerHTML = shellsSVG(info.sh, e.sym) + `<p>${info.txt}<br>Thửa ruộng này đã mở: ô <b>${e.sym}</b>, tầng <b>Chu kì ${e.p}</b>, cột <b>nhóm ${GROUP[e.c]}</b>.</p>`; $('why').hidden = false;
+  $('qplace').textContent = `Ô ${e.sym} · Chu kì ${e.p} · Nhóm ${GROUP[e.c]}`;
+  revealCell(e); refreshStake(cell);
+  const pop = $('tm'+turn); if(ok && pop){ pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
+  turn = (turn+1) % teams.length;
+  renderTeams(); drawTurn();
+  $('ctrl').innerHTML = `<span class="verdict ${ok ? 'good' : 'bad'}">${ok ? `Chính xác! +${st.pts} điểm cho ${esc(t.name)}` : `Chưa đúng. Đáp án đúng là ${'ABCD'[q.ans]}.`}</span>` +
+    `<button class="go" type="button" id="btnNext">${opened>=10 ? 'Xem kết quả' : `Tiếp tục · lượt của ${esc(teams[turn].name)} ›`}</button>`;
+  $('btnNext').onclick = closeCell; $('btnNext').focus();
+  save();
+}
+function closeCell(){
+  if(phase!=='reveal') return;
+  $('deck').hidden = true; current = null; phase = 'walk';
+  if(opened >= 10) finish('done'); else save();
+}
+
+// 4) end: results go to the teacher's Google Sheet; "Lượt chơi mới" leaves a blank page
+function finish(why){
+  if(reason) return;
+  reason = why; endedAt = Math.min(Date.now(), deadline || Date.now());
+  running = false; phase = 'end'; current = null; locked = false;
+  revealAll(); showHud(false); $('top').hidden = false; $('mapbox').hidden = false;
+  renderTeams(); showEnd(); save(); sendResult();
+}
+function showEnd(){
+  showOnly('result');
+  const total = teams.reduce((a,t)=> a+t.score, 0), corr = teams.reduce((a,t)=> a+t.correct, 0);
+  $('rEyebrow').textContent = `${cfg.lop} · ${cfg.group} · ${REASONS[reason] || ''}`;
+  $('rTitle').textContent = reason==='violation' ? 'Trò chơi kết thúc vì rời màn hình lần 2' : (reason==='timeout' ? 'Hết giờ! Mùa gặt kết thúc' : 'Nhóm đã mở đủ 10 ô lúa');
+  $('rTotal').innerHTML = `<b>${total}</b> điểm · ${corr}/${opened} câu đúng · ${fmt((endedAt-startedAt)/1000)} phút chơi`;
+  const sorted = teams.map((t,i)=>({...t,i})).sort((a,b)=> b.score-a.score);
+  $('rank').innerHTML = sorted.map((t,k)=>`<li><span class="pos">${k+1}</span><span class="who"><span class="sh" style="--c:${t.c}">${t.s}</span><span>${esc(t.name)}<small>SBD ${esc(t.sbd)} · đúng ${t.correct}/${t.answered} câu · vào lúc ${clock24(t.joinedAt)}</small></span></span><span class="pts">${t.score}</span></li>`).join('');
+  const ordered = history.concat(qCells.filter(c=>!c.done).sort((a,b)=>a.stage-b.stage));
+  $('review').innerHTML = ordered.map(c=>{ const q = c.q, st = STAGES[c.stage], who = c.done ? teams[c.by] : null;
+    return `<li><i>Ô ${esc(c.el.sym)} (chu kì ${c.el.p}, nhóm ${GROUP[c.el.c]}) · ${st.pts} điểm.</i> ${esc(q.q)}<br>Đáp án: <b>${esc(q.opts[q.ans])}</b>${who ? ` · ${esc(who.name)} chọn ${'ABCD'[c.chosen]} (${c.ok ? 'đúng' : 'sai'})` : ' <span class="skip">· chưa mở</span>'}</li>`; }).join('');
+  $('newConfirm').hidden = true; $('btnNew').textContent = 'Lượt chơi mới';
+}
+function buildReport(){
+  const total = teams.reduce((a,t)=> a+t.score, 0), corr = teams.reduce((a,t)=> a+t.correct, 0);
+  return {kind:'ruonglua-chuki', game:'Ruộng lúa Chu kì', id:sessionId, lop:cfg.lop, group:cfg.group, minutes:cfg.minutes,
+    startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves, groupScore:total, groupCorrect:corr, opened,
+    members: teams.map((t,i)=>({name:t.name, sbd:t.sbd, score:t.score, correct:t.correct, answered:t.answered, joinedAt:t.joinedAt,
+      detail: history.filter(c=> c.by===i).map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): ${c.ok ? 'đúng' : 'sai'}`).join('; ')})),
+    items: history.map(c=>({n:c.order, el:c.el.sym, pts:STAGES[c.stage].pts, q:c.q.q, opts:c.q.opts, correct:c.q.ans, chosen:c.chosen, by:teams[c.by] ? teams[c.by].name : '', ok:c.ok}))};
+}
+let sending = false;
+async function sendResult(){
+  const m = $('sendMsg'), rb = $('resendBtn');
+  const show = (t, cls, resend)=>{ m.textContent = t; m.className = 'sendmsg ' + (cls||''); m.hidden = false; rb.hidden = !resend; };
+  if(!reason) return;
+  if(submitted === true){ show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok'); return; }
+  if(!SHEET_URL){ show('Chưa cài địa chỉ Google Sheet nên kết quả chỉ nằm trên máy này. Hãy chụp màn hình gửi giáo viên.'); return; }
+  if(sending) return; sending = true; show('Đang gửi kết quả cho giáo viên…');
+  const body = JSON.stringify(buildReport()), headers = {'Content-Type':'text/plain;charset=utf-8'};
+  try{
+    const res = await fetch(SHEET_URL, {method:'POST', body, headers, redirect:'follow'}); const j = await res.json();
+    if(!j.ok) throw new Error(j.error || 'máy chủ báo lỗi');
+    submitted = true; save(); show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok');
+  }catch(err){
+    try{ await fetch(SHEET_URL, {method:'POST', mode:'no-cors', body, headers}); submitted = 'maybe'; save();
+      show('Đã gửi nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy kết quả của nhóm, hãy bấm Gửi lại.', '', true); }
+    catch(e2){ show('Chưa gửi được kết quả' + (navigator.onLine===false ? ' (máy đang mất mạng)' : '') + '. Kiểm tra mạng rồi bấm Gửi lại.', 'bad', true); }
+  }finally{ sending = false; }
+}
+addEventListener('online', ()=>{ if(reason && submitted!==true) sendResult(); });
+$('resendBtn').onclick = ()=>{ submitted = false; sendResult(); };
+$('btnNew').onclick = ()=>{
+  if(submitted!==true && $('newConfirm').hidden){ $('newConfirm').hidden = false; $('btnNew').textContent = 'Vẫn mở lượt chơi mới'; return; }
+  clearSave();
+  document.title = ' ';
+  document.body.innerHTML = ''; document.body.style.background = '#fff'; document.documentElement.style.background = '#fff';
+  stopped = true; try{ renderer.setAnimationLoop(null); }catch(_){}
+  try{ window.close(); }catch(_){}
+  setTimeout(()=>{ try{ location.replace('about:blank'); }catch(_){} }, 60);
+};
+
+/* ---------- leaving the game screen locks it; the second time ends the game ---------- */
+function lockGame(){
+  if(!running || reason || locked) return;
+  leaves++;
+  if(leaves >= 2){ finish('violation'); return; }
+  showLock();
+}
+function showLock(){
+  locked = true; clearKeys();
+  $('lockMsg').textContent = `${cfg.lop} · ${cfg.group} đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để chơi tiếp. Đồng hồ vẫn chạy. Nếu rời màn hình thêm lần nữa, trò chơi sẽ kết thúc ngay và gửi điểm.`;
+  $('uCode').value = ''; $('lockErr').hidden = true; $('lock').hidden = false;
+  save();
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) lockGame(); });
+addEventListener('blur', ()=> lockGame());
+addEventListener('pagehide', ()=> lockGame());
+$('unlockForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  if($('uCode').value.trim() !== CODE_UNLOCK){ $('lockErr').hidden = false; $('uCode').select(); return; }
+  $('uCode').value = ''; locked = false; $('lock').hidden = true; save();
+  if(document.activeElement) document.activeElement.blur();
+  if(Date.now() >= deadline) finish('timeout');
+});
+
+/* ---------- restore after a reload (counts as leaving the screen) ---------- */
+function restore(){
+  let d = null; try{ d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); }catch(_){}
+  if(!d || !d.cfg) return false;
+  cfg = d.cfg; teams = d.teams || []; turn = d.turn || 0; opened = d.opened || 0; startedAt = d.startedAt || 0; deadline = d.deadline || 0;
+  endedAt = d.endedAt || 0; leaves = d.leaves || 0; reason = d.reason || ''; sessionId = d.sessionId || ''; submitted = d.submitted || false; TOTAL = d.TOTAL || cfg.minutes*60;
+  if(d.phase === 'join' && !d.running && !reason){ phase = 'join'; openJoin(); return true; }
+  if(!d.cells || !d.cells.length) return false;
+  hideAll(); setupRound(d.cells);
+  history = qCells.filter(c=> c.done).sort((a,b)=> a.order-b.order);
+  history.forEach(c=> revealCell(c.el));
+  $('who').textContent = `${cfg.lop} · ${cfg.group}`; $('qi').textContent = opened;
+  const fx = d.fx ?? START.x, fz = d.fz ?? START.z; farmer.position.set(fx, H(fx,fz), fz); fy = farmer.position.y;
+  if(reason){ phase = 'end'; running = false; revealAll(); showOnly('result'); $('top').hidden = false; $('mapbox').hidden = false; renderTeams(); showEnd(); sendResult(); return true; }
+  running = true; phase = 'walk'; showOnly(null); showHud(true); renderTeams(); drawTurn(); snapCam();
+  if(opened >= 10){ finish('done'); return true; }
+  if(Date.now() >= deadline){ finish('timeout'); return true; }
+  if(d.locked){ showLock(); } else lockGame();
+  return true;
+}
+
+/* ---------- setup UI ---------- */
+$('growth').innerHTML = STAGES.map(s=>`<div style="--c:${s.css}">${s.rows}<b>${s.pts} điểm</b>${s.name}</div>`).join('');
+$('stages').innerHTML = STAGES.map(s=>`<i style="--c:${s.css}"></i><span>${s.rows}: ${s.name}</span><b>${s.pts}</b>`).join('');
+
+/* ---------- input ---------- */
+const keys = {}, joy = {x:0,y:0};
+const clearKeys = () => { for(const k in keys) keys[k] = false; joy.x = joy.y = 0; };
+let zoom = 1;
+const setZoom = z => { zoom = Math.min(1.9, Math.max(0.55, z)); };
+$('zin').onclick = ()=> setZoom(zoom/1.15); $('zout').onclick = ()=> setZoom(zoom*1.15);
+canvas.addEventListener('wheel', e=>{ if(!running) return; e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 1.08 : 1/1.08)); }, {passive:false});
+addEventListener('keydown', e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName) || !running || locked) return;
+  if(e.key==='+' || e.key==='=') setZoom(zoom/1.15);
+  if(e.key==='-' || e.key==='_') setZoom(zoom*1.15);
+  if(phase==='walk'){
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+    keys[e.code] = true;
+    if((e.code==='KeyE'||e.code==='Enter'||e.code==='Space') && hereCell && !hereCell.done) openCell(hereCell);
+  } else if(phase==='ask'){
+    const n = parseInt(e.key,10); if(n>=1 && n<=4){ e.preventDefault(); choose(n-1); }
+  } else if(phase==='reveal'){
+    if(e.code==='Space'){ e.preventDefault(); closeCell(); }
+  }
+});
+addEventListener('keyup', e=>{ keys[e.code] = false; });
+addEventListener('blur', clearKeys);
+const joyEl = $('joy'), knob = $('knob'); let joyId = null;
+function moveJoy(e){ const r = joyEl.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const m = r.width/2-18, d = Math.hypot(dx,dy); if(d>m){dx*=m/d;dy*=m/d;} knob.style.transform = `translate(${dx}px,${dy}px)`; joy.x = dx/m; joy.y = dy/m; }
+joyEl.addEventListener('pointerdown', e=>{ joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); moveJoy(e); });
+joyEl.addEventListener('pointermove', e=>{ if(e.pointerId===joyId) moveJoy(e); });
+['pointerup','pointercancel'].forEach(t=> joyEl.addEventListener(t, e=>{ if(e.pointerId===joyId){ joyId = null; joy.x = joy.y = 0; knob.style.transform = ''; } }));
+$('act').onclick = ()=>{ if(hereCell && !hereCell.done) openCell(hereCell); };
+
+/* ---------- minimap: the periodic table seen from above ---------- */
+const mapC = $('map'), mctx = mapC.getContext('2d');
+const MW = 400, MH = 240, CW = MW/20, CH = (MH-20)/7;
+const mx = x => MW - (x/W + 9.5 + 0.5)*CW, mz = z => MH - 20 - ((z - zb(0))/D)*CH;
+const cellL = c => MW - (c+1)*CW, rowT = p => MH - 20 - p*CH;
+const mapBg = document.createElement('canvas'); mapBg.width = MW; mapBg.height = MH;
+function buildMapBg(){
+  const c = mapBg.getContext('2d');
+  c.fillStyle = '#7fae4a'; c.fillRect(0,0,MW,MH);
+  c.fillStyle = '#c4a778'; c.fillRect(0,0,CW,MH-20); c.fillRect(19*CW,0,CW,MH-20); c.fillRect(0,MH-20,MW,20);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for(let p=1;p<=7;p++) for(let col=1;col<=18;col++){
+    const e = GRID[p][col]; if(!e) continue;
+    c.fillStyle = STAGES[e.stage].hex; c.fillRect(cellL(col)+1, rowT(p)+1, CW-2, CH-2);
+    c.fillStyle = '#1e2b1c'; c.font = `700 ${e.label ? 8 : 10}px ${FONT}`;
+    if(REV.el.has(e)) c.fillText(e.label ? '*' : e.sym, cellL(col)+CW/2, rowT(p)+CH/2);
+  }
+  c.fillStyle = '#1e2b1c'; c.font = `800 13px ${FONT}`;
+  for(let p=1;p<=7;p++){ const t = REV.p.has(p) ? p : '?'; c.fillText(t, CW/2, rowT(p)+CH/2); c.fillText(t, 19.5*CW, rowT(p)+CH/2); }
+  c.font = `700 8px ${FONT}`; for(let col=1;col<=18;col++) c.fillText(REV.c.has(col) ? GROUP[col] : '?', cellL(col)+CW/2, MH-10);
+  c.fillStyle = '#5a3a20';
+  for(let k=0;k<7;k++) for(const rx of RAMP_X) c.fillRect(mx(rx)-4, rowT(k)-3, 8, 6);
+  for(let k=0;k<=7;k++){ c.fillRect(2, rowT(k)-1, CW-4, 2); c.fillRect(19*CW+2, rowT(k)-1, CW-4, 2); }
+}
+buildMapBg();
+function drawMap(){
+  mctx.drawImage(mapBg,0,0);
+  qCells.forEach(cell=>{
+    const L = cellL(cell.el.c), T = rowT(cell.el.p);
+    mctx.lineWidth = 3; mctx.strokeStyle = cell.done ? '#23824f' : '#d2492f'; mctx.strokeRect(L+1.5, T+1.5, CW-3, CH-3);
+    if(!cell.done){ mctx.beginPath(); mctx.arc(L+CW-3, T+3, 5, 0, 7); mctx.fillStyle = '#e9b736'; mctx.fill(); }
+  });
+  const x = mx(farmer.position.x), y = mz(farmer.position.z);
+  mctx.save(); mctx.translate(x,y); mctx.rotate(-yaw);
+  mctx.beginPath(); mctx.moveTo(0,-9); mctx.lineTo(7,7); mctx.lineTo(0,3); mctx.lineTo(-7,7); mctx.closePath();
+  mctx.fillStyle = teams[turn] ? teams[turn].c : '#fff'; mctx.fill(); mctx.lineWidth = 2; mctx.strokeStyle = '#1e2b1c'; mctx.stroke(); mctx.restore();
+}
+
+/* ---------- camera ---------- */
+const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), want = new THREE.Vector3(), wantLook = new THREE.Vector3();
+let orbitT = 0;
+function computeWant(){
+  if(phase==='setup' || phase==='join'){
+    orbitT += RM ? 0 : 0.0012;
+    wantLook.set(0, 3, 0); want.set(Math.sin(orbitT)*30, 72, -92 - Math.cos(orbitT)*8); return;
+  }
+  const narrow = camera.aspect < 1;
+  const o = new THREE.Vector3(0, narrow ? 12.5 : 9, narrow ? -16 : -12.5).multiplyScalar(zoom);
+  want.copy(farmer.position).add(o);
+  wantLook.copy(farmer.position).add(new THREE.Vector3(0, 1.2, 3));
+  if(phase==='ask' || phase==='reveal'){ wantLook.z -= 4.5*zoom; want.z -= 2*zoom; }
+}
+function snapCam(){ computeWant(); camPos.copy(want); camLook.copy(wantLook); }
+function resize(){ const w = app.clientWidth, h = app.clientHeight; renderer.setSize(w,h,false); camera.aspect = w/h; camera.fov = camera.aspect < 1 ? 62 : 50; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+
+/* ---------- loop ---------- */
+let yaw = Math.PI/2, fy = 0, walkT = 0, hereCell = null;
+const SPEED = 9;
+function blocked(x,z,nx,nz){
+  if(Math.abs(nx) > XLIM || nz > ZFRONT || nz < ZBACK) return true;
+  const d = Math.hypot(nx-x, nz-z) || 1, ax = x+(nx-x)/d*.6, az = z+(nz-z)/d*.6;
+  return H(ax,az) - H(x,z) > 0.6;
+}
+const cellAt = (x,z) => qCells.find(c=> Math.abs(x - colX(c.el.c)) < W/2 && z >= zb(c.el.p-1)+0.3 && z < zb(c.el.p)) || null;
+const clock = new THREE.Clock();
+farmer.position.set(START.x, H(START.x,START.z), START.z); fy = farmer.position.y;
+resize(); snapCam();
+let stopped = false;
+function tick(){
+  if(stopped) return;
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  if(running && !reason && Date.now() >= deadline) finish('timeout');
+  if(running || phase==='end'){
+    const left = ((reason ? endedAt : Date.now()) <= deadline ? deadline - (reason ? endedAt : Date.now()) : 0)/1000;
+    $('time').textContent = fmt(left); $('tbar').style.transform = `scaleX(${Math.max(0,left/TOTAL)})`;
+    $('clock').classList.toggle('low', left <= 30);
+  }
+  let vx = 0, vz = 0;
+  if(running && !locked && phase==='walk'){
+    if(keys.ArrowLeft||keys.KeyA) vx -= 1; if(keys.ArrowRight||keys.KeyD) vx += 1;
+    if(keys.ArrowUp||keys.KeyW) vz -= 1; if(keys.ArrowDown||keys.KeyS) vz += 1;
+    vx += joy.x; vz += joy.y;
+    vx = -vx; vz = -vz;   // camera looks from the chu kì 1 side, so screen directions are mirrored
+  }
+  let len = Math.hypot(vx,vz); if(len > 1){ vx/=len; vz/=len; len = 1; }
+  const moving = len > .1, p = farmer.position;
+  if(moving){
+    const sx = vx*SPEED*dt, sz = vz*SPEED*dt;
+    if(!blocked(p.x,p.z,p.x+sx,p.z+sz)){ p.x += sx; p.z += sz; }
+    else if(sx && !blocked(p.x,p.z,p.x+sx,p.z)) p.x += sx;
+    else if(sz && !blocked(p.x,p.z,p.x,p.z+sz)) p.z += sz;
+    const ty = Math.atan2(vx,vz), diff = ((ty-yaw+Math.PI*3) % (Math.PI*2)) - Math.PI;
+    yaw += diff*Math.min(1, dt*12); walkT += dt*11;
+  }
+  const gy = H(p.x,p.z); fy = gy > fy ? gy : fy + (gy-fy)*Math.min(1, dt*10); p.y = fy;
+  farmer.rotation.y = yaw;
+  const sw = moving ? Math.sin(walkT) : 0;
+  legs[0].rotation.x = sw*.6; legs[1].rotation.x = -sw*.6; arms[0].rotation.x = -sw*.5; arms[1].rotation.x = sw*.5;
+  fb.position.y = moving ? Math.abs(Math.sin(walkT))*.06 : Math.sin(t*2)*.01; hat.rotation.z = sw*.03;
+  turnSprite.visible = running && phase==='walk';
+  if(running && !locked && phase==='walk'){
+    hereCell = cellAt(p.x,p.z);
+    const act = $('act');
+    if(hereCell && !hereCell.done){ act.hidden = false; act.textContent = `Mở ô bí ẩn · ${STAGES[hereCell.stage].pts} điểm (E)`; } else act.hidden = true;
+  } else hereCell = null;
+  qCells.forEach((c,i)=>{ c.badge.position.y = 4.3 + (RM ? 0 : Math.sin(t*2+i)*.18); if(c.ring.visible) c.ring.material.opacity = .55 + (RM ? 0 : Math.sin(t*4+i)*.3); });
+  boat.position.y = -.7 + Math.sin(t*1.3)*.04;
+  updateLife(dt, t);
+  sun.position.set(p.x+18, p.y+34, p.z-22); sun.target.position.set(p.x, p.y, p.z+4);
+  computeWant();
+  const k = 1 - Math.exp(-dt*(phase==='setup' || phase==='join' ? 1 : 4));
+  camPos.lerp(want,k); camLook.lerp(wantLook,k); camera.position.copy(camPos); camera.lookAt(camLook);
+  if(running || phase==='end') drawMap();
+  renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(tick);
+if(document.fonts && document.fonts.load){
+  Promise.all([document.fonts.load(`800 60px ${FONT}`), document.fonts.load(`600 40px ${FONT}`), document.fonts.load(`700 40px ${FONT}`)]).then(()=>{ ELS.forEach(e=> redraw(e.tex)); BOARD_TEX.forEach(redraw); qCells.forEach(refreshStake); drawTurn(); }).catch(()=>{});
+}
+if(!restore()) $('fClass').focus();
+setInterval(()=>{ if(running && !reason) save(); }, 5000);
+})();
+
+</script>
+</body>
+</html>
