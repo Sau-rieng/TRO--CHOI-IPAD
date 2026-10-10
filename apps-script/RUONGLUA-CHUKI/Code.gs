@@ -6,7 +6,7 @@
  *  2. Trong Sheet đó: Tiện ích mở rộng → Apps Script → xoá nội dung có sẵn, dán toàn bộ file này vào Code.gs → Lưu.
  *  3. Chọn hàm caiDat → Chạy (một lần) → cấp quyền. Sheet sẽ có 2 trang tính:
  *       CauHinh : mã giáo viên (7070), mã mở khoá (7979), thời gian chơi (phút). Giáo viên đổi mã ngay tại đây.
- *       KetQua  : mỗi học sinh một dòng.
+ *       KetQua  : mỗi lượt chơi của một nhóm một dòng.
  *  4. Triển khai → Tùy chọn triển khai mới → Ứng dụng web:
  *       Thực thi với tư cách: Tôi
  *       Người có quyền truy cập: Bất kỳ ai
@@ -22,7 +22,7 @@
 const RESULT_SHEET = 'KetQua';
 const CONFIG_SHEET = 'CauHinh';
 const CLASSES = ['9D01', '9D02', '9D03', '10E01', '12G01', '12G02'];
-const HEADERS = ['Thời điểm gửi', 'Lớp', 'Nhóm', 'Họ và tên', 'Điểm', 'Số câu đúng', 'Số câu đã trả lời',
+const HEADERS = ['Thời điểm gửi', 'Lớp', 'Nhóm', 'Điểm', 'Số câu đúng', 'Số câu đã trả lời',
   'Đăng nhập lúc', 'Thoát lúc', 'Thời gian chơi', 'Kết thúc', 'Số lần rời màn hình', 'Chi tiết câu trả lời', 'Mã lượt chơi'];
 
 /** Chạy một lần để tạo trang tính và cấp quyền. */
@@ -83,7 +83,7 @@ function unlock_(p) {
   return String(p.code || '').trim() === config_().unlock ? { ok: true } : { ok: false, error: 'code' };
 }
 
-/* ---------------- Kết quả: mỗi học sinh một dòng ---------------- */
+/* ---------------- Kết quả: mỗi lượt chơi của một nhóm một dòng ---------------- */
 
 function getResultSheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -93,14 +93,14 @@ function getResultSheet_() {
     sh.appendRow(HEADERS);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#eeeeee');
     sh.setFrozenRows(1);
-    ['A:A', 'H:H', 'I:I'].forEach(function (c) { sh.getRange(c).setNumberFormat('dd/MM/yyyy HH:mm:ss'); });
+    ['A:A', 'G:G', 'H:H'].forEach(function (c) { sh.getRange(c).setNumberFormat('dd/MM/yyyy HH:mm:ss'); });
   }
   return sh;
 }
 
 function saveResult_(p) {
-  const lop = clean_(p.lop, 10), group = clean_(p.group, 20), name = clean_(p.name, 60), id = clean_(p.id, 40);
-  if (CLASSES.indexOf(lop) < 0 || !group || !name || !id) throw new Error('Dữ liệu không hợp lệ');
+  const lop = clean_(p.lop, 10), group = clean_(p.group, 20), id = clean_(p.id, 40);
+  if (CLASSES.indexOf(lop) < 0 || !group || !id) throw new Error('Dữ liệu không hợp lệ');
   const start = Number(p.startedAt) || 0, end = Number(p.endedAt) || 0;
   const secs = start && end ? Math.max(0, Math.round((end - start) / 1000)) : 0;
   const used = Math.floor(secs / 60) + ':' + ('0' + secs % 60).slice(-2);
@@ -113,7 +113,7 @@ function saveResult_(p) {
       const ids = sh.getRange(2, HEADERS.length, last - 1, 1).getValues();
       for (let i = 0; i < ids.length; i++) if (ids[i][0] === id) return { ok: true, duplicate: true };
     }
-    sh.appendRow([new Date(), lop, group, name, Number(p.score) || 0, Number(p.correct) || 0, Number(p.answered) || 0,
+    sh.appendRow([new Date(), lop, group, Number(p.score) || 0, Number(p.correct) || 0, Number(p.answered) || 0,
       start ? new Date(start) : '', end ? new Date(end) : '', used, clean_(p.reason, 40), Number(p.violations) || 0,
       clean_(p.detail, 1500), id]);
     return { ok: true };

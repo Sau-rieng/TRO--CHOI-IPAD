@@ -268,8 +268,6 @@ summary{cursor:pointer;font-weight:700}
             <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
             <label for="fGroup">Nhóm</label>
             <select id="fGroup"><option value="">Chọn nhóm</option><option>Nhóm 1</option><option>Nhóm 2</option><option>Nhóm 3</option><option>Nhóm 4</option><option>Nhóm 5</option><option>Nhóm 6</option><option>Nhóm 7</option><option>Nhóm 8</option></select>
-            <label for="fName">Họ và tên</label>
-            <input id="fName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A">
             <label for="fCode">Mã giáo viên</label>
             <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
           </div>
@@ -973,7 +971,7 @@ function drawTurn(){
 const SAVE_KEY = 'ruonglua-chuki-v2';
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần', quit:'Tự thoát'};
-let player = null;              // {lop, group, name}
+let player = null;              // {lop, group}
 let teams = [];                 // the player, shaped for the score chip and the badge above the farmer
 let turn = 0, opened = 0, history = [];
 let startedAt = 0, deadline = 0, endedAt = 0, TOTAL = 300;
@@ -1039,17 +1037,17 @@ function hideAll(){
 function showOnly(id){ ['setup','result','lock','deck','quit'].forEach(m=> $(m).hidden = m!==id); }
 function showHud(on){ ['top','mapbox','hint','joy','zoom'].forEach(m=> $(m).hidden = !on); if(!on) $('act').hidden = true; }
 
-/* ---------- login: lớp, nhóm, họ tên + mã giáo viên (checked in Google Drive) ---------- */
+/* ---------- login: lớp, nhóm + mã giáo viên (checked in Google Drive) ---------- */
 $('setupForm').addEventListener('submit', async e=>{
   e.preventDefault();
-  const lop = $('fClass').value, group = $('fGroup').value, name = $('fName').value.trim().replace(/\s+/g,' '), code = $('fCode').value.trim();
+  const lop = $('fClass').value, group = $('fGroup').value, code = $('fCode').value.trim(), name = group;
   const err = $('setupErr'), btn = $('goBtn');
   const fail = t => { err.textContent = t; err.hidden = false; };
-  const miss = [!lop && 'lớp', !group && 'nhóm', !name && 'họ và tên', !code && 'mã giáo viên'].filter(Boolean);
+  const miss = [!lop && 'lớp', !group && 'nhóm', !code && 'mã giáo viên'].filter(Boolean);
   if(miss.length) return fail('Cần nhập ' + miss.join(', ') + '.');
   err.hidden = true; btn.disabled = true; btn.textContent = 'Đang kiểm tra mã…';
   try{
-    const r = await api({kind:'login', code, lop, group, name});
+    const r = await api({kind:'login', code, lop, group});
     if(!r.ok){ $('fCode').value = ''; $('fCode').focus(); return fail(r.error==='code' ? 'Mã giáo viên không đúng.' : (r.error || 'Máy chủ từ chối đăng nhập.')); }
     $('fCode').value = '';
     player = {lop, group, name};
@@ -1140,9 +1138,9 @@ function showEnd(){
   showOnly('result');
   const t = teams[0];
   $('rEyebrow').textContent = `${player.lop} · ${player.group} · ${REASONS[reason] || ''}`;
-  $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Em đã thoát trò chơi'}[reason] || 'Em đã mở đủ 10 ô lúa';
+  $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Nhóm đã thoát trò chơi'}[reason] || 'Nhóm đã mở đủ 10 ô lúa';
   $('rTotal').innerHTML = `<b>${t.score}</b> điểm · ${t.correct}/${opened} câu đúng`;
-  $('rank').innerHTML = `<li class="info"><span>Họ và tên</span><b>${esc(t.name)}</b></li><li class="info"><span>Lớp · Nhóm</span><b>${esc(player.lop)} · ${esc(player.group)}</b></li>`+
+  $('rank').innerHTML = `<li class="info"><span>Lớp · Nhóm</span><b>${esc(player.lop)} · ${esc(player.group)}</b></li>`+
     `<li class="info"><span>Đăng nhập lúc</span><b>${clock24(startedAt)}</b></li>`+
     `<li class="info"><span>Thoát lúc</span><b>${clock24(endedAt)}</b></li><li class="info"><span>Thời gian chơi</span><b>${fmt((endedAt-startedAt)/1000)}</b></li>`;
   const ordered = history.concat(qCells.filter(c=>!c.done).sort((a,b)=>a.stage-b.stage));
@@ -1152,7 +1150,7 @@ function showEnd(){
 }
 function buildReport(){
   const t = teams[0];
-  return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group, name:player.name,
+  return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group,
     score:t.score, correct:t.correct, answered:t.answered, startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves,
     detail: history.map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): chọn ${'ABCD'[c.chosen]}, ${c.ok ? 'đúng' : 'sai'}`).join('; ')};
 }
@@ -1171,7 +1169,7 @@ async function sendResult(){
     submitted = true; save(); show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok');
   }catch(err){
     try{ await fetch(SHEET_URL, {method:'POST', mode:'no-cors', body, headers}); submitted = 'maybe'; save();
-      show('Đã gửi nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy kết quả của em, hãy bấm Gửi lại.', '', true); }
+      show('Đã gửi nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy kết quả của nhóm, hãy bấm Gửi lại.', '', true); }
     catch(e2){ show('Chưa gửi được kết quả' + (navigator.onLine===false ? ' (máy đang mất mạng)' : '') + '. Kiểm tra mạng rồi bấm Gửi lại.', 'bad', true); }
   }finally{ sending = false; }
 }
@@ -1196,7 +1194,7 @@ function lockGame(){
 }
 function showLock(){
   locked = true; clearKeys(); $('quit').hidden = true;
-  $('lockMsg').textContent = `${player.name} (${player.lop}, ${player.group}) đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để chơi tiếp. Đồng hồ vẫn chạy. Nếu rời màn hình thêm lần nữa, trò chơi sẽ kết thúc ngay và gửi điểm.`;
+  $('lockMsg').textContent = `${player.group} (${player.lop}) đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để chơi tiếp. Đồng hồ vẫn chạy. Nếu rời màn hình thêm lần nữa, trò chơi sẽ kết thúc ngay và gửi điểm.`;
   $('uCode').value = ''; $('lockErr').hidden = true; $('lock').hidden = false;
   save();
 }
