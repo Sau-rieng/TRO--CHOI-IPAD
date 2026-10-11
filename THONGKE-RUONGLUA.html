@@ -57,6 +57,10 @@ th:first-child,td:first-child{text-align:left}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 td.none{color:var(--muted)}
 .msg{margin:0;font-weight:600}
+.auto{display:flex!important;align-items:center;gap:8px;grid-auto-flow:column;align-self:center;padding-top:18px}
+.auto input{width:20px;height:20px;min-height:0;accent-color:var(--bar)}
+.newbadge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--bar);color:#fff;font-weight:700;font-size:12px}
+#chart .bar.flash{fill:var(--mean)}
 .msg.bad{color:var(--warn)}
 .gate{max-width:420px;display:grid;gap:10px}
 .gate .row{display:flex;gap:8px}
@@ -82,6 +86,7 @@ td.none{color:var(--muted)}
       <label>Bảng kết quả (ca chơi)<select id="fSheet"><option value="">Tất cả các bảng</option></select></label>
       <label>Lớp<select id="fClass"><option value="">Tất cả các lớp</option></select></label>
       <label>Ngày chơi<select id="fDay"><option value="">Tất cả các ngày</option></select></label>
+      <label class="auto"><input type="checkbox" id="fAuto" checked> Tự cập nhật mỗi 15 giây</label>
       <p class="sub" id="updated" style="margin:0 0 6px auto"></p>
     </div>
 
@@ -120,28 +125,36 @@ const num = (v, d=1) => Number.isFinite(v) ? v.toLocaleString('vi-VN', {minimumF
 const dayKey = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const dayLabel = k => { const [y,m,d] = k.split('-'); return `${d}/${m}/${y}`; };
 
-async function load(){
+let loading = false, firstLoad = true;
+async function load(silent){
   const err = $('gateErr'), btn = $('goBtn');
   if(!SHEET_URL){ err.textContent = 'Chưa có link Google Sheet.'; err.hidden = false; return; }
-  btn.disabled = true; btn.textContent = 'Đang tải…'; $('reload').disabled = true;
+  if(loading) return; loading = true;
+  if(!silent){ btn.disabled = true; btn.textContent = 'Đang tải…'; $('reload').disabled = true; }
   try{
     const res = await fetch(SHEET_URL, {method:'POST', body:JSON.stringify({kind:'stats', code}), headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow'});
     const j = await res.json();
     if(!j.ok){
+      if(silent && j.error!=='code'){ $('updated').textContent = 'Máy chủ báo lỗi, sẽ thử lại sau 15 giây'; return; }
       err.textContent = j.error==='code' ? 'Mã giáo viên không đúng.' : (j.error==='Yêu cầu không hợp lệ' ? 'Máy chủ chưa có phần thống kê: hãy cập nhật Code.gs mới và triển khai phiên bản mới.' : 'Máy chủ báo lỗi: ' + j.error);
       err.hidden = false; $('gate').hidden = false; $('report').hidden = true; return;
     }
+    const before = rows.length;
     rows = (j.rows||[]).map(r=>({t:r[0], lop:r[1], group:r[2], score:r[3], correct:r[4], answered:r[5], sheet:r[6]||''}));
     sheets = j.sheets || [...new Set(rows.map(r=>r.sheet))]; current = j.current || '';
     err.hidden = true; $('gate').hidden = true; $('report').hidden = false; $('reload').hidden = false;
-    $('updated').textContent = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+    const added = firstLoad ? 0 : rows.length - before; firstLoad = false;
+    $('updated').innerHTML = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) + (added > 0 ? `<span class="newbadge">+${added} lượt mới</span>` : '');
     fillFilters(); render();
   }catch(ex){
-    err.textContent = 'Không kết nối được Google Sheet. Kiểm tra mạng rồi thử lại.'; err.hidden = false;
-  }finally{ btn.disabled = false; btn.textContent = 'Xem thống kê'; $('reload').disabled = false; }
+    if(silent) $('updated').textContent = 'Mất kết nối, sẽ thử lại sau 15 giây';
+    else { err.textContent = 'Không kết nối được Google Sheet. Kiểm tra mạng rồi thử lại.'; err.hidden = false; }
+  }finally{ loading = false; if(!silent){ btn.disabled = false; btn.textContent = 'Xem thống kê'; $('reload').disabled = false; } }
 }
-$('gate').addEventListener('submit', e=>{ e.preventDefault(); code = $('code').value.trim(); if(code) load(); });
-$('reload').onclick = load;
+setInterval(()=>{ if(code && !$('report').hidden && $('fAuto').checked && !document.hidden) load(true); }, 15000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && code && !$('report').hidden && $('fAuto').checked) load(true); });
+$('gate').addEventListener('submit', e=>{ e.preventDefault(); code = $('code').value.trim(); if(code) load(false); });
+$('reload').onclick = ()=> load(false);
 
 function fillFilters(){
   const keepS = $('fSheet').dataset.init ? $('fSheet').value : (sheets.includes(current) ? current : '');
@@ -182,28 +195,49 @@ function render(){
 }
 
 function niceMax(v){ if(!(v>0)) return 50; const step = v > 150 ? 50 : v > 60 ? 20 : 10; return Math.ceil(v*1.12/step)*step; }
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let shown = {}, shownMean = NaN, anim = 0;
 function drawChart(S){
   const svg = $('chart'), W = Math.max(320, svg.parentElement.clientWidth - 4), Hh = 320;
   const m = {l:44, r:16, t:24, b:36}, iw = W-m.l-m.r, ih = Hh-m.t-m.b;
   const top = Math.min(MAX_SCORE, niceMax(Math.max(S.avg||0, ...S.by.map(b=> b.n ? b.avg : 0))));
   const y = v => m.t + ih - v/top*ih, band = iw / S.by.length, bw = Math.min(56, band*0.56);
   const ticks = []; const st = top <= 60 ? 10 : top <= 150 ? 30 : 50; for(let v=0; v<=top; v+=st) ticks.push(v);
+  const barD = (x, v) => { const yt = y(v), h = Math.max(2, y(0)-yt), r = Math.min(4, h/2); return `M${x},${y(0)} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+bw-r} Q${x+bw},${yt} ${x+bw},${yt+r} V${y(0)} Z`; };
   let s = `<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}">`;
   ticks.forEach(v=>{ s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`; });
+  const moving = [];
   S.by.forEach((b,i)=>{
     const cx = m.l + band*i + band/2, x = cx - bw/2;
     s += `<text x="${cx}" y="${Hh-12}" text-anchor="middle">${esc(b.g)}</text>`;
     if(!b.n){ s += `<text x="${cx}" y="${y(0)-8}" text-anchor="middle" style="fill:var(--muted)">chưa chơi</text>`; return; }
-    const h = Math.max(2, ih - (y(b.avg)-m.t)), yt = y(b.avg), r = Math.min(4, h/2);
+    const from = Number.isFinite(shown[b.g]) ? shown[b.g] : 0;
     s += `<rect class="hit" data-i="${i}" x="${cx-band/2}" y="${m.t}" width="${band}" height="${ih}" fill="transparent"/>`;
-    s += `<path class="bar" data-i="${i}" d="M${x},${y(0)} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+bw-r} Q${x+bw},${yt} ${x+bw},${yt+r} V${y(0)} Z"/>`;
-    s += `<text class="val" x="${cx}" y="${yt-7}" text-anchor="middle">${num(b.avg)}</text>`;
+    s += `<path class="bar${from !== b.avg && Number.isFinite(shown[b.g]) ? ' flash' : ''}" data-i="${i}" d="${barD(x, RM ? b.avg : from)}"/>`;
+    s += `<text class="val" data-i="${i}" x="${cx}" y="${y(RM ? b.avg : from)-7}" text-anchor="middle">${num(RM ? b.avg : from)}</text>`;
+    if(from !== b.avg) moving.push({i, x, from, to:b.avg});
   });
   s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink2)" stroke-width="1"/>`;
-  if(S.n){ const ym = y(S.avg); s += `<line x1="${m.l}" x2="${W-m.r}" y1="${ym}" y2="${ym}" stroke="var(--mean)" stroke-width="2"/><text class="mlab" x="${W-m.r}" y="${ym-6}" text-anchor="end">TB chung ${num(S.avg)}</text>`; }
+  const m0 = Number.isFinite(shownMean) ? shownMean : (S.avg || 0);
+  if(S.n){ const ym = y(RM ? S.avg : m0); s += `<line class="mline" x1="${m.l}" x2="${W-m.r}" y1="${ym}" y2="${ym}" stroke="var(--mean)" stroke-width="2"/><text class="mlab" x="${W-m.r}" y="${ym-6}" text-anchor="end">TB chung ${num(RM ? S.avg : m0)}</text>`; }
   s += '</svg>';
   svg.outerHTML = s.replace('<svg ', '<svg id="chart" role="img" aria-label="Biểu đồ cột điểm trung bình của các nhóm" ');
   const tip = $('tip'), el = $('chart');
+  // glide every changed bar, its label and the mean line to the new value
+  cancelAnimationFrame(anim);
+  if(!RM && (moving.length || (S.n && m0 !== S.avg))){
+    const t0 = performance.now(), D = 900, ease = t => 1 - Math.pow(1-t, 3);
+    const bars = moving.map(mv=> ({...mv, p:el.querySelector(`.bar[data-i="${mv.i}"]`), t:el.querySelector(`.val[data-i="${mv.i}"]`)}));
+    const ml = el.querySelector('.mline'), mt = el.querySelector('.mlab');
+    const step = now => {
+      const k = ease(Math.min(1, (now - t0)/D));
+      bars.forEach(b=>{ const v = b.from + (b.to - b.from)*k; b.p.setAttribute('d', barD(b.x, v)); b.t.setAttribute('y', y(v)-7); b.t.textContent = num(k===1 ? b.to : v); });
+      if(ml){ const v = m0 + (S.avg - m0)*k; ml.setAttribute('y1', y(v)); ml.setAttribute('y2', y(v)); mt.setAttribute('y', y(v)-6); mt.textContent = 'TB chung ' + num(k===1 ? S.avg : v); }
+      if(k < 1) anim = requestAnimationFrame(step); else setTimeout(()=> el.querySelectorAll('.bar.flash').forEach(p=> p.classList.remove('flash')), 1200);
+    };
+    anim = requestAnimationFrame(step);
+  }
+  shown = {}; S.by.forEach(b=>{ if(b.n) shown[b.g] = b.avg; }); shownMean = S.n ? S.avg : NaN;
   el.querySelectorAll('.hit').forEach(h=>{
     const b = S.by[+h.dataset.i], bar = el.querySelector(`.bar[data-i="${h.dataset.i}"]`);
     h.addEventListener('pointermove', e=>{
