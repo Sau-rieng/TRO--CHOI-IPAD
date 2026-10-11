@@ -96,6 +96,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 .qhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tag{font-family:var(--display);font-weight:800;font-size:17px;border-radius:10px;padding:2px 10px;background:var(--c);color:var(--ink)}
 .tag.n{background:var(--ink);color:var(--paper)}
+.qfig{display:flex;justify-content:center;overflow-x:auto;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px}
+.qfig svg{max-width:100%;height:auto;max-height:170px}
+.qfig svg.orb{height:clamp(64px,11vh,96px);width:auto}
+.qfig svg.bohr{height:clamp(110px,18vh,160px);width:auto}
 .qtext{font-weight:700;font-size:clamp(18px,2.3vw,28px);line-height:1.3;margin:0;text-wrap:balance}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .opt{display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:clamp(15px,1.7vw,21px);font-weight:600;line-height:1.3;min-width:0}
@@ -241,6 +245,7 @@ summary{cursor:pointer;font-weight:700}
     <div class="qcard" role="dialog" aria-labelledby="qtext">
       <div class="qhead"><span class="tag n" id="qnum">Câu 1</span><span class="tag n" id="qplace"></span><span class="tag" id="qstage"></span><span class="qwho" id="qwho"></span></div>
       <p class="qtext" id="qtext"></p>
+      <div class="qfig" id="qfig" hidden></div>
       <div class="opts" id="opts"></div>
       <div class="why" id="why" hidden></div>
       <div class="ctrl" id="ctrl"></div>
@@ -355,97 +360,167 @@ const STAGES = [
 ];
 const STAGE_OF_P = [0,0,1,2,3,4,4,4];
 ELS.forEach(e=> e.stage = STAGE_OF_P[e.p]);
-/* Facts for the elements that can hold a question (names follow IUPAC, as in SGK Hoá 10 Kết nối tri thức) */
-const INFO = {
-  H:{name:'hydrogen', cfg:'1s¹', desc:'nhẹ nhất trong các nguyên tố, cùng oxygen tạo nên nước', wrong:['He','Hy','O']},
-  He:{name:'helium', cfg:'1s²', desc:'khí hiếm rất nhẹ, dùng bơm bóng bay', wrong:['H','Hl','Ne']},
-  Li:{name:'lithium', cfg:'1s²2s¹', desc:'kim loại nhẹ nhất, dùng làm pin điện thoại, xe điện', wrong:['L','Ln','Na']},
-  Be:{name:'beryllium', cfg:'1s²2s²', desc:'kim loại nhẹ và cứng, dùng trong hợp kim chế tạo máy bay', wrong:['B','Br','Ba']},
-  B:{name:'boron', cfg:'1s²2s²2p¹', desc:'nguyên tố có trong hàn the, dùng làm thuỷ tinh chịu nhiệt', wrong:['Be','Bo','Br']},
-  C:{name:'carbon', cfg:'1s²2s²2p²', desc:'có trong than chì, kim cương và mọi hợp chất hữu cơ', wrong:['Ca','Cb','Cl']},
-  N:{name:'nitrogen', cfg:'1s²2s²2p³', desc:'khí chiếm khoảng 78% thể tích không khí', wrong:['Ni','Na','Ne']},
-  O:{name:'oxygen', cfg:'1s²2s²2p⁴', desc:'khí duy trì sự sống và sự cháy', wrong:['Ox','Os','Og']},
-  F:{name:'fluorine', cfg:'1s²2s²2p⁵', desc:'phi kim hoạt động mạnh nhất, hợp chất của nó có trong kem đánh răng chống sâu răng', wrong:['Fl','Fe','Fr']},
-  Ne:{name:'neon', cfg:'1s²2s²2p⁶', desc:'khí hiếm phát ánh sáng đỏ cam trong đèn quảng cáo', wrong:['N','Ni','Na']},
-  Na:{name:'sodium', cfg:'1s²2s²2p⁶3s¹', desc:'kim loại mềm, hợp chất chloride của nó là muối ăn', wrong:['S','So','N']},
-  Mg:{name:'magnesium', cfg:'1s²2s²2p⁶3s²', desc:'kim loại cháy cho ánh sáng trắng chói, dùng làm pháo sáng', wrong:['Mn','Ma','M']},
-  Al:{name:'aluminium', cfg:'1s²2s²2p⁶3s²3p¹', desc:'kim loại nhẹ dùng làm nồi, khung cửa, vỏ lon nước', wrong:['Am','A','Ag']},
-  Si:{name:'silicon', cfg:'1s²2s²2p⁶3s²3p²', desc:'nguyên tố làm chip bán dẫn, pin mặt trời, có nhiều trong cát', wrong:['S','Sn','Sc']},
-  P:{name:'phosphorus', cfg:'1s²2s²2p⁶3s²3p³', desc:'có trong đầu que diêm và phân lân', wrong:['Ph','Po','K']},
-  S:{name:'sulfur', cfg:'1s²2s²2p⁶3s²3p⁴', desc:'chất rắn màu vàng, dùng sản xuất sulfuric acid', wrong:['Su','Sn','Si']},
-  Cl:{name:'chlorine', cfg:'1s²2s²2p⁶3s²3p⁵', desc:'khí màu vàng lục dùng khử trùng nước sinh hoạt', wrong:['C','Ch','Ca']},
-  Ar:{name:'argon', cfg:'1s²2s²2p⁶3s²3p⁶', desc:'khí hiếm chiếm gần 1% thể tích không khí', wrong:['Ag','Au','Al']},
-  K:{name:'potassium', cfg:'1s²2s²2p⁶3s²3p⁶4s¹', short:'[Ar]4s¹', desc:'kim loại có trong phân kali', wrong:['P','Po','Ka']},
-  Ca:{name:'calcium', cfg:'1s²2s²2p⁶3s²3p⁶4s²', short:'[Ar]4s²', desc:'có trong đá vôi, vỏ sò, xương và răng', wrong:['C','Cl','Cu']},
-  Fe:{name:'iron', cfg:'1s²2s²2p⁶3s²3p⁶3d⁶4s²', short:'[Ar]3d⁶4s²', desc:'kim loại dùng làm thép, có trong hemoglobin của máu', wrong:['F','Ir','Fr'], bWhy:'electron cuối điền vào phân lớp 3d, có 6 + 2 = 8 electron hoá trị (3d⁶4s²)', bWrong:['VIB','IIA','VIIIA']},
-  Zn:{name:'zinc', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²', short:'[Ar]3d¹⁰4s²', desc:'kim loại dùng mạ tôn chống gỉ', wrong:['Z','Zi','Sn'], bWhy:'cấu hình kết thúc bằng 3d¹⁰4s², phân lớp d đã bão hoà, 2 electron ở 4s', bWrong:['IIA','VIIIB','IB']},
-  Br:{name:'bromine', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²4p⁵', short:'[Ar]3d¹⁰4s²4p⁵', desc:'phi kim duy nhất ở thể lỏng, màu nâu đỏ', wrong:['B','Bo','Ba']},
-  Kr:{name:'krypton', cfg:'1s²2s²2p⁶3s²3p⁶3d¹⁰4s²4p⁶', short:'[Ar]3d¹⁰4s²4p⁶', desc:'khí hiếm', wrong:['K','Cr','Kp']},
-  Rb:{name:'rubidium', short:'[Kr]5s¹'}, Sr:{name:'strontium', short:'[Kr]5s²'}, Sn:{name:'tin', short:'[Kr]4d¹⁰5s²5p²'},
-  I:{name:'iodine', short:'[Kr]4d¹⁰5s²5p⁵'}, Xe:{name:'xenon', short:'[Kr]4d¹⁰5s²5p⁶'},
-  Cs:{name:'caesium', short:'[Xe]6s¹'}, Ba:{name:'barium', short:'[Xe]6s²'}, Pb:{name:'lead', short:'[Xe]4f¹⁴5d¹⁰6s²6p²'}, Rn:{name:'radon', short:'[Xe]4f¹⁴5d¹⁰6s²6p⁶'},
-  Fr:{name:'francium', short:'[Rn]7s¹'}, Ra:{name:'radium', short:'[Rn]7s²'},
+/* ================= Question bank: built from each element's electron configuration =================
+   Names follow IUPAC, as in SGK Hoá 10 Kết nối tri thức. Configurations are generated by the Aufbau order;
+   elements with exceptional configurations (Cr, Cu, Nb, Mo, Ru, Rh, Pd, Ag, Pt, Au…) are left out of the bank. */
+const NAME = {1:'hydrogen',2:'helium',3:'lithium',4:'beryllium',5:'boron',6:'carbon',7:'nitrogen',8:'oxygen',9:'fluorine',10:'neon',
+  11:'sodium',12:'magnesium',13:'aluminium',14:'silicon',15:'phosphorus',16:'sulfur',17:'chlorine',18:'argon',19:'potassium',20:'calcium',
+  21:'scandium',22:'titanium',23:'vanadium',25:'manganese',26:'iron',27:'cobalt',28:'nickel',30:'zinc',31:'gallium',32:'germanium',
+  33:'arsenic',34:'selenium',35:'bromine',36:'krypton',37:'rubidium',38:'strontium',48:'cadmium',49:'indium',50:'tin',51:'antimony',
+  52:'tellurium',53:'iodine',54:'xenon',55:'caesium',56:'barium',80:'mercury',81:'thallium',82:'lead',83:'bismuth',84:'polonium',
+  85:'astatine',86:'radon',87:'francium',88:'radium'};
+const DESC = {
+  H:['nhẹ nhất trong các nguyên tố, cùng oxygen tạo nên nước',['He','Hy','O']],
+  He:['khí hiếm rất nhẹ, dùng bơm bóng bay',['H','Hl','Ne']],
+  Li:['kim loại nhẹ nhất, dùng làm pin điện thoại, xe điện',['L','Ln','Na']],
+  Be:['kim loại nhẹ và cứng, dùng trong hợp kim chế tạo máy bay',['B','Br','Ba']],
+  B:['nguyên tố có trong hàn the, dùng làm thuỷ tinh chịu nhiệt',['Be','Bo','Br']],
+  C:['có trong than chì, kim cương và mọi hợp chất hữu cơ',['Ca','Cb','Cl']],
+  N:['khí chiếm khoảng 78% thể tích không khí',['Ni','Na','Ne']],
+  O:['khí duy trì sự sống và sự cháy',['Ox','Os','Og']],
+  F:['phi kim hoạt động mạnh nhất, hợp chất của nó có trong kem đánh răng chống sâu răng',['Fl','Fe','Fr']],
+  Ne:['khí hiếm phát ánh sáng đỏ cam trong đèn quảng cáo',['N','Ni','Na']],
+  Na:['kim loại mềm, hợp chất chloride của nó là muối ăn',['S','So','N']],
+  Mg:['kim loại cháy cho ánh sáng trắng chói, dùng làm pháo sáng',['Mn','Ma','M']],
+  Al:['kim loại nhẹ dùng làm nồi, khung cửa, vỏ lon nước',['Am','A','Ag']],
+  Si:['nguyên tố làm chip bán dẫn, pin mặt trời, có nhiều trong cát',['S','Sn','Sc']],
+  P:['có trong đầu que diêm và phân lân',['Ph','Po','K']],
+  S:['chất rắn màu vàng, dùng sản xuất sulfuric acid',['Su','Sn','Si']],
+  Cl:['khí màu vàng lục dùng khử trùng nước sinh hoạt',['C','Ch','Ca']],
+  Ar:['khí hiếm chiếm gần 1% thể tích không khí',['Ag','Au','Al']],
 };
 // which elements and question types each rice stage uses: higher chu kì → harder question, more points
 const STAGE_PLAN = [
-  {els:['H','He'],                                   types:['sym','z']},
-  {els:['Li','Be','B','C','N','O','F','Ne'],           types:['sym','z','p']},
-  {els:['Na','Mg','Al','Si','P','S','Cl','Ar'],        types:['p','g','sym','pg']},
-  {els:['K','Ca','Fe','Zn','Br','Kr'],                 types:['pg','g']},
-  {els:['Rb','Sr','Sn','I','Xe','Cs','Ba','Pb','Rn','Fr','Ra'], types:['pgz']},
+  {els:['H','He'], types:['sym','z','bohr_z','orb_id','e_out']},
+  {els:['Li','Be','B','C','N','O','F','Ne'], types:['sym','z','p','g','bohr_z','bohr_pg','orb_id','e_out']},
+  {els:['Na','Mg','Al','Si','P','S','Cl','Ar'], types:['sym','p','g','pg','bohr_pg','orb_id','orb_pg','e_out']},
+  {els:['K','Ca','Sc','Ti','V','Mn','Fe','Co','Ni','Zn','Ga','Ge','As','Se','Br','Kr'], types:['pg','g','z','orb_pg','short_pg']},
+  {els:['Rb','Sr','Cd','In','Sn','Sb','Te','I','Xe','Cs','Ba','Hg','Tl','Pb','Bi','Po','At','Rn','Fr','Ra'], types:['pgz','short_pg','orb_pg']},
 ];
 const ROMAN = ['','I','II','III','IV','V','VI','VII','VIII'];
 const A_GROUPS = ['IA','IIA','IIIA','IVA','VA','VIA','VIIA','VIIIA'];
-const SUP = {'⁰':0,'¹':1,'²':2,'³':3,'⁴':4,'⁵':5,'⁶':6,'⁷':7,'⁸':8,'⁹':9};
-const CORE = {He:[2], Ne:[2,8], Ar:[2,8,8], Kr:[2,8,18,8], Xe:[2,8,18,18,8], Rn:[2,8,18,32,18,8]};
-function shellsOf(cfg){
-  let sh = [], rest = cfg;
-  const m = cfg.match(/^\[(\w+)\]/); if(m){ sh = CORE[m[1]].slice(); rest = cfg.slice(m[0].length); }
-  for(const t of rest.matchAll(/(\d)([spdf])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g)){
-    const n = +t[1], k = +[...t[3]].map(c=>SUP[c]).join('');
-    while(sh.length < n) sh.push(0); sh[n-1] += k;
+const B_GROUPS = ['IIIB','IVB','VB','VIB','VIIB','VIIIB','IB','IIB'];
+const SUPD = '⁰¹²³⁴⁵⁶⁷⁸⁹', sup = n => String(n).replace(/\d/g, d=> SUPD[d]);
+const AUFBAU = ['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p','6s','4f','5d','6p','7s','5f','6d','7p'];
+const CAP = {s:2, p:6, d:10, f:14}, LORD = 'spdf';
+const CORES = [[86,'Rn'],[54,'Xe'],[36,'Kr'],[18,'Ar'],[10,'Ne'],[2,'He']];
+const fillAufbau = z => { const out = []; let left = z; for(const o of AUFBAU){ if(!left) break; const k = Math.min(CAP[o[1]], left); out.push({n:+o[0], l:o[1], e:k}); left -= k; } return out; };
+const byLayer = subs => subs.slice().sort((a,b)=> a.n-b.n || LORD.indexOf(a.l)-LORD.indexOf(b.l));
+const cfgStr = subs => subs.map(s=> `${s.n}${s.l}${sup(s.e)}`).join('');
+const CFG = {};
+function configOf(z){
+  if(CFG[z]) return CFG[z];
+  const auf = fillAufbau(z), subs = byLayer(auf), sh = [];
+  subs.forEach(s=>{ while(sh.length < s.n) sh.push(0); sh[s.n-1] += s.e; });
+  let short = cfgStr(subs), core = null, rest = subs;
+  for(const [zc, sym] of CORES){
+    if(z > zc){
+      const coreE = {}; fillAufbau(zc).forEach(s=> coreE[s.n+s.l] = s.e);
+      rest = subs.map(s=> ({...s, e: s.e - (coreE[s.n+s.l]||0)})).filter(s=> s.e > 0);
+      short = `[${sym}]` + cfgStr(rest); core = sym; break;
+    }
   }
-  return sh;
+  const last = auf[auf.length-1], nmax = sh.length;
+  const ns = (subs.find(s=> s.n===nmax && s.l==='s')||{e:0}).e, np = (subs.find(s=> s.n===nmax && s.l==='p')||{e:0}).e;
+  const nd = (subs.find(s=> s.n===nmax-1 && s.l==='d')||{e:0}).e;
+  let group, block = last.l;
+  if(z===2) group = 'VIIIA';
+  else if(block==='s' || block==='p') group = ROMAN[ns+np] + 'A';
+  else { const t = nd + ns; group = t<=7 ? ROMAN[t]+'B' : t<=10 ? 'VIIIB' : t===11 ? 'IB' : 'IIB'; }
+  // the outer (valence) subshells: ns np for s/p elements, (n-1)d ns for d elements
+  const val = block==='d' ? subs.filter(s=> (s.n===nmax-1 && s.l==='d') || (s.n===nmax && s.l==='s'))
+                          : subs.filter(s=> s.n===nmax && (s.l==='s' || s.l==='p'));
+  return CFG[z] = {subs, full:cfgStr(subs), short, core, sh, group, block, nd, ns, np, val, nmax};
 }
+
+/* ---------- pictures used inside questions ---------- */
+function bohrSVG(sh, label='X'){
+  const n = sh.length, R0 = 15, step = Math.min(15, 62/n), S = 2*(R0+step*n)+16, c = S/2;
+  let s = `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" class="bohr" aria-label="Mô hình các lớp electron của nguyên tử ${label}"><circle cx="${c}" cy="${c}" r="${R0-2}" fill="#e9b736" stroke="#1e2b1c" stroke-width="1.5"/><text x="${c}" y="${c+5}" text-anchor="middle" font-size="14" font-weight="800" fill="#1e2b1c" font-family="Be Vietnam Pro, Arial">${label}</text>`;
+  sh.forEach((e,i)=>{ const r = R0 + step*(i+1); s += `<circle cx="${c}" cy="${c}" r="${r.toFixed(1)}" fill="none" stroke="#5f6b55" stroke-width="1.2"/>`;
+    for(let k=0;k<e;k++){ const a = k/e*Math.PI*2 - Math.PI/2; s += `<circle cx="${(c+Math.cos(a)*r).toFixed(1)}" cy="${(c+Math.sin(a)*r).toFixed(1)}" r="${e>10?2.4:3.4}" fill="#23824f"/>`; } });
+  return s + '</svg>';
+}
+function orbSVG(subs, prefix){
+  const B = 26, GAP = 12, PAD = prefix ? 46 : 6; let x = PAD, parts = '';
+  subs.forEach(sub=>{
+    const boxes = {s:1,p:3,d:5,f:7}[sub.l], arrows = Array(boxes).fill(0);
+    for(let k=0;k<sub.e;k++) arrows[k % boxes]++;            // Hund: one up in each box first, then pair
+    for(let b=0;b<boxes;b++){
+      parts += `<rect x="${x+b*B}" y="6" width="${B}" height="${B}" fill="#fff" stroke="#1e2b1c" stroke-width="1.5"/>`;
+      const a = arrows[b], mid = x+b*B+B/2;
+      if(a) parts += `<text x="${mid}" y="${6+B/2+7}" text-anchor="middle" font-size="19" font-weight="700" fill="#23824f" font-family="Arial, sans-serif">${a===2 ? '↑↓' : '↑'}</text>`;
+    }
+    parts += `<text x="${x + boxes*B/2}" y="${B+26}" text-anchor="middle" font-size="14" font-weight="700" fill="#1e2b1c" font-family="Be Vietnam Pro, Arial">${sub.n}${sub.l}</text>`;
+    x += boxes*B + GAP;
+  });
+  const W = x - GAP + 6, pre = prefix ? `<text x="4" y="${B/2+11}" font-size="15" font-weight="800" fill="#5f6b55" font-family="Be Vietnam Pro, Arial">${prefix}</text>` : '';
+  return `<svg viewBox="0 0 ${W} ${B+34}" width="${W}" height="${B+34}" class="orb" aria-label="Sơ đồ electron theo ô orbital">${pre}${parts}</svg>`;
+}
+
+/* ---------- explanation shown after answering ---------- */
 function placeText(e){
-  const f = INFO[e.sym], g = GROUP[e.c], cfg = f.cfg || f.short, sh = shellsOf(cfg), v = sh[sh.length-1];
+  const C = configOf(e.z), g = GROUP[e.c], name = NAME[e.z] || e.sym;
   let grp;
-  if(f.bWhy) grp = `${f.bWhy} → <b>nhóm ${g}</b>`;
-  else if(e.sym==='He') grp = `lớp ngoài cùng có 2 electron đã bão hoà (khí hiếm) → <b>nhóm VIIIA</b>`;
-  else grp = `lớp ngoài cùng có ${v} electron, electron cuối điền vào phân lớp ${g==='IA'||g==='IIA' ? 's' : 'p'} → <b>nhóm ${g}</b>`;
-  return {cfg, sh, txt:`<b>${f.name} (${e.sym})</b>, Z = ${e.z}: ${cfg}${f.short && f.cfg ? ` (viết gọn ${f.short})` : ''}. Có <b>${sh.length} lớp electron → chu kì ${e.p}</b>; ${grp}.`};
+  if(e.sym==='He') grp = `lớp ngoài cùng có 2 electron đã bão hoà (khí hiếm) → <b>nhóm VIIIA</b>`;
+  else if(C.block==='d') grp = `electron cuối điền vào phân lớp ${C.nmax-1}d (nguyên tố d); electron hoá trị (${C.nmax-1}d${sup(C.nd)}${C.nmax}s${sup(C.ns)}) có ${C.nd} + ${C.ns} = ${C.nd+C.ns} → <b>nhóm ${g}</b>`;
+  else grp = `lớp ngoài cùng có ${C.ns+C.np} electron, electron cuối điền vào phân lớp ${C.np ? 'p' : 's'} (nguyên tố ${C.np ? 'p' : 's'}) → <b>nhóm ${g}</b>`;
+  return {sh:C.sh, txt:`<b>${name} (${e.sym})</b>, Z = ${e.z}: ${C.full}${C.core ? ` (viết gọn ${C.short})` : ''}. Có <b>${C.sh.length} lớp electron → chu kì ${e.p}</b>; ${grp}.`};
 }
-function pick3(correct, cands){ return shuffle([...new Set(cands.filter(x=> x!==correct))]).slice(0,3); }
+
+/* ---------- distractors ---------- */
+function pick3(correct, cands){ return shuffle([...new Set(cands.filter(x=> x!==correct && x!==undefined && x!==null))]).slice(0,3); }
+function num3(right, cands){                       // three different wrong numbers, padded if the list runs short
+  const r = Number(right), out = pick3(r, cands.map(Number).filter(x=> x>0));
+  for(let k=1; out.length<3; k++){ if(r+k!==r && !out.includes(r+k)) out.push(r+k); }
+  return out.map(String);
+}
 function groupWrongs(e){
-  const f = INFO[e.sym], g = GROUP[e.c];
-  if(f.bWrong) return f.bWrong;
-  const i = A_GROUPS.indexOf(g), n = i+1, c = [];
-  if(i>0) c.push(A_GROUPS[i-1]); if(i<7) c.push(A_GROUPS[i+1]);
-  if(n<=8) c.push(ROMAN[n]+'B');
-  c.push(ROMAN[Math.min(8,e.p)]+'A');
-  if(i>1) c.push(A_GROUPS[i-2]); if(i<6) c.push(A_GROUPS[i+2]);
-  return pick3(g, c);
+  const g = GROUP[e.c], C = configOf(e.z), c = [];
+  if(g.endsWith('B')){
+    const i = B_GROUPS.indexOf(g);
+    c.push(ROMAN[C.ns]+'A', B_GROUPS[i-1], B_GROUPS[i+1], g.replace('B','A'), ROMAN[Math.min(8,C.nd)]+'B');
+  } else {
+    const i = A_GROUPS.indexOf(g), n = i+1;
+    c.push(A_GROUPS[i-1], A_GROUPS[i+1], n<=8 ? ROMAN[n]+'B' : null, ROMAN[Math.min(8,e.p)]+'A', A_GROUPS[i-2], A_GROUPS[i+2]);
+  }
+  return pick3(g, c.filter(Boolean));
 }
 function periodWrongs(e){
-  const v = shellsOf(INFO[e.sym].cfg || INFO[e.sym].short).slice(-1)[0];
-  return pick3(e.p, [e.p-1, e.p+1, v, e.p+2, e.p-2].filter(x=> x>=1 && x<=7));
+  const C = configOf(e.z);
+  return pick3(e.p, [e.p-1, e.p+1, C.ns+C.np, e.p+2, e.p-2, C.nmax+1].filter(x=> x>=1 && x<=7));
 }
+const symNear = z => [z-2, z-1, z+1, z+2, z+3].filter(k=> k>=1 && k<=118).map(k=> SYM[k-1]);
+
+/* ---------- one question for one element ---------- */
 function makeQuestion(e, type){
-  const f = INFO[e.sym], cfg = f.cfg || f.short, g = GROUP[e.c];
-  let q, right, wrong;
-  if(type==='sym'){ q = `Nguyên tố ${f.name} (${f.desc}) có kí hiệu hoá học là gì?`; right = e.sym; wrong = f.wrong; }
-  else if(type==='z'){ q = `Nguyên tử X có cấu hình electron ${cfg}. Số hiệu nguyên tử của X là bao nhiêu?`; right = String(e.z); wrong = pick3(e.z, [e.z+1, e.z-1, e.z+2, e.z-2, e.z+3].filter(x=>x>0)).map(String); }
-  else if(type==='p'){ q = `Nguyên tử X có cấu hình electron ${cfg}. X thuộc chu kì nào?`; right = `Chu kì ${e.p}`; wrong = periodWrongs(e).map(n=>`Chu kì ${n}`); }
-  else if(type==='g'){ q = `Nguyên tử X có cấu hình electron ${cfg}. X thuộc nhóm nào?`; right = `Nhóm ${g}`; wrong = groupWrongs(e).map(x=>`Nhóm ${x}`); }
-  else {
-    const given = type==='pgz' ? `số hiệu nguyên tử Z = ${e.z}` : `cấu hình electron ${cfg}`;
-    q = `Nguyên tử X có ${given}. Vị trí của X trong bảng tuần hoàn là:`;
-    right = `Chu kì ${e.p}, nhóm ${g}`;
-    const ps = periodWrongs(e), gs = groupWrongs(e);
-    wrong = [`Chu kì ${ps[0]}, nhóm ${g}`, `Chu kì ${e.p}, nhóm ${gs[0]}`, `Chu kì ${ps[1] ?? ps[0]}, nhóm ${gs[1] ?? gs[0]}`];
+  const C = configOf(e.z), g = GROUP[e.c], name = NAME[e.z] || e.sym;
+  let q, fig = '', right, wrong;
+  const pgWrong = () => { const ps = periodWrongs(e), gs = groupWrongs(e); return [`Chu kì ${ps[0]}, nhóm ${g}`, `Chu kì ${e.p}, nhóm ${gs[0]}`, `Chu kì ${ps[1] ?? ps[0]}, nhóm ${gs[1] ?? gs[0]}`]; };
+  switch(type){
+    case 'sym': q = `Nguyên tố ${name} (${DESC[e.sym][0]}) có kí hiệu hoá học là gì?`; right = e.sym; wrong = DESC[e.sym][1]; break;
+    case 'z': q = `Nguyên tử X có cấu hình electron ${C.full}. Số hiệu nguyên tử của X là bao nhiêu?`; right = String(e.z); wrong = num3(e.z, [e.z+1,e.z-1,e.z+2,e.z-2,e.z+3]); break;
+    case 'p': q = `Nguyên tử X có cấu hình electron ${C.full}. X thuộc chu kì nào?`; right = `Chu kì ${e.p}`; wrong = periodWrongs(e).map(n=>`Chu kì ${n}`); break;
+    case 'g': q = `Nguyên tử X có cấu hình electron ${C.full}. X thuộc nhóm nào?`; right = `Nhóm ${g}`; wrong = groupWrongs(e).map(x=>`Nhóm ${x}`); break;
+    case 'pg': q = `Nguyên tử X có cấu hình electron ${C.full}. Vị trí của X trong bảng tuần hoàn là:`; right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
+    case 'pgz': q = `Nguyên tử X có số hiệu nguyên tử Z = ${e.z}. Vị trí của X trong bảng tuần hoàn là:`; right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
+    case 'short_pg': q = `Nguyên tử X có cấu hình electron viết gọn ${C.short}. Vị trí của X trong bảng tuần hoàn là:`; right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
+    case 'e_out': q = `Nguyên tử X có cấu hình electron ${C.full}. Lớp ngoài cùng của X có bao nhiêu electron?`; right = String(C.ns+C.np);
+      wrong = num3(right, [e.z, C.sh.length, C.ns+C.np+1, C.ns+C.np-1, C.ns, 8]); break;
+    case 'bohr_z': q = 'Hình bên là mô hình sự phân bố electron trên các lớp của nguyên tử X. Số hiệu nguyên tử của X là bao nhiêu?';
+      fig = bohrSVG(C.sh); right = String(e.z); wrong = num3(e.z, [e.z+1,e.z-1,e.z+2,e.z-2,C.sh.length,C.sh[C.sh.length-1]]); break;
+    case 'bohr_pg': q = 'Hình bên là mô hình sự phân bố electron trên các lớp của nguyên tử X. Vị trí của X trong bảng tuần hoàn là:';
+      fig = bohrSVG(C.sh); right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
+    case 'orb_id': q = 'Cấu hình electron theo ô orbital của nguyên tử X như hình bên. X là nguyên tố nào?';
+      fig = orbSVG(C.subs); right = e.sym; wrong = pick3(e.sym, symNear(e.z)); break;
+    case 'orb_pg': q = `Sự phân bố electron vào các ô orbital ở lớp ngoài của nguyên tử X như hình bên (các lớp bên trong giống khí hiếm ${C.core}). Vị trí của X trong bảng tuần hoàn là:`;
+      fig = orbSVG(C.val, `[${C.core}]`); right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
   }
   const opts = shuffle([right, ...wrong.slice(0,3)]);
-  return {q, opts, ans:opts.indexOf(right), type};
+  return {q, fig, opts, ans:opts.indexOf(right), type};
+}
+function typesFor(e, stage){
+  return STAGE_PLAN[stage].types.filter(t=> (t!=='sym' || DESC[e.sym]) && !(t==='g' && e.sym==='He') && !(t==='orb_pg' && !configOf(e.z).core));
 }
 const TEAM_STYLE = [{c:'#ff8a7a',s:'▲'},{c:'#7cc4ff',s:'●'},{c:'#ffd64d',s:'■'},{c:'#86e08f',s:'◆'},{c:'#d9a6ff',s:'★'},{c:'#ffb067',s:'✚'}];
 
@@ -968,7 +1043,7 @@ function drawTurn(){
 }
 
 /* ================= Game: each student logs in on an iPad; teacher code is checked by the Google Sheet ================= */
-const SAVE_KEY = 'ruonglua-chuki-v2';
+const SAVE_KEY = 'ruonglua-chuki-v3';
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần', quit:'Tự thoát'};
 let player = null;              // {lop, group}
@@ -1011,10 +1086,10 @@ function setupRound(saved){
   }
   STAGE_PLAN.forEach((plan, stage)=>{
     const els = shuffle(plan.els).slice(0,2).map(sym=> BY_SYM[sym]);
-    const types = shuffle(plan.types);
-    els.forEach((el,i)=>{
-      let type = types[i % types.length];
-      if(type==='g' && el.sym==='He') type = 'z';
+    let used = null;
+    els.forEach(el=>{
+      const opts = typesFor(el, stage), fresh = opts.filter(t=> t!==used);
+      const type = shuffle(fresh.length ? fresh : opts)[0]; used = type;
       const cell = {el, stage, q:makeQuestion(el, type), done:false, winners:[]};
       makeStake(cell); qCells.push(cell);
     });
@@ -1089,6 +1164,7 @@ function openCell(cell){
   $('qstage').textContent = `${st.name} · ${st.pts} điểm`; $('qstage').style.setProperty('--c', st.css);
   $('qwho').textContent = '';
   $('qtext').textContent = q.q;
+  $('qfig').innerHTML = q.fig || ''; $('qfig').hidden = !q.fig;
   $('opts').innerHTML = q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('');
   $('opts').querySelectorAll('.opt').forEach(b=> b.onclick = ()=> choose(+b.dataset.i));
   $('why').hidden = true;
