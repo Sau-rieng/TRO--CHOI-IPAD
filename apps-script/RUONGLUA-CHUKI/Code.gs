@@ -16,6 +16,7 @@
  *
  * Mã giáo viên chỉ nằm trong Sheet này (thuộc Drive của giáo viên, chế độ riêng tư),
  * không nằm trong file trò chơi trên GitHub nên học sinh không đọc được.
+ * Trang thống kê THONGKE-RUONGLUA.html dùng cùng link /exec, giáo viên nhập mã giáo viên để xem điểm trung bình các nhóm.
  * Khi sửa file này: Triển khai → Quản lý các bản triển khai → bút chì → Phiên bản mới → Triển khai (link giữ nguyên).
  */
 
@@ -44,6 +45,7 @@ function doPost(e) {
     if (p.kind === 'login') out = login_(p);
     else if (p.kind === 'unlock') out = unlock_(p);
     else if (p.kind === 'result') out = saveResult_(p);
+    else if (p.kind === 'stats') out = stats_(p);
     else out = { ok: false, error: 'Yêu cầu không hợp lệ' };
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
@@ -120,6 +122,19 @@ function saveResult_(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ---------------- Thống kê cho trang THONGKE-RUONGLUA.html (cần mã giáo viên) ---------------- */
+
+function stats_(p) {
+  if (String(p.code || '').trim() !== config_().open) return { ok: false, error: 'code' };
+  const sh = getResultSheet_(), last = sh.getLastRow();
+  if (last < 2) return { ok: true, rows: [] };
+  const v = sh.getRange(2, 1, last - 1, 6).getValues();   // Thời điểm gửi, Lớp, Nhóm, Điểm, Số câu đúng, Số câu đã trả lời
+  const rows = v.filter(function (r) { return r[1] && r[2]; }).map(function (r) {
+    return [r[0] instanceof Date ? r[0].getTime() : 0, String(r[1]), String(r[2]), Number(r[3]) || 0, Number(r[4]) || 0, Number(r[5]) || 0];
+  });
+  return { ok: true, rows: rows };
 }
 
 function clean_(v, max) {
