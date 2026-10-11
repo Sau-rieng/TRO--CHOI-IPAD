@@ -1125,7 +1125,7 @@ $('setupForm').addEventListener('submit', async e=>{
     const r = await api({kind:'login', code, lop, group});
     if(!r.ok){ $('fCode').value = ''; $('fCode').focus(); return fail(r.error==='code' ? 'Mã giáo viên không đúng.' : (r.error || 'Máy chủ từ chối đăng nhập.')); }
     $('fCode').value = '';
-    player = {lop, group, name};
+    player = {lop, group, name, sheet: r.sheet || ''};
     startGame(Number(r.minutes) || 5);
   }catch(ex){ fail(netMsg(ex)); }
   finally{ btn.disabled = false; btn.textContent = 'Vào chơi'; }
@@ -1213,7 +1213,7 @@ function finish(why){
 function showEnd(){
   showOnly('result');
   const t = teams[0];
-  $('rEyebrow').textContent = `${player.lop} · ${player.group} · ${REASONS[reason] || ''}`;
+  $('rEyebrow').textContent = `${player.lop} · ${player.group} · ${REASONS[reason] || ''}${player.sheet ? ' · Bảng: ' + player.sheet : ''}`;
   $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Nhóm đã thoát trò chơi'}[reason] || 'Nhóm đã mở đủ 10 ô lúa';
   $('rTotal').innerHTML = `<b>${t.score}</b> điểm · ${t.correct}/${opened} câu đúng`;
   $('rank').innerHTML = `<li class="info"><span>Lớp · Nhóm</span><b>${esc(player.lop)} · ${esc(player.group)}</b></li>`+
@@ -1226,7 +1226,7 @@ function showEnd(){
 }
 function buildReport(){
   const t = teams[0];
-  return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group,
+  return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group, sheet:player.sheet || '',
     score:t.score, correct:t.correct, answered:t.answered, startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves,
     detail: history.map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): chọn ${'ABCD'[c.chosen]}, ${c.ok ? 'đúng' : 'sai'}`).join('; ')};
 }

@@ -4,9 +4,11 @@
  * Cách dùng (tóm tắt):
  *  1. Tạo một Google Sheet MỚI chỉ dùng cho trò này (ví dụ đặt tên "Ruộng lúa Chu kì – Kết quả").
  *  2. Trong Sheet đó: Tiện ích mở rộng → Apps Script → xoá nội dung có sẵn, dán toàn bộ file này vào Code.gs → Lưu.
- *  3. Chọn hàm caiDat → Chạy (một lần) → cấp quyền. Sheet sẽ có 2 trang tính:
- *       CauHinh : mã giáo viên (7070), mã mở khoá (7979), thời gian chơi (phút). Giáo viên đổi mã ngay tại đây.
- *       KetQua  : mỗi lượt chơi của một nhóm một dòng.
+ *  3. Chọn hàm caiDat → Chạy (một lần) → cấp quyền. Sheet sẽ có trang tính CauHinh gồm:
+ *       B1 mã giáo viên (7070), B2 mã mở khoá (7979), B3 thời gian chơi (phút),
+ *       B4 TÊN BẢNG KẾT QUẢ của ca chơi hiện tại, ví dụ "10E01 – Ca sáng 12/10".
+ *     Mỗi ca chơi / mỗi lớp mới: giáo viên gõ tên mới vào ô B4. Kết quả của ca đó tự ghi vào một trang tính
+ *     MỚI mang đúng tên này (mỗi lượt chơi của một nhóm một dòng). Để trống B4 thì máy tự đặt tên "Lớp – ngày".
  *  4. Triển khai → Tùy chọn triển khai mới → Ứng dụng web:
  *       Thực thi với tư cách: Tôi
  *       Người có quyền truy cập: Bất kỳ ai
@@ -20,7 +22,6 @@
  * Khi sửa file này: Triển khai → Quản lý các bản triển khai → bút chì → Phiên bản mới → Triển khai (link giữ nguyên).
  */
 
-const RESULT_SHEET = 'KetQua';
 const CONFIG_SHEET = 'CauHinh';
 const CLASSES = ['9D01', '9D02', '9D03', '10E01', '12G01', '12G02'];
 const HEADERS = ['Thời điểm gửi', 'Lớp', 'Nhóm', 'Điểm', 'Số câu đúng', 'Số câu đã trả lời',
@@ -29,7 +30,6 @@ const HEADERS = ['Thời điểm gửi', 'Lớp', 'Nhóm', 'Điểm', 'Số câu
 /** Chạy một lần để tạo trang tính và cấp quyền. */
 function caiDat() {
   getConfigSheet_();
-  getResultSheet_();
   Logger.log('Đã cài đặt xong. Mã giáo viên, mã mở khoá và thời gian nằm ở trang tính ' + CONFIG_SHEET + '.');
 }
 
@@ -65,20 +65,35 @@ function getConfigSheet_() {
     sh.getRange('A1:A3').setFontWeight('bold');
     sh.setColumnWidth(1, 260);
   }
+  if (!sh.getRange('A4').getValue()) {           // thêm ô tên bảng cho các Sheet đã cài từ trước
+    sh.getRange('A4').setValue('Tên bảng kết quả (ca chơi hiện tại)').setFontWeight('bold');
+    sh.getRange('B4').setNumberFormat('@');
+    sh.getRange('C4').setValue('← mỗi ca chơi / lớp mới gõ tên mới, kết quả sẽ ghi vào trang tính mang tên này').setFontColor('#777777');
+  }
   return sh;
 }
 
 function config_() {
-  const v = getConfigSheet_().getRange('B1:B3').getDisplayValues();
+  const v = getConfigSheet_().getRange('B1:B4').getDisplayValues();
   const minutes = Math.round(Number(v[2][0]));
-  return { open: String(v[0][0]).trim(), unlock: String(v[1][0]).trim(), minutes: minutes >= 1 && minutes <= 60 ? minutes : 5 };
+  return { open: String(v[0][0]).trim(), unlock: String(v[1][0]).trim(), minutes: minutes >= 1 && minutes <= 60 ? minutes : 5,
+    session: String(v[3][0]).trim() };
+}
+
+/** Tên trang tính kết quả: lấy ô B4, để trống thì "Lớp – ngày". Bỏ các kí tự Google Sheet không cho dùng. */
+function sheetName_(name, lop) {
+  let n = String(name || '').replace(/[\[\]\*\?\/\\:]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90);
+  if (!n) n = (lop || 'Lớp') + ' – ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+  if (n === CONFIG_SHEET) n = n + ' (kết quả)';
+  return n;
 }
 
 function login_(p) {
   const c = config_();
   if (String(p.code || '').trim() !== c.open) return { ok: false, error: 'code' };
-  if (CLASSES.indexOf(clean_(p.lop, 10)) < 0) return { ok: false, error: 'Lớp không hợp lệ' };
-  return { ok: true, minutes: c.minutes };
+  const lop = clean_(p.lop, 10);
+  if (CLASSES.indexOf(lop) < 0) return { ok: false, error: 'Lớp không hợp lệ' };
+  return { ok: true, minutes: c.minutes, sheet: sheetName_(c.session, lop) };
 }
 
 function unlock_(p) {
@@ -87,10 +102,10 @@ function unlock_(p) {
 
 /* ---------------- Kết quả: mỗi lượt chơi của một nhóm một dòng ---------------- */
 
-function getResultSheet_() {
+function getResultSheet_(name) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(RESULT_SHEET);
-  if (!sh) sh = ss.insertSheet(RESULT_SHEET);
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
     sh.appendRow(HEADERS);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#eeeeee');
@@ -109,7 +124,8 @@ function saveResult_(p) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    const sh = getResultSheet_();
+    // ghi vào bảng của ca chơi lúc nhóm đăng nhập (trò chơi gửi kèm tên bảng); không có thì lấy ô B4 hiện tại
+    const sh = getResultSheet_(sheetName_(p.sheet || config_().session, lop));
     const last = sh.getLastRow();
     if (last > 1) {   // không ghi trùng khi bấm Gửi lại
       const ids = sh.getRange(2, HEADERS.length, last - 1, 1).getValues();
@@ -127,14 +143,19 @@ function saveResult_(p) {
 /* ---------------- Thống kê cho trang THONGKE-RUONGLUA.html (cần mã giáo viên) ---------------- */
 
 function stats_(p) {
-  if (String(p.code || '').trim() !== config_().open) return { ok: false, error: 'code' };
-  const sh = getResultSheet_(), last = sh.getLastRow();
-  if (last < 2) return { ok: true, rows: [] };
-  const v = sh.getRange(2, 1, last - 1, 6).getValues();   // Thời điểm gửi, Lớp, Nhóm, Điểm, Số câu đúng, Số câu đã trả lời
-  const rows = v.filter(function (r) { return r[1] && r[2]; }).map(function (r) {
-    return [r[0] instanceof Date ? r[0].getTime() : 0, String(r[1]), String(r[2]), Number(r[3]) || 0, Number(r[4]) || 0, Number(r[5]) || 0];
+  const c = config_();
+  if (String(p.code || '').trim() !== c.open) return { ok: false, error: 'code' };
+  const rows = [], sheets = [];
+  SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(function (sh) {
+    if (sh.getName() === CONFIG_SHEET || sh.getRange('A1').getValue() !== HEADERS[0]) return;   // chỉ đọc các bảng kết quả
+    sheets.push(sh.getName());
+    const last = sh.getLastRow();
+    if (last < 2) return;
+    sh.getRange(2, 1, last - 1, 6).getValues().forEach(function (r) {   // Thời điểm gửi, Lớp, Nhóm, Điểm, Số câu đúng, Số câu đã trả lời
+      if (r[1] && r[2]) rows.push([r[0] instanceof Date ? r[0].getTime() : 0, String(r[1]), String(r[2]), Number(r[3]) || 0, Number(r[4]) || 0, Number(r[5]) || 0, sh.getName()]);
+    });
   });
-  return { ok: true, rows: rows };
+  return { ok: true, rows: rows, sheets: sheets, current: c.session ? sheetName_(c.session) : '' };
 }
 
 function clean_(v, max) {

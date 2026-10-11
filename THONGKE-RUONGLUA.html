@@ -79,6 +79,7 @@ td.none{color:var(--muted)}
 
   <div id="report" hidden>
     <div class="card filters" style="margin-bottom:16px">
+      <label>Bảng kết quả (ca chơi)<select id="fSheet"><option value="">Tất cả các bảng</option></select></label>
       <label>Lớp<select id="fClass"><option value="">Tất cả các lớp</option></select></label>
       <label>Ngày chơi<select id="fDay"><option value="">Tất cả các ngày</option></select></label>
       <p class="sub" id="updated" style="margin:0 0 6px auto"></p>
@@ -113,7 +114,7 @@ const $ = id => document.getElementById(id);
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const GROUPS = ['Nhóm 1','Nhóm 2','Nhóm 3','Nhóm 4','Nhóm 5','Nhóm 6','Nhóm 7','Nhóm 8'];
 const MAX_SCORE = 300;
-let rows = [], code = '';
+let rows = [], sheets = [], current = '', code = '';
 const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num = (v, d=1) => Number.isFinite(v) ? v.toLocaleString('vi-VN', {minimumFractionDigits:0, maximumFractionDigits:d}) : '–';
 const dayKey = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -130,7 +131,8 @@ async function load(){
       err.textContent = j.error==='code' ? 'Mã giáo viên không đúng.' : (j.error==='Yêu cầu không hợp lệ' ? 'Máy chủ chưa có phần thống kê: hãy cập nhật Code.gs mới và triển khai phiên bản mới.' : 'Máy chủ báo lỗi: ' + j.error);
       err.hidden = false; $('gate').hidden = false; $('report').hidden = true; return;
     }
-    rows = (j.rows||[]).map(r=>({t:r[0], lop:r[1], group:r[2], score:r[3], correct:r[4], answered:r[5]}));
+    rows = (j.rows||[]).map(r=>({t:r[0], lop:r[1], group:r[2], score:r[3], correct:r[4], answered:r[5], sheet:r[6]||''}));
+    sheets = j.sheets || [...new Set(rows.map(r=>r.sheet))]; current = j.current || '';
     err.hidden = true; $('gate').hidden = true; $('report').hidden = false; $('reload').hidden = false;
     $('updated').textContent = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
     fillFilters(); render();
@@ -142,17 +144,20 @@ $('gate').addEventListener('submit', e=>{ e.preventDefault(); code = $('code').v
 $('reload').onclick = load;
 
 function fillFilters(){
+  const keepS = $('fSheet').dataset.init ? $('fSheet').value : (sheets.includes(current) ? current : '');
+  $('fSheet').dataset.init = '1';
+  $('fSheet').innerHTML = '<option value="">Tất cả các bảng</option>' + sheets.slice().reverse().map(n=>`<option${n===keepS?' selected':''}>${esc(n)}</option>`).join('');
   const keepC = $('fClass').value, keepD = $('fDay').value;
   const classes = [...new Set(rows.map(r=>r.lop))].sort();
   const days = [...new Set(rows.filter(r=>r.t).map(r=>dayKey(r.t)))].sort().reverse();
   $('fClass').innerHTML = '<option value="">Tất cả các lớp</option>' + classes.map(c=>`<option${c===keepC?' selected':''}>${esc(c)}</option>`).join('');
   $('fDay').innerHTML = '<option value="">Tất cả các ngày</option>' + days.map(d=>`<option value="${d}"${d===keepD?' selected':''}>${dayLabel(d)}</option>`).join('');
 }
-$('fClass').onchange = render; $('fDay').onchange = render;
+$('fClass').onchange = render; $('fDay').onchange = render; $('fSheet').onchange = render;
 
 function stats(){
-  const c = $('fClass').value, d = $('fDay').value;
-  const sel = rows.filter(r=> (!c || r.lop===c) && (!d || (r.t && dayKey(r.t)===d)));
+  const c = $('fClass').value, d = $('fDay').value, sh = $('fSheet').value;
+  const sel = rows.filter(r=> (!sh || r.sheet===sh) && (!c || r.lop===c) && (!d || (r.t && dayKey(r.t)===d)));
   const names = [...new Set(GROUPS.concat(sel.map(r=>r.group)))];
   const by = names.map(g=>{
     const rs = sel.filter(r=>r.group===g), n = rs.length;
