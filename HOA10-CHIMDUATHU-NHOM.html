@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Chim Đưa Thư Theo Nhóm</title>
 <!-- ĐỊA CHỈ GOOGLE SHEET RIÊNG CỦA TRÒ NÀY: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
@@ -28,6 +28,7 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
+html,body,button,select,input{touch-action:manipulation}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
 #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .hud{position:fixed;inset:0;pointer-events:none;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(14px + env(safe-area-inset-bottom,0px))}
@@ -500,8 +501,11 @@ function buildQuestions(picks){
 (function(){
 if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<p style="position:fixed;inset:auto 16px 16px;">Không tải được thư viện 3D.</p>');return;}
 const canvas=document.getElementById('scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const TOUCH=matchMedia('(pointer: coarse)').matches||navigator.maxTouchPoints>1;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:!TOUCH,powerPreference:'high-performance'});
+let PR=Math.min(window.devicePixelRatio,TOUCH?1.5:1.75);renderer.setPixelRatio(PR);
+/* hình bị mất do iPad thiếu bộ nhớ đồ hoạ: ngăn trang treo, Three.js tự dựng lại khi máy cấp lại */
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();},false);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,1,0.5,3000);
@@ -516,7 +520,7 @@ function height(x,z){
   const outer=(48+18*Math.sin(x*0.013+z*0.009))*(1-Math.exp(-(d*d)/(2*150*150)));
   return ridge+outer+noise(x,z)*(0.6+Math.min(Math.abs(d)/80,1));
 }
-const SIZE=900,SEG=240;
+const SIZE=900,SEG=150;
 const tg=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG);tg.rotateX(-Math.PI/2);
 const pos=tg.attributes.position,cols=[];
 const cMeadow=new THREE.Color('#9fae4c'),cDark=new THREE.Color('#3f5f30');
@@ -566,6 +570,29 @@ for(let i=0;i<N;i++){
 }
 [body,walk,parL,parR,merl].forEach(m=>{m.instanceMatrix.needsUpdate=true;scene.add(m);});
 
+/* ---------- gộp các khối tĩnh: mỗi vật liệu một lần vẽ, nhẹ cho iPad ---------- */
+function mergeChildren(group,keep){
+  const byMat=new Map(),drop=[];
+  group.updateMatrix();
+  group.children.forEach(ch=>{
+    if(!ch.isMesh||ch.isInstancedMesh||(keep&&keep(ch)))return;
+    ch.updateMatrix();
+    let g=ch.geometry.clone();if(g.index)g=g.toNonIndexed();g.applyMatrix4(ch.matrix);
+    if(!byMat.has(ch.material))byMat.set(ch.material,[]);byMat.get(ch.material).push(g);drop.push(ch);
+  });
+  drop.forEach(ch=>group.remove(ch));
+  byMat.forEach((list,mat)=>{
+    const out=new THREE.BufferGeometry();
+    ['position','normal','uv'].forEach(name=>{
+      if(!list.every(g=>g.attributes[name]))return;
+      const size=list[0].attributes[name].itemSize,total=list.reduce((a,g)=>a+g.attributes[name].array.length,0),arr=new Float32Array(total);
+      let o=0;list.forEach(g=>{arr.set(g.attributes[name].array,o);o+=g.attributes[name].array.length;});
+      out.setAttribute(name,new THREE.BufferAttribute(arr,size));
+    });
+    list.forEach(g=>g.dispose());
+    group.add(new THREE.Mesh(out,mat));
+  });
+}
 /* ---------- Towers with numbered flags ---------- */
 const roofMat=new THREE.MeshStandardMaterial({color:'#3a3f44',roughness:0.7,flatShading:true});
 const pillarMat=new THREE.MeshStandardMaterial({color:'#8e2a22',roughness:0.8});
@@ -599,6 +626,7 @@ for(let n=0;n<10;n++){
   const out=sideV.clone().multiplyScalar(hA<=hB?1:-1),lx=p.x+out.x*OFF,lz=p.z+out.z*OFF;
   const tw={group:g,base:p.clone(),land:new THREE.Vector3(lx,height(lx,lz)+1.9,lz),out,fwd:fwdV,yaw:g.rotation.y,fc,ft,flag,state:'todo'};
   towers.push(tw);drawFlag(tw,n);
+  mergeChildren(g,ch=>ch===flag);
 }
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,160,12,1,true),
   new THREE.MeshBasicMaterial({color:'#ffd27a',transparent:true,opacity:.35,depthWrite:false,fog:false,side:THREE.DoubleSide}));
@@ -626,18 +654,19 @@ const nearTower=(x,z,r)=>towers.some(t=>Math.hypot(t.land.x-x,t.land.z-z)<r||Mat
 let WATER_Y;
 {const hs=[];for(let i=0;i<4000;i++){const x=(decoRnd()-.5)*SIZE*.9,z=(decoRnd()-.5)*SIZE*.9;hs.push(height(x,z));}hs.sort((a,b)=>a-b);WATER_Y=hs[Math.floor(hs.length*0.09)];}
 const waterMat=new THREE.MeshStandardMaterial({color:'#4f8fb3',roughness:.15,metalness:.25,transparent:true,opacity:.88,flatShading:true});
-const waterGeo=new THREE.PlaneGeometry(SIZE,SIZE,60,60);waterGeo.rotateX(-Math.PI/2);
+const waterGeo=new THREE.PlaneGeometry(SIZE,SIZE,28,28);waterGeo.rotateX(-Math.PI/2);
 const water=new THREE.Mesh(waterGeo,waterMat);water.position.y=WATER_Y;scene.add(water);
 const wPos=waterGeo.attributes.position,wBase=Float32Array.from(wPos.array);
 /* dãy núi xa quanh chân trời */
-{const mMat=new THREE.MeshStandardMaterial({color:'#7d8ea0',flatShading:true,roughness:1});
+{const mtn=new THREE.Group();scene.add(mtn);const mMat=new THREE.MeshStandardMaterial({color:'#7d8ea0',flatShading:true,roughness:1});
  const sMat=new THREE.MeshStandardMaterial({color:'#f4f6f8',flatShading:true,roughness:.9});
  for(let i=0;i<46;i++){
    const a=i/46*Math.PI*2+decoRnd()*.08,r=540+decoRnd()*170,h=90+decoRnd()*170,w=70+decoRnd()*90;
    const m=new THREE.Mesh(new THREE.ConeGeometry(w,h,5+Math.floor(decoRnd()*3),1),mMat);
-   m.position.set(Math.cos(a)*r,h/2-10,Math.sin(a)*r);m.rotation.y=decoRnd()*6;scene.add(m);
-   if(h>190){const c=new THREE.Mesh(new THREE.ConeGeometry(w*.3,h*.3,m.geometry.parameters.radialSegments,1),sMat);c.position.set(m.position.x,h-10-h*.15+0.5,m.position.z);c.rotation.y=m.rotation.y;scene.add(c);}
- }}
+   m.position.set(Math.cos(a)*r,h/2-10,Math.sin(a)*r);m.rotation.y=decoRnd()*6;mtn.add(m);
+   if(h>190){const c=new THREE.Mesh(new THREE.ConeGeometry(w*.3,h*.3,m.geometry.parameters.radialSegments,1),sMat);c.position.set(m.position.x,h-10-h*.15+0.5,m.position.z);c.rotation.y=m.rotation.y;mtn.add(c);}
+ }
+ mergeChildren(mtn);}
 /* cây lá rộng nhiều màu (xanh, vàng, cam, đỏ phong) */
 {const crown=new THREE.IcosahedronGeometry(2.4,0);crown.translate(0,5.2,0);
  const trunk=new THREE.CylinderGeometry(.28,.38,3.4,5);trunk.translate(0,1.7,0);
@@ -664,7 +693,7 @@ const wPos=waterGeo.attributes.position,wBase=Float32Array.from(wPos.array);
    rocks.setMatrixAt(n,dummy.matrix);rocks.setColorAt(n,rc[Math.floor(decoRnd()*4)]);n++;}
  rocks.instanceColor.needsUpdate=true;scene.add(rocks);}
 /* làng nhỏ: nhà tường vàng đất, mái ngói xám đen */
-{const wallM=new THREE.MeshStandardMaterial({color:'#d8c39a',flatShading:true}),roofM=new THREE.MeshStandardMaterial({color:'#3c3f45',flatShading:true});
+{const village=new THREE.Group();scene.add(village);const wallM=new THREE.MeshStandardMaterial({color:'#d8c39a',flatShading:true}),roofM=new THREE.MeshStandardMaterial({color:'#3c3f45',flatShading:true});
  const doorM=new THREE.MeshStandardMaterial({color:'#7a2d22'});
  const centers=[[-160,-150],[60,170],[230,-160],[-250,140]];
  for(const [cx,cz] of centers){let made=0,tries=0;
@@ -675,14 +704,16 @@ const wPos=waterGeo.attributes.position,wBase=Float32Array.from(wPos.array);
      const b=new THREE.Mesh(new THREE.BoxGeometry(7,3.6,4.6),wallM);b.position.y=1.6;h.add(b);
      const r=new THREE.Mesh(new THREE.ConeGeometry(5.4,2.6,4,1),roofM);r.rotation.y=Math.PI/4;r.scale.set(1,1,.68);r.position.y=4.7;h.add(r);
      const d=new THREE.Mesh(new THREE.BoxGeometry(1.2,2,.1),doorM);d.position.set(0,1,2.33);h.add(d);
-     scene.add(h);made++;}}}
+     village.add(h);made++;}}
+ const flat=new THREE.Group();village.children.slice().forEach(h=>{h.updateMatrix();h.children.slice().forEach(ch=>{ch.updateMatrix();ch.matrix.premultiply(h.matrix);ch.matrix.decompose(ch.position,ch.quaternion,ch.scale);flat.add(ch);});});
+ scene.remove(village);scene.add(flat);mergeChildren(flat);}
 /* mây trôi */
 const clouds=[];
 {const cm=new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:1,transparent:true,opacity:.93});
  const cg=new THREE.IcosahedronGeometry(1,1);
- for(let i=0;i<18;i++){const g=new THREE.Group();const k=4+Math.floor(decoRnd()*4);
+ for(let i=0;i<12;i++){const g=new THREE.Group();const k=4+Math.floor(decoRnd()*4);
    for(let j=0;j<k;j++){const m=new THREE.Mesh(cg,cm);const s=8+decoRnd()*10;m.scale.set(s*1.4,s*.7,s);m.position.set((j-k/2)*9+decoRnd()*4,decoRnd()*4,decoRnd()*8);g.add(m);}
-   g.position.set((decoRnd()-.5)*1000,135+decoRnd()*55,(decoRnd()-.5)*900);g.userData.v=2+decoRnd()*3;scene.add(g);clouds.push(g);}}
+   g.position.set((decoRnd()-.5)*1000,135+decoRnd()*55,(decoRnd()-.5)*900);g.userData.v=2+decoRnd()*3;mergeChildren(g);scene.add(g);clouds.push(g);}}
 /* đàn chim nhỏ bay lượn */
 const flocks=[];
 {const fg=new THREE.BufferGeometry();
@@ -1054,6 +1085,9 @@ function restore(){
   next();
   if(d.locked)showLock();else lockGame();
 }
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 const KEYMAP={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
 function takeOff(){if(locked||reason)return false;if(state==='answered'&&cur<9){next();return true;}return state==='free'||state==='takeoff';}
 const typing=e=>locked||!$('quit').hidden||(e.target&&e.target.closest&&e.target.closest('input,select,textarea'));
@@ -1076,7 +1110,7 @@ document.addEventListener('keydown',e=>{
 /* ---------- Loop ---------- */
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<600?68:55;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
-const clock=new THREE.Clock();let time=0,hop=0;
+const clock=new THREE.Clock();const perf={frames:0,acc:0};let time=0,hop=0;
 const tmp=new THREE.Vector3();
 function loop(){
   const dt=Math.min(clock.getDelta(),0.05);time+=dt;
@@ -1175,6 +1209,9 @@ function loop(){
   animateScenery(time,dt);
   camera.lookAt(camLook);
   renderer.render(scene,camera);
+  perf.frames++;perf.acc+=dt;
+  if(perf.acc>=2){const fps=perf.frames/perf.acc;perf.frames=0;perf.acc=0;
+    if(fps<38&&PR>0.75){PR=Math.max(0.75,+(PR-0.25).toFixed(2));renderer.setPixelRatio(PR);resize();}}
   requestAnimationFrame(loop);
 }
 restore();
