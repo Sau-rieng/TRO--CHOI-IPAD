@@ -93,7 +93,7 @@ td.none{color:var(--muted)}
     <div class="tiles" style="margin-bottom:16px">
       <div class="card tile"><div class="k">Điểm trung bình chung</div><div class="v" id="tAvg">–</div><div class="s">trên tối đa 10 điểm</div></div>
       <div class="card tile"><div class="k">Số lượt chơi</div><div class="v" id="tPlays">–</div><div class="s" id="tGroups"></div></div>
-      <div class="card tile"><div class="k">Số câu đúng trung bình</div><div class="v" id="tCorr">–</div><div class="s">trên 10 câu</div></div>
+      <div class="card tile"><div class="k">Số câu đúng trung bình</div><div class="v" id="tCorr">–</div><div class="s">trên 11 câu (đúng trọn điểm)</div></div>
     </div>
 
     <div class="card chartbox" style="margin-bottom:16px">
@@ -241,7 +241,7 @@ function drawChart(S){
   el.querySelectorAll('.hit').forEach(h=>{
     const b = S.by[+h.dataset.i], bar = el.querySelector(`.bar[data-i="${h.dataset.i}"]`);
     h.addEventListener('pointermove', e=>{
-      tip.innerHTML = `<b>${esc(b.g)}</b><br>Điểm TB: <b>${num(b.avg)}</b><br>${b.n} lượt chơi · cao nhất ${b.max} · thấp nhất ${b.min}<br>Câu đúng TB: ${num(b.corr)}/10`;
+      tip.innerHTML = `<b>${esc(b.g)}</b><br>Điểm TB: <b>${num(b.avg)}</b><br>${b.n} lượt chơi · cao nhất ${num(b.max,2)} · thấp nhất ${num(b.min,2)}<br>Câu đúng TB: ${num(b.corr)}/11`;
       tip.hidden = false; const tw = tip.offsetWidth;
       tip.style.left = Math.min(innerWidth - tw - 8, e.clientX + 14) + 'px'; tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
       bar.classList.add('on');
