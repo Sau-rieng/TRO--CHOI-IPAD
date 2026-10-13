@@ -1,8 +1,8 @@
 /**
- * RUỘNG LÚA NGUYÊN TỬ (Hóa 10, Bài 1–4) – kiểm tra mã giáo viên và nhận kết quả, ghi vào Google Sheet riêng của trò này.
+ * CHIM ĐƯA THƯ HÓA 10 – BẢN CHƠI THEO NHÓM – kiểm tra mã giáo viên và nhận kết quả, ghi vào Google Sheet riêng của trò này.
  *
  * Cách dùng (tóm tắt):
- *  1. Tạo một Google Sheet MỚI chỉ dùng cho trò này (ví dụ đặt tên "Ruộng lúa Nguyên tử – Kết quả").
+ *  1. Tạo một Google Sheet MỚI chỉ dùng cho trò này (ví dụ đặt tên "Chim Đưa Thư nhóm – Kết quả").
  *  2. Trong Sheet đó: Tiện ích mở rộng → Apps Script → xoá nội dung có sẵn, dán toàn bộ file này vào Code.gs → Lưu.
  *  3. Chọn hàm caiDat → Chạy (một lần) → cấp quyền. Sheet sẽ có trang tính CauHinh gồm:
  *       B1 mã giáo viên (7070), B2 mã mở khoá (7979), B3 thời gian chơi (phút),
@@ -13,12 +13,12 @@
  *       Thực thi với tư cách: Tôi
  *       Người có quyền truy cập: Bất kỳ ai
  *     → sao chép đường link kết thúc bằng /exec.
- *  5. Dán link /exec vào dòng SHEET_URL:'…' ở đầu file RUONGLUA-HOA10-NHOM.html trên GitHub
+ *  5. Dán link /exec vào dòng SHEET_URL:'…' ở đầu file HOA10-CHIMDUATHU-NHOM.html trên GitHub
  *     (hoặc gửi link cho Claude để Claude sửa giúp).
  *
  * Mã giáo viên chỉ nằm trong Sheet này (thuộc Drive của giáo viên, chế độ riêng tư),
  * không nằm trong file trò chơi trên GitHub nên học sinh không đọc được.
- * Trang thống kê THONGKE-RUONGLUA.html dùng cùng link /exec, giáo viên nhập mã giáo viên để xem điểm trung bình các nhóm.
+ * Trang thống kê THONGKE-CHIMDUATHU.html dùng cùng link /exec, giáo viên nhập mã giáo viên để xem điểm trung bình các nhóm.
  * Khi sửa file này: Triển khai → Quản lý các bản triển khai → bút chì → Phiên bản mới → Triển khai (link giữ nguyên).
  */
 
@@ -34,7 +34,7 @@ function caiDat() {
 }
 
 function doGet() {
-  return ContentService.createTextOutput('Ruộng lúa Nguyên tử – máy chủ nhận kết quả đang chạy.');
+  return ContentService.createTextOutput('Chim Đưa Thư (nhóm) – máy chủ nhận kết quả đang chạy.');
 }
 
 /** Trò chơi gửi dữ liệu bằng fetch POST (text/plain, nội dung JSON). */
@@ -140,7 +140,7 @@ function saveResult_(p) {
   }
 }
 
-/* ---------------- Thống kê cho trang THONGKE-RUONGLUA.html (cần mã giáo viên) ---------------- */
+/* ---------------- Thống kê cho trang THONGKE-CHIMDUATHU.html (cần mã giáo viên) ---------------- */
 
 function stats_(p) {
   const c = config_();

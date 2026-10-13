@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Chim Đưa Thư Theo Nhóm</title>
-<!-- ĐỊA CHỈ GOOGLE SHEET: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
-     Để trống '' thì trò chơi không gửi kết quả. (Đang dùng chung địa chỉ với DAINOI-HOA10.html, LANGBIANG-HOA10.html) -->
-<script>window.CAU_HINH={SHEET_URL:'https://script.google.com/macros/s/AKfycbxmShE6OemyomC-8wxMhZsQ0MuiPYzfQ9i6JuxpOxmwMIuWDlDwnmXOJMZcYyFxP7fY/exec'};</script>
+<!-- ĐỊA CHỈ GOOGLE SHEET RIÊNG CỦA TRÒ NÀY: dán địa chỉ Web app (…/exec) vào giữa hai dấu nháy ở dòng SHEET_URL.
+     Cài máy chủ theo hướng dẫn ở apps-script/HOA10-CHIMDUATHU-NHOM/Code.gs. Mã giáo viên, mã mở khoá và thời gian chơi
+     nằm trong Sheet đó, không nằm trong file này. Trang thống kê: THONGKE-CHIMDUATHU.html (dùng cùng link).
+     TẠM THỜI đang dùng chung máy chủ với Ruộng lúa Chu kì; cột "Chi tiết" bắt đầu bằng [Chim Đưa Thư] để phân biệt. -->
+<script>window.CAU_HINH={SHEET_URL:'https://script.google.com/macros/s/AKfycbxEWNgVx6yzhMuJBzPNJyJAsIxg3veQpNFPZhEloYM5eHEt7asbXRlTv-2BCCPYqFThdA/exec'};</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
 <style>
@@ -185,20 +187,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
   <form class="sheet" id="login" novalidate>
     <div class="lcol">
     <h2>Chim đưa thư trên Trường Thành</h2>
-    <div class="rules"><span>Chơi theo nhóm</span><span>10 câu</span><span>Mỗi câu đúng 1 điểm</span><span>5 phút</span></div>
+    <div class="rules"><span>Chơi theo nhóm</span><span>10 câu</span><span>Mỗi câu đúng 1 điểm</span></div>
     <p>Điều khiển chim bằng phím <b>↑</b> bay tới, <b>↓</b> lùi, <b>← →</b> rẽ (điện thoại dùng nút mũi tên). Bay đến cột sáng vàng, chim sà xuống chân tháp để trả lời. Câu sai được 0 điểm, chim vẫn bay tiếp.</p>
-    <p class="warn">Không rời màn hình chơi. Rời lần 1 (chuyển tab, mở cửa sổ khác, tải lại trang): bài bị khóa, cần giáo viên nhập mã. Rời lần 2: bài kết thúc ngay và tính điểm.</p>
+    <p class="warn">Không rời màn hình chơi. Rời lần 1 (chuyển tab, mở cửa sổ khác, tải lại trang): trò chơi bị khóa, cần giáo viên nhập mã. Rời lần 2: trò chơi kết thúc ngay và gửi điểm của nhóm.</p>
     </div>
     <div class="rcol">
     <div class="fields">
-      <label for="fName">Họ và tên</label><input id="fName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A">
       <label for="fClass">Lớp</label>
-      <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
+      <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
       <label for="fGroup">Nhóm</label>
       <select id="fGroup"><option value="">Chọn nhóm</option><option>Nhóm 1</option><option>Nhóm 2</option><option>Nhóm 3</option><option>Nhóm 4</option><option>Nhóm 5</option><option>Nhóm 6</option><option>Nhóm 7</option><option>Nhóm 8</option></select>
-      <label for="fSbd">Số báo danh</label>
-      <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled aria-describedby="sbdHint"></div>
-      <span></span><small class="hintline" id="sbdHint">Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.</small>
+      <label for="fCode">Mã giáo viên</label>
+      <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
     </div>
     <p class="err" id="loginErr" hidden></p>
     <div class="row"><button class="btn" type="submit" id="go">Vào chơi</button></div>
@@ -214,7 +214,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
     <label for="code">Mã của giáo viên</label>
     <input id="code" type="password" inputmode="numeric" autocomplete="off" maxlength="8">
     <p class="err" id="codeErr" hidden>Mã không đúng. Chỉ giáo viên mới có mã mở khóa.</p>
-    <div class="row"><button type="button" class="btn ghost" id="lockCancel" hidden>Quay lại</button><button class="btn" type="submit">Mở khóa</button></div>
+    <div class="row"><button class="btn" type="submit" id="unlockBtn">Mở khóa</button></div>
   </form>
 </div>
 
@@ -234,7 +234,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
     <ul class="review" id="review"></ul>
     <p class="sendmsg" id="sendMsg" hidden></p>
     <p class="err" id="copyMsg" hidden></p>
-    <div class="row"><button class="btn ghost" id="resendBtn" hidden>Gửi lại</button><button class="btn ghost" id="copyBtn">Sao chép kết quả</button><button class="btn" id="again">Người chơi mới</button></div>
+    <p class="err" id="newConfirm" hidden>Kết quả của nhóm chưa gửi được về Google Sheet. Hãy chụp màn hình bảng điểm này trước khi mở lượt chơi mới.</p>
+    <div class="row"><button class="btn ghost" id="resendBtn" hidden>Gửi lại</button><button class="btn ghost" id="copyBtn">Sao chép kết quả</button><button class="btn" id="again">Lượt chơi mới</button></div>
   </div>
 </div>
 
@@ -861,9 +862,9 @@ function next(){
   aimAt(cur);
   if(cur>0)startTakeoff();else startFree();
 }
-const SAVE='chimhoa10-nhom-v1',CODE='7070',LIMIT=5*60*1000;
+const SAVE='chimhoa10-nhom-v2';let LIMIT=5*60*1000;
 let picks=null,chosen=[],sessionId='',submitted=false,player=null,deadline=0,startedAt=0,endedAt=0,locked=false,reason='',lockPurpose='resume',leaves=0;
-function save(){try{localStorage.setItem(SAVE,JSON.stringify({picks,chosen,sessionId,submitted,player,deadline,startedAt,endedAt,answers,locked,reason,leaves,finished:!!reason}));}catch(_){}}
+function save(){try{localStorage.setItem(SAVE,JSON.stringify({LIMIT,picks,chosen,sessionId,submitted,player,deadline,startedAt,endedAt,answers,locked,reason,leaves,finished:!!reason}));}catch(_){}}
 function clearSave(){try{localStorage.removeItem(SAVE);}catch(_){}}
 const playing=()=>!!player&&!reason&&state!=='intro';
 const mmss=ms=>{const t=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');};
@@ -878,10 +879,13 @@ function finish(why){
 }
 function showEnd(){
   setStatus('');hideFlightUI();locked=false;$('lock').hidden=true;$('quit').hidden=true;$('timer').hidden=true;$('exitBtn').hidden=true;
-  $('endTitle').textContent={timeout:'Hết 5 phút làm bài',violation:'Bài làm kết thúc vì rời màn hình lần 2',quit:'Em đã thoát trò chơi'}[reason]||'Chim đã về đích';
+  $('endTitle').textContent={timeout:'Hết thời gian chơi',violation:'Bài làm kết thúc vì rời màn hình lần 2',quit:'Nhóm đã thoát trò chơi'}[reason]||'Chim đã về đích';
   $('final').textContent=score+'/10 điểm';
-  $('resultBox').innerHTML=`<dt>Họ và tên</dt><dd>${esc(player.name)}</dd><dt>Lớp</dt><dd>${esc(player.lop)}</dd><dt>Nhóm</dt><dd>${esc(player.group)}</dd><dt>Số báo danh</dt><dd>${esc(player.sbd)}</dd>
-    <dt>Số câu đúng</dt><dd>${score}/10</dd><dt>Thời gian làm</dt><dd>${mmss(endedAt-startedAt)}</dd>`;
+  const clk=ms=>ms?new Date(ms).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+  $('resultBox').innerHTML=`<dt>Lớp · Nhóm</dt><dd>${esc(player.lop)} · ${esc(player.group)}</dd>${player.sheet?`<dt>Bảng kết quả</dt><dd>${esc(player.sheet)}</dd>`:''}
+    <dt>Đăng nhập lúc</dt><dd>${clk(startedAt)}</dd><dt>Thoát lúc</dt><dd>${clk(endedAt)}</dd>
+    <dt>Thời gian chơi</dt><dd>${mmss(endedAt-startedAt)}</dd><dt>Số câu đúng</dt><dd>${score}/10</dd>`;
+  $('newConfirm').hidden=true;$('again').textContent='Lượt chơi mới';
   $('review').innerHTML=QUESTIONS.map((Q,i)=>{
     const a=answers[i],bg=a===true?'var(--good)':a===false?'var(--seal)':'var(--bad)',pt=a===true?'1 điểm':a===false?'0 điểm':'Chưa làm · 0 điểm';
     return `<li><i style="background:${bg}">${i+1}</i><span>Câu ${i+1}: ${pt}</span></li>`;}).join('');
@@ -899,7 +903,7 @@ function toPlain(html){
     .replace(/\s+/g,' ').trim();
 }
 function buildPayload(){
-  return {sessionId,name:player.name,lop:player.lop,group:player.group,sbd:player.sbd,score,total:10,
+  return {sessionId,name:player.name,lop:player.lop,sbd:player.sbd,score,total:10,
     timeUsed:mmss(endedAt-startedAt),startedAt,endedAt,leaves,reason:reason||'done',
     items:QUESTIONS.map((Q,i)=>({bai:Q.bai,q:toPlain(Q.q)+(Q.f?' '+toPlain(Q.f):''),options:Q.o.map(toPlain),
       correct:'ABCD'[Q.a],chosen:chosen[i]===undefined?'':'ABCD'[chosen[i]],ok:answers[i]===true}))};
@@ -907,23 +911,21 @@ function buildPayload(){
 const SHEET_URL=((window.CAU_HINH||{}).SHEET_URL||'').trim();
 function buildReport(){
   const done=answers.filter(a=>a!==undefined).length;
-  return {game:'Chim Đưa Thư Hóa 10 – '+player.group,id:sessionId,name:player.group+' – '+player.name,member:player.name,group:player.group,cls:player.lop,sbd:player.sbd,
-    score,correct:score,wrong:done-score,none:10-done,used:mmss(endedAt-startedAt),violations:leaves,
-    reason:{timeout:'Hết thời gian',violation:'Rời màn hình 2 lần',quit:'Nộp bài và thoát',done:'Hoàn thành'}[reason]||'Hoàn thành',
-    finishedAt:new Date(endedAt).toLocaleString('vi-VN'),
-    items:QUESTIONS.map((Q,i)=>({n:i+1,place:'Tháp '+(i+1),lesson:Q.bai,q:toPlain(Q.q)+(Q.f?' '+toPlain(Q.f):''),
-      opts:Q.o.map(toPlain),correct:Q.a,chosen:chosen[i]===undefined?null:chosen[i],point:answers[i]===true?1:0,explain:toPlain(Q.e)}))};
+  return {kind:'result',game:'Chim Đưa Thư Hóa 10 (nhóm)',id:sessionId,lop:player.lop,group:player.group,sheet:player.sheet||'',
+    score,correct:score,answered:done,startedAt,endedAt,
+    reason:{timeout:'Hết thời gian',violation:'Rời màn hình 2 lần',quit:'Tự thoát',done:'Hoàn thành 10 câu'}[reason]||reason,violations:leaves,
+    detail:'[Chim Đưa Thư] '+QUESTIONS.map((Q,i)=>`Câu ${i+1} ${Q.bai.split(' · ')[0]}: `+(answers[i]===undefined?'chưa làm':`chọn ${'ABCD'[chosen[i]]}, ${answers[i]?'đúng':'sai'}`)).join('; ')};
 }
 let sending=false;
 async function sendResult(){
   const m=$('sendMsg'),rb=$('resendBtn');
   const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
   if(!player||!reason)return;
-  if(submitted===true){show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');return;}
-  const gs=window.google&&google.script&&google.script.run;
+  if(submitted===true){show('Đã gửi kết quả của nhóm về Google Sheet của giáo viên ✓','ok');return;}
+  const gs=false;
   if(gs){
     show('Đang gửi kết quả cho giáo viên…');
-    google.script.run.withSuccessHandler(()=>{submitted=true;save();show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');})
+    google.script.run.withSuccessHandler(()=>{submitted=true;save();show('Đã gửi kết quả của nhóm về Google Sheet của giáo viên ✓','ok');})
       .withFailureHandler(()=>show('Chưa gửi được kết quả. Kiểm tra mạng rồi bấm Gửi lại.','bad',true)).submitResult(buildPayload());
     return;
   }
@@ -933,7 +935,7 @@ async function sendResult(){
   try{
     const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});const j=await res.json();
     if(!j.ok)throw new Error(j.error||'máy chủ báo lỗi');
-    submitted=true;save();show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');
+    submitted=true;save();show('Đã gửi kết quả của nhóm về Google Sheet của giáo viên ✓','ok');
   }catch(err){
     try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',body,headers});submitted='maybe';save();
       show('Đã gửi kết quả nhưng chưa nhận được xác nhận. Nếu giáo viên chưa thấy bài của em, hãy bấm Gửi lại.','',true);}
@@ -942,7 +944,7 @@ async function sendResult(){
 }
 addEventListener('online',()=>{if(reason&&submitted!==true)sendResult();});
 $('resendBtn').onclick=()=>{submitted=false;sendResult();};
-function resultText(){return `Họ tên: ${player.name} | Lớp: ${player.lop} | ${player.group} | SBD: ${player.sbd} | Điểm: ${score}/10 | Thời gian: ${mmss(endedAt-startedAt)}${{timeout:' (hết giờ)',violation:' (rời màn hình 2 lần)',quit:' (tự thoát)'}[reason]||''}`;}
+function resultText(){return `Lớp: ${player.lop} | ${player.group} | Điểm: ${score}/10 | Thời gian: ${mmss(endedAt-startedAt)}${{timeout:' (hết giờ)',violation:' (rời màn hình 2 lần)',quit:' (tự thoát)'}[reason]||''}`;}
 $('copyBtn').onclick=()=>{
   const t=resultText(),m=$('copyMsg');
   const show=x=>{m.textContent=x;m.hidden=false;m.style.color='var(--gold)';};
@@ -957,32 +959,36 @@ function newPlayer(){
   $('end').hidden=true;$('lock').hidden=true;$('timer').hidden=true;$('who').textContent='Kết nối tri thức · Bài 1, 2, 3, 4';
   $('login').reset();$('loginErr').hidden=true;$('start').hidden=false;$('fName').focus();
 }
+async function api(data){
+  if(!SHEET_URL)throw new Error('nourl');
+  const res=await fetch(SHEET_URL,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain;charset=utf-8'},redirect:'follow'});
+  return res.json();
+}
+const netMsg=err=>err&&err.message==='nourl'?'Trò chơi chưa được nối với Google Sheet của giáo viên.':'Không kết nối được máy chủ kiểm tra mã. Kiểm tra mạng rồi thử lại.';
 function beginPlay(){
-  $('who').textContent=`${player.group} · ${player.name} · ${player.lop} · SBD ${player.sbd}`;
+  $('who').textContent=`${player.lop} · ${player.group}`;
   $('timer').hidden=false;$('exitBtn').hidden=false;$('start').hidden=true;
   if(document.activeElement)document.activeElement.blur();
   next();
 }
-const SBD_PREFIX={'9D01':'260901','9D02':'260902','10E01':'261001','12G01':'261201','12G02':'261202'};
-function syncSbd(){
-  const pre=SBD_PREFIX[$('fClass').value],inp=$('fSbd');
-  $('sbdPre').textContent=pre||'••••••';inp.disabled=!pre;
-  $('sbdHint').textContent=pre?`Số báo danh của lớp ${$('fClass').value}: ${pre}__ · em nhập 2 số cuối.`:'Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.';
-}
-$('fClass').addEventListener('change',()=>{syncSbd();if(!$('fSbd').disabled)$('fSbd').focus();});
-$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
-$('login').addEventListener('reset',()=>setTimeout(syncSbd,0));
-$('login').addEventListener('submit',e=>{
+$('login').addEventListener('submit',async e=>{
   e.preventDefault();
-  const name=$('fName').value.trim().replace(/\s+/g,' '),lop=$('fClass').value,group=$('fGroup').value,tail=$('fSbd').value.trim();
-  const miss=[!name&&'họ và tên',!lop&&'lớp',!group&&'nhóm',!tail&&'2 số cuối của số báo danh'].filter(Boolean);
-  if(miss.length){$('loginErr').textContent='Em cần nhập '+miss.join(', ')+'.';$('loginErr').hidden=false;return;}
-  if(!/^\d{2}$/.test(tail)){$('loginErr').textContent='Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.';$('loginErr').hidden=false;$('fSbd').focus();return;}
-  const sbd=SBD_PREFIX[lop]+tail;
-  picks=pickQuestions();buildQuestions(picks);
-  sessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);submitted=false;
-  player={name,lop,group,sbd};startedAt=Date.now();deadline=startedAt+LIMIT;reason='';leaves=0;
-  resetWorld();save();beginPlay();
+  const lop=$('fClass').value,group=$('fGroup').value,code=$('fCode').value.trim(),err=$('loginErr'),btn=$('go');
+  const fail=t=>{err.textContent=t;err.hidden=false;};
+  const miss=[!lop&&'lớp',!group&&'nhóm',!code&&'mã giáo viên'].filter(Boolean);
+  if(miss.length)return fail('Cần nhập '+miss.join(', ')+'.');
+  err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
+  try{
+    const r=await api({kind:'login',code,lop,group});
+    if(!r.ok){$('fCode').value='';$('fCode').focus();return fail(r.error==='code'?'Mã giáo viên không đúng.':(r.error||'Máy chủ từ chối đăng nhập.'));}
+    $('fCode').value='';
+    LIMIT=(Number(r.minutes)||5)*60*1000;
+    picks=pickQuestions();buildQuestions(picks);
+    sessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);submitted=false;
+    player={lop,group,sheet:r.sheet||''};startedAt=Date.now();deadline=startedAt+LIMIT;reason='';leaves=0;
+    resetWorld();save();beginPlay();
+  }catch(ex){fail(netMsg(ex));}
+  finally{btn.disabled=false;btn.textContent='Vào chơi';}
 });
 function lockGame(){
   if(!playing()||locked)return;
@@ -994,28 +1000,33 @@ function showLock(){
   locked=true;$('quit').hidden=true;lockPurpose='resume';for(const k in keys)keys[k]=false;
   document.querySelectorAll('.pad button').forEach(b=>b.classList.remove('on'));
   $('lockTitle').textContent='Bài chơi đã bị khóa';
-  $('lockMsg').textContent=`${player.name} (${player.group}, ${player.lop}) đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để tiếp tục. Đồng hồ vẫn đang chạy. Nếu rời màn hình thêm lần nữa, bài làm sẽ kết thúc ngay và tính điểm.`;
-  $('lockCancel').hidden=true;$('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;
+  $('lockMsg').textContent=`${player.group} (${player.lop}) đã rời khỏi màn hình chơi (lần 1). Hãy báo giáo viên nhập mã để tiếp tục. Đồng hồ vẫn đang chạy. Nếu rời màn hình thêm lần nữa, bài làm sẽ kết thúc ngay và tính điểm.`;
+  $('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;
   save();
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)lockGame();});
 addEventListener('blur',()=>lockGame());
 addEventListener('pagehide',()=>lockGame());
 $('again').onclick=()=>{
-  lockPurpose='new';$('lockTitle').textContent='Lượt chơi mới';
-  const gs=SHEET_URL||(window.google&&google.script&&google.script.run);
-  $('lockMsg').textContent='Giáo viên nhập mã để mở lượt chơi cho học sinh tiếp theo. Kết quả hiện tại sẽ bị xóa khỏi máy này.'+(gs&&submitted!==true?' Lưu ý: kết quả này CHƯA gửi được về Google Sheet, hãy bấm Gửi lại hoặc ghi lại trước.':'');
-  $('lockCancel').hidden=false;$('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;$('code').focus();
+  if(submitted!==true&&$('newConfirm').hidden){$('newConfirm').hidden=false;$('again').textContent='Vẫn mở lượt chơi mới';return;}
+  clearSave();
+  document.title=' ';document.body.innerHTML='';document.body.style.background='#fff';document.documentElement.style.background='#fff';
+  try{window.close();}catch(_){}
+  setTimeout(()=>{try{location.replace('about:blank');}catch(_){}},60);
 };
-$('lockCancel').onclick=()=>{$('lock').hidden=true;};
-$('unlockForm').addEventListener('submit',e=>{
+$('unlockForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if($('code').value.trim()!==CODE){$('codeErr').hidden=false;$('code').select();return;}
-  $('code').value='';
-  if(lockPurpose==='new'){newPlayer();return;}
-  locked=false;$('lock').hidden=true;save();
-  if(document.activeElement)document.activeElement.blur();
-  if(Date.now()>=deadline)finish('timeout');
+  const code=$('code').value.trim(),err=$('codeErr'),btn=$('unlockBtn');
+  if(!code){err.textContent='Giáo viên nhập mã mở khóa.';err.hidden=false;return;}
+  btn.disabled=true;btn.textContent='Đang kiểm tra…';
+  try{
+    const r=await api({kind:'unlock',code});
+    if(!r.ok){err.textContent='Mã không đúng. Chỉ giáo viên mới có mã mở khóa.';err.hidden=false;$('code').select();return;}
+    $('code').value='';err.hidden=true;locked=false;$('lock').hidden=true;save();
+    if(document.activeElement)document.activeElement.blur();
+    if(Date.now()>=deadline)finish('timeout');
+  }catch(ex){err.textContent=netMsg(ex);err.hidden=false;}
+  finally{btn.disabled=false;btn.textContent='Mở khóa';}
 });
 $('exitBtn').onclick=()=>{if(!playing())return;for(const k in keys)keys[k]=false;$('quit').hidden=false;$('quitNo').focus();};
 $('quitNo').onclick=()=>{$('quit').hidden=true;$('quitNo').blur();};
@@ -1031,11 +1042,11 @@ function restore(){
   if(!d||!d.player)return;
   if(!d.picks)return;
   picks=d.picks;buildQuestions(picks);
-  player=d.player;deadline=d.deadline;startedAt=d.startedAt;endedAt=d.endedAt||0;leaves=d.leaves||0;
+  LIMIT=d.LIMIT||LIMIT;player=d.player;deadline=d.deadline;startedAt=d.startedAt;endedAt=d.endedAt||0;leaves=d.leaves||0;
   answers=(d.answers||[]).map(v=>v===null?undefined:v);chosen=d.chosen||[];sessionId=d.sessionId||'';submitted=d.submitted===true?true:(d.submitted||false);
   score=answers.filter(Boolean).length;
   answers.forEach((a,i)=>{if(a!==undefined){towers[i].state=a?'ok':'no';drawFlag(towers[i],i);}});
-  $('start').hidden=true;$('who').textContent=`${player.group} · ${player.name} · ${player.lop} · SBD ${player.sbd}`;
+  $('start').hidden=true;$('who').textContent=`${player.lop} · ${player.group}`;
   if(d.finished){reason=d.reason;state='done';showEnd();sendResult();return;}
   cur=answers.length-1;
   if(cur>=0)bird.position.copy(towers[cur].land);
