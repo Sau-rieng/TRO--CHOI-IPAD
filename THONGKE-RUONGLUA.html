@@ -91,9 +91,9 @@ td.none{color:var(--muted)}
     </div>
 
     <div class="tiles" style="margin-bottom:16px">
-      <div class="card tile"><div class="k">Điểm trung bình chung</div><div class="v" id="tAvg">–</div><div class="s">trên tối đa 300 điểm</div></div>
+      <div class="card tile"><div class="k">Điểm trung bình chung</div><div class="v" id="tAvg">–</div><div class="s">trên thang 10 điểm</div></div>
       <div class="card tile"><div class="k">Số lượt chơi</div><div class="v" id="tPlays">–</div><div class="s" id="tGroups"></div></div>
-      <div class="card tile"><div class="k">Số câu đúng trung bình</div><div class="v" id="tCorr">–</div><div class="s">trên 10 câu</div></div>
+      <div class="card tile"><div class="k">Số câu đúng hoàn toàn (TB)</div><div class="v" id="tCorr">–</div><div class="s">trên 11 câu</div></div>
     </div>
 
     <div class="card chartbox" style="margin-bottom:16px">
@@ -118,10 +118,10 @@ td.none{color:var(--muted)}
 const $ = id => document.getElementById(id);
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const GROUPS = ['Nhóm 1','Nhóm 2','Nhóm 3','Nhóm 4','Nhóm 5','Nhóm 6','Nhóm 7','Nhóm 8'];
-const MAX_SCORE = 300;
+const MAX_SCORE = 10;
 let rows = [], sheets = [], current = '', code = '';
 const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const num = (v, d=1) => Number.isFinite(v) ? v.toLocaleString('vi-VN', {minimumFractionDigits:0, maximumFractionDigits:d}) : '–';
+const num = (v, d=2) => Number.isFinite(v) ? v.toLocaleString('vi-VN', {minimumFractionDigits:0, maximumFractionDigits:d}) : '–';
 const dayKey = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const dayLabel = k => { const [y,m,d] = k.split('-'); return `${d}/${m}/${y}`; };
 
@@ -190,11 +190,11 @@ function render(){
   $('chartSub').textContent = S.n ? 'Mỗi cột là trung bình điểm các lượt chơi của nhóm. Đường ngang là điểm trung bình chung.' : 'Chưa có lượt chơi nào trong phạm vi đã chọn.';
   drawChart(S);
   $('tbody').innerHTML = S.by.map(b=> b.n
-    ? `<tr><td>${esc(b.g)}</td><td>${b.n}</td><td><b>${num(b.avg)}</b></td><td>${b.max}</td><td>${b.min}</td><td>${num(b.corr)}</td></tr>`
+    ? `<tr><td>${esc(b.g)}</td><td>${b.n}</td><td><b>${num(b.avg)}</b></td><td>${num(b.max,2)}</td><td>${num(b.min,2)}</td><td>${num(b.corr)}</td></tr>`
     : `<tr><td>${esc(b.g)}</td><td class="none">0</td><td class="none">chưa chơi</td><td class="none">–</td><td class="none">–</td><td class="none">–</td></tr>`).join('');
 }
 
-function niceMax(v){ if(!(v>0)) return 50; const step = v > 150 ? 50 : v > 60 ? 20 : 10; return Math.ceil(v*1.12/step)*step; }
+function niceMax(v){ return MAX_SCORE; }   // thang điểm 10 cố định
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let shown = {}, shownMean = NaN, anim = 0;
 function drawChart(S){
@@ -202,7 +202,7 @@ function drawChart(S){
   const m = {l:44, r:16, t:24, b:36}, iw = W-m.l-m.r, ih = Hh-m.t-m.b;
   const top = Math.min(MAX_SCORE, niceMax(Math.max(S.avg||0, ...S.by.map(b=> b.n ? b.avg : 0))));
   const y = v => m.t + ih - v/top*ih, band = iw / S.by.length, bw = Math.min(56, band*0.56);
-  const ticks = []; const st = top <= 60 ? 10 : top <= 150 ? 30 : 50; for(let v=0; v<=top; v+=st) ticks.push(v);
+  const ticks = []; for(let v=0; v<=top; v+=2) ticks.push(v);
   const barD = (x, v) => { const yt = y(v), h = Math.max(2, y(0)-yt), r = Math.min(4, h/2); return `M${x},${y(0)} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+bw-r} Q${x+bw},${yt} ${x+bw},${yt+r} V${y(0)} Z`; };
   let s = `<svg viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}">`;
   ticks.forEach(v=>{ s += `<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l-8}" y="${y(v)+4}" text-anchor="end">${v}</text>`; });
@@ -241,7 +241,7 @@ function drawChart(S){
   el.querySelectorAll('.hit').forEach(h=>{
     const b = S.by[+h.dataset.i], bar = el.querySelector(`.bar[data-i="${h.dataset.i}"]`);
     h.addEventListener('pointermove', e=>{
-      tip.innerHTML = `<b>${esc(b.g)}</b><br>Điểm TB: <b>${num(b.avg)}</b><br>${b.n} lượt chơi · cao nhất ${b.max} · thấp nhất ${b.min}<br>Câu đúng TB: ${num(b.corr)}/10`;
+      tip.innerHTML = `<b>${esc(b.g)}</b><br>Điểm TB: <b>${num(b.avg)}</b><br>${b.n} lượt chơi · cao nhất ${num(b.max,2)} · thấp nhất ${num(b.min,2)}<br>Câu đúng TB: ${num(b.corr)}/11`;
       tip.hidden = false; const tw = tip.offsetWidth;
       tip.style.left = Math.min(innerWidth - tw - 8, e.clientX + 14) + 'px'; tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
       bar.classList.add('on');

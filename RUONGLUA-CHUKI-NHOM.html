@@ -101,6 +101,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 .qfig svg.orb{height:clamp(64px,11vh,96px);width:auto}
 .qfig svg.bohr{height:clamp(110px,18vh,160px);width:auto}
 .qtext{font-weight:700;font-size:clamp(18px,2.3vw,28px);line-height:1.3;margin:0;text-wrap:balance}
+.tflist{display:grid;gap:8px}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .opt{display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;padding:10px 14px;cursor:pointer;font-size:clamp(15px,1.7vw,21px);font-weight:600;line-height:1.3;min-width:0}
 .opt:hover:not(:disabled){border-color:var(--ink)}
@@ -109,6 +110,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-of
 .opt.ok{border-color:var(--good);background:var(--good-bg)}
 .opt.ok .k{background:var(--good)}
 .opt.dim{opacity:.4}
+.tfrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px 10px;font-size:clamp(15px,1.6vw,19px);font-weight:600}
+.tfk{font-family:var(--display);font-weight:800;font-size:18px;width:28px;text-align:center}
+.tfb{display:flex;gap:6px}
+.tfb button{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:15px;cursor:pointer;min-width:64px;color:var(--ink)}
+.tfb button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tfb button:disabled{cursor:default}
+.tfrow.ok{border-color:var(--good);background:var(--good-bg)}
+.tfrow.no{border-color:var(--warn);background:#fbe5df}
+.tfrow .key{font-size:13px;font-weight:700;color:var(--muted);grid-column:2/4}
+.opts .sabox{grid-column:1/-1}
+.sabox{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sabox input{font:800 26px var(--display);width:9em;max-width:100%;padding:8px 14px;border:2px solid var(--line);border-radius:12px;text-align:center;color:var(--ink);background:#fff}
+.sabox input.ok{border-color:var(--good);background:var(--good-bg)}
+.sabox input.no{border-color:var(--warn);background:#fbe5df}
+.sabox .key{font-weight:700}
 .why{display:flex;gap:14px;align-items:center;background:var(--good-bg);border-radius:12px;padding:10px 14px}
 .why p{margin:0;font-size:clamp(14px,1.5vw,18px);line-height:1.45;min-width:0;flex:1}
 .why b{color:var(--good)}
@@ -224,7 +240,7 @@ summary{cursor:pointer;font-weight:700}
     <div class="tl">
     <div class="panel clock" id="clock">
       <span class="t" id="time">5:00</span>
-      <span class="meta"><span>Đã mở <b id="qi">0</b>/10 ô</span><span class="bar"><i id="tbar"></i></span></span>
+      <span class="meta"><span>Đã mở <b id="qi">0</b>/11 ô</span><span class="bar"><i id="tbar"></i></span></span>
     </div>
     <span class="panel who" id="who"></span>
     <button class="panel iconbtn exit" id="exitBtn" type="button">Thoát</button>
@@ -247,6 +263,7 @@ summary{cursor:pointer;font-weight:700}
       <p class="qtext" id="qtext"></p>
       <div class="qfig" id="qfig" hidden></div>
       <div class="opts" id="opts"></div>
+      <div class="tflist" id="tflist" hidden></div>
       <div class="why" id="why" hidden></div>
       <div class="ctrl" id="ctrl"></div>
     </div>
@@ -261,8 +278,8 @@ summary{cursor:pointer;font-weight:700}
           <p>Cánh đồng là <b>bảng tuần hoàn</b>: mỗi tầng ruộng là một <b>chu kì</b>, mỗi cột là một <b>nhóm</b>, mỗi thửa là một <b>ô nguyên tố</b>. Kí hiệu, số chu kì và số nhóm đang <b>bị che</b>. Trả lời câu hỏi để mở ra.</p>
           <ol class="rules">
             <li>Điều khiển anh nông dân (<b>← ↑ ↓ →</b> hoặc cần điều khiển) đến thửa có cọc <b>?</b>, bấm <b>E</b> hoặc nút <b>Mở ô</b>, rồi chạm vào đáp án.</li>
-            <li>Mở 10 ô lúa. Đúng thì được điểm của ô đó. Lên tầng ở bậc gỗ hoặc đường dốc hai bên.</li>
-            <li>Chu kì càng lớn, câu càng khó, điểm càng cao.</li>
+            <li>Mỗi lượt 11 ô = 10 điểm: <b>7 trắc nghiệm</b> (1 điểm/câu), <b>2 đúng/sai</b> (đúng 1 ý 0,1 · 2 ý 0,25 · 3 ý 0,5 · 4 ý 1 điểm), <b>2 trả lời ngắn</b> (chỉ nhập số, 0,5 điểm/câu). Lên tầng ở bậc gỗ hoặc đường dốc hai bên.</li>
+            <li>Chu kì càng lớn, câu càng khó.</li>
             <li class="warn">Không rời màn hình chơi. Rời lần 1: trò chơi bị khoá, cần giáo viên nhập mã. Rời lần 2: trò chơi kết thúc và gửi điểm.</li>
           </ol>
           <div class="growth" id="growth"></div>
@@ -522,6 +539,64 @@ function makeQuestion(e, type){
 function typesFor(e, stage){
   return STAGE_PLAN[stage].types.filter(t=> (t!=='sym' || DESC[e.sym]) && !(t==='g' && e.sym==='He') && !(t==='orb_pg' && !configOf(e.z).core));
 }
+/* ---------- each round: 7 trắc nghiệm (1 đ), 2 đúng/sai (tối đa 1 đ), 2 trả lời ngắn (0,5 đ) = 10 điểm ---------- */
+const KIND = {mc:{name:'Trắc nghiệm', label:'1 điểm'}, tf:{name:'Đúng/Sai', label:'tối đa 1 điểm'}, sa:{name:'Trả lời ngắn', label:'0,5 điểm'}};
+const TF_SCORE = [0, 0.1, 0.25, 0.5, 1];
+const SA_POINTS = 0.5, MC_POINTS = 1;
+// [stage, kind]: harder kinds sit on the higher terraces
+const ROUND_SLOTS = [[0,'mc'], [1,'mc'],[1,'mc'],[1,'sa'], [2,'mc'],[2,'mc'],[2,'tf'], [3,'mc'],[3,'sa'], [4,'mc'],[4,'tf']];
+const fmtPt = v => (Math.round(v*100)/100).toLocaleString('vi-VN', {maximumFractionDigits:2});
+const unpaired = C => C.subs.reduce((a,s)=>{ const b = {s:1,p:3,d:5,f:7}[s.l]; return a + (s.e <= b ? s.e : 2*b - s.e); }, 0);
+const OTHER_BLOCK = {s:'p', p:'s', d:'p'};
+
+function makeTF(e, stage){
+  const C = configOf(e.z), g = GROUP[e.c], v = C.block==='d' ? C.ns : C.ns + C.np, u = unpaired(C);
+  const byZ = stage >= 4;
+  const stem = byZ ? `Nguyên tử X có số hiệu nguyên tử Z = ${e.z}. Mỗi ý sau đây đúng hay sai?`
+                   : `Nguyên tử X có cấu hình electron ${C.full}. Mỗi ý sau đây đúng hay sai?`;
+  const off = (n, lo=0) => { const c = [n+1, n-1].filter(x=> x>=lo); return shuffle(c)[0]; };
+  const pool = [
+    !byZ && {t:`Hạt nhân nguyên tử X có ${e.z} proton.`, f:`Hạt nhân nguyên tử X có ${off(e.z,1)} proton.`},
+    {t:`Nguyên tử X có ${C.sh.length} lớp electron.`, f:`Nguyên tử X có ${off(C.sh.length,1)} lớp electron.`},
+    {t:`Lớp ngoài cùng của X có ${v} electron.`, f:`Lớp ngoài cùng của X có ${off(v,1)} electron.`},
+    {t:`X thuộc chu kì ${e.p}.`, f:`X thuộc chu kì ${periodWrongs(e)[0]}.`},
+    {t:`X thuộc nhóm ${g}.`, f:`X thuộc nhóm ${groupWrongs(e)[0]}.`},
+    {t:`X là nguyên tố ${C.block}.`, f:`X là nguyên tố ${OTHER_BLOCK[C.block]}.`},
+    {t:`Ở trạng thái cơ bản, nguyên tử X có ${u} electron độc thân.`, f:`Ở trạng thái cơ bản, nguyên tử X có ${off(u)} electron độc thân.`},
+    C.block==='d' && {t:`X có ${C.nd+C.ns} electron hoá trị.`, f:`X có ${off(C.nd+C.ns,1)} electron hoá trị.`},
+  ].filter(Boolean);
+  const pick = shuffle(pool).slice(0,4);
+  let truth = pick.map(()=> Math.random() < .5);
+  if(truth.every(x=>x)) truth[(Math.random()*4)|0] = false;
+  if(truth.every(x=>!x)) truth[(Math.random()*4)|0] = true;
+  return {kind:'tf', q:stem, fig:'', items: pick.map((s,i)=> ({text: truth[i] ? s.t : s.f, truth: truth[i]}))};
+}
+
+function makeSA(e, stage){
+  const C = configOf(e.z), u = unpaired(C);
+  const pSum = C.subs.filter(s=> s.l==='p').reduce((a,s)=> a+s.e, 0), sSum = C.subs.filter(s=> s.l==='s').reduce((a,s)=> a+s.e, 0);
+  const d3 = (C.subs.find(s=> s.n===3 && s.l==='d') || {e:0}).e;
+  const opts = stage <= 2 ? [
+    {q:`Nguyên tử X có cấu hình electron ${C.full}. Số hiệu nguyên tử của X là bao nhiêu?`, a:e.z},
+    {q:'Hình bên là mô hình sự phân bố electron trên các lớp của nguyên tử X. Số hiệu nguyên tử của X là bao nhiêu?', a:e.z, fig:bohrSVG(C.sh)},
+    {q:`Nguyên tử X có cấu hình electron ${C.full}. Ở trạng thái cơ bản, X có bao nhiêu electron độc thân?`, a:u},
+    pSum && {q:`Nguyên tử X có cấu hình electron ${C.full}. Tổng số electron ở các phân lớp p của X là bao nhiêu?`, a:pSum},
+  ] : [
+    {q:`Nguyên tử X có cấu hình electron viết gọn ${C.short}. Số hiệu nguyên tử của X là bao nhiêu?`, a:e.z},
+    {q:`Nguyên tử X có Z = ${e.z}. Ở trạng thái cơ bản, X có bao nhiêu electron độc thân?`, a:u},
+    {q:`Nguyên tử X có Z = ${e.z}. Tổng số electron ở các phân lớp s của X là bao nhiêu?`, a:sSum},
+    d3 && {q:`Nguyên tử X có Z = ${e.z}. Phân lớp 3d của X có bao nhiêu electron?`, a:d3},
+  ];
+  const o = shuffle(opts.filter(Boolean))[0];
+  return {kind:'sa', q:o.q, fig:o.fig || '', ans:String(o.a)};
+}
+function makeCellQuestion(e, stage, kind, avoidType){
+  if(kind==='tf') return makeTF(e, stage);
+  if(kind==='sa') return makeSA(e, stage);
+  const opts = typesFor(e, stage), fresh = opts.filter(t=> t!==avoidType);
+  const q = makeQuestion(e, shuffle(fresh.length ? fresh : opts)[0]); q.kind = 'mc'; return q;
+}
+
 const TEAM_STYLE = [{c:'#ff8a7a',s:'▲'},{c:'#7cc4ff',s:'●'},{c:'#ffd64d',s:'■'},{c:'#86e08f',s:'◆'},{c:'#d9a6ff',s:'★'},{c:'#ffb067',s:'✚'}];
 
 /* ================= World layout: the field IS the periodic table =================
@@ -761,7 +836,7 @@ function chuKiTex(p){
     cx.fillStyle = '#1e2b1c'; cx.textAlign='center'; cx.textBaseline='middle';
     const on = REV.p.has(p);
     cx.font = `800 82px ${FONT}`; cx.fillText(`CHU KÌ ${on ? p : '?'}`, 256, 92);
-    cx.font = `600 28px ${FONT}`; cx.fillStyle = '#4b5a43'; cx.fillText(on ? `${p} lớp electron · ${st.name}` : `${st.name} · ${st.pts} điểm`, 256, 146);
+    cx.font = `600 28px ${FONT}`; cx.fillStyle = '#4b5a43'; cx.fillText(on ? `${p} lớp electron · ${st.name}` : st.name, 256, 146);
   });
   BOARD_TEX.push(tex); CHUKI_TEX[p] = tex; return tex;
 }
@@ -805,8 +880,8 @@ function drawStake(c, cell){
   c.fillStyle = '#7a5530'; rrect(c,6,6,500,288,26); c.fill();
   c.fillStyle = cell.done ? '#e1f3e6' : '#f6ecd2'; rrect(c,22,22,468,256,18); c.fill();
   c.fillStyle = '#1e2b1c'; c.textAlign='center'; c.textBaseline='middle';
-  if(!cell.done){ c.font = `800 110px ${FONT}`; c.fillText('?',110,150); c.textAlign='left'; c.font = `800 64px ${FONT}`; c.fillText(`${st.pts} điểm`,190,112); c.font = `600 40px ${FONT}`; c.fillText(st.name,190,190); }
-  else { c.fillStyle = '#23824f'; c.font = `800 100px ${FONT}`; c.fillText('✓',105,150); c.fillStyle = '#1e2b1c'; c.textAlign='left'; c.font = `800 52px ${FONT}`; c.fillText(`Câu ${cell.order}`,185,105); c.font = `700 46px ${FONT}`; c.fillText(cell.ok ? 'Trả lời đúng' : 'Trả lời sai',185,185); }
+  if(!cell.done){ const K = KIND[cell.q.kind||'mc']; c.font = `800 110px ${FONT}`; c.fillText('?',110,150); c.textAlign='left'; fitText(c, K.name, 290, 60, 800); c.fillText(K.name,190,112); c.font = `600 40px ${FONT}`; c.fillText(K.label,190,190); }
+  else { c.fillStyle = '#23824f'; c.font = `800 100px ${FONT}`; c.fillText('✓',105,150); c.fillStyle = '#1e2b1c'; c.textAlign='left'; c.font = `800 52px ${FONT}`; c.fillText(`Câu ${cell.order}`,185,105); c.font = `700 46px ${FONT}`; c.fillText(`+${fmtPt(cell.earned||0)} điểm`,185,185); }
 }
 function makeStake(cell){
   const e = cell.el, x = colX(e.c) + W/2 - 0.9, z = zb(e.p) - 1.7;   // far side of the paddy, so it never hides the symbol
@@ -1045,7 +1120,7 @@ function drawTurn(){
 }
 
 /* ================= Game: each student logs in on an iPad; teacher code is checked by the Google Sheet ================= */
-const SAVE_KEY = 'ruonglua-chuki-v3';
+const SAVE_KEY = 'ruonglua-chuki-v4';
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const REASONS = {done:'Mở đủ 10 ô lúa', timeout:'Hết thời gian', violation:'Rời màn hình 2 lần', quit:'Tự thoát'};
 let player = null;              // {lop, group}
@@ -1070,7 +1145,7 @@ function save(){
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({player, teams, opened, startedAt, deadline, endedAt, running, locked, leaves, reason, sessionId, submitted, TOTAL,
       fx:farmer.position.x, fz:farmer.position.z,
-      cells: qCells.map(c=>({sym:c.el.sym, stage:c.stage, q:c.q, done:c.done, by:c.by, chosen:c.chosen, ok:c.ok, order:c.order}))}));
+      cells: qCells.map(c=>({sym:c.el.sym, stage:c.stage, q:c.q, done:c.done, by:c.by, chosen:c.chosen, ok:c.ok, order:c.order, earned:c.earned, nRight:c.nRight}))}));
   }catch(_){}
 }
 function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(_){} }
@@ -1081,20 +1156,17 @@ function setupRound(saved){
   qCells = [];
   if(saved){
     saved.forEach(s=>{
-      const cell = {el:BY_SYM[s.sym], stage:s.stage, q:s.q, done:s.done, by:s.by, chosen:s.chosen, ok:s.ok, order:s.order, winners: s.done && s.ok ? [0] : []};
+      const cell = {el:BY_SYM[s.sym], stage:s.stage, q:s.q, done:s.done, by:s.by, chosen:s.chosen, ok:s.ok, order:s.order, earned:s.earned||0, nRight:s.nRight, winners: s.done && s.ok ? [0] : []};
       makeStake(cell); qCells.push(cell);
     });
     return;
   }
-  STAGE_PLAN.forEach((plan, stage)=>{
-    const els = shuffle(plan.els).slice(0,2).map(sym=> BY_SYM[sym]);
-    let used = null;
-    els.forEach(el=>{
-      const opts = typesFor(el, stage), fresh = opts.filter(t=> t!==used);
-      const type = shuffle(fresh.length ? fresh : opts)[0]; used = type;
-      const cell = {el, stage, q:makeQuestion(el, type), done:false, winners:[]};
-      makeStake(cell); qCells.push(cell);
-    });
+  const pools = STAGE_PLAN.map(pl=> shuffle(pl.els)), lastType = [];
+  ROUND_SLOTS.forEach(([stage, kind])=>{
+    const el = BY_SYM[pools[stage].shift()];
+    const q = makeCellQuestion(el, stage, kind, lastType[stage]); if(q.type) lastType[stage] = q.type;
+    const cell = {el, stage, q, done:false, earned:0, winners:[]};
+    makeStake(cell); qCells.push(cell);
   });
 }
 function revealCell(e){
@@ -1149,7 +1221,7 @@ function startGame(minutes){
   if(document.activeElement) document.activeElement.blur();
 }
 function renderTeams(){
-  $('teams').innerHTML = teams.map((t,i)=>`<div class="panel team" id="tm${i}" style="--c:${t.c}"><span class="sh">${t.s}</span><span class="nm">${esc(t.name)}</span><span class="sc">${t.score}</span></div>`).join('');
+  $('teams').innerHTML = teams.map((t,i)=>`<div class="panel team" id="tm${i}" style="--c:${t.c}"><span class="sh">${t.s}</span><span class="nm">${esc(t.name)}</span><span class="sc">${fmtPt(t.score)}</span></div>`).join('');
 }
 function shellsSVG(shells, sym){
   const n = shells.length, R0 = 14, step = (52-R0)/Math.max(1,n);
@@ -1160,43 +1232,83 @@ function shellsSVG(shells, sym){
 function openCell(cell){
   if(!cell || cell.done || phase!=='walk' || locked || reason) return;
   current = cell; phase = 'ask'; cell.order = opened + 1;
-  const q = cell.q, st = STAGES[cell.stage];
+  const q = cell.q, st = STAGES[cell.stage], kind = q.kind || 'mc', K = KIND[kind];
   $('qnum').textContent = `Câu ${cell.order}`;
   $('qplace').textContent = 'Ô bí ẩn';
-  $('qstage').textContent = `${st.name} · ${st.pts} điểm`; $('qstage').style.setProperty('--c', st.css);
-  $('qwho').textContent = '';
+  $('qstage').textContent = `${K.name} · ${K.label}`; $('qstage').style.setProperty('--c', st.css);
+  $('qwho').textContent = st.name;
   $('qtext').textContent = q.q;
   $('qfig').innerHTML = q.fig || ''; $('qfig').hidden = !q.fig;
-  $('opts').innerHTML = q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('');
-  $('opts').querySelectorAll('.opt').forEach(b=> b.onclick = ()=> choose(+b.dataset.i));
-  $('why').hidden = true;
-  $('ctrl').innerHTML = `<span class="kbd">Chạm vào đáp án em chọn (hoặc phím 1–4). Chỉ được chọn một lần.</span>`;
+  $('why').hidden = true; $('opts').hidden = kind==='tf'; $('tflist').hidden = kind!=='tf';
+  if(kind==='mc'){
+    $('opts').innerHTML = q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('');
+    $('opts').querySelectorAll('.opt').forEach(b=> b.onclick = ()=> submitAnswer(+b.dataset.i));
+    $('ctrl').innerHTML = `<span class="kbd">Chạm vào đáp án em chọn (hoặc phím 1–4). Chỉ được chọn một lần.</span>`;
+  } else if(kind==='tf'){
+    const pick = [null,null,null,null];
+    $('tflist').innerHTML = q.items.map((it,i)=>`<div class="tfrow" data-i="${i}"><span class="tfk">${'abcd'[i]})</span><span>${esc(it.text)}</span><span class="tfb"><button type="button" data-v="1" aria-pressed="false">Đúng</button><button type="button" data-v="0" aria-pressed="false">Sai</button></span></div>`).join('');
+    $('ctrl').innerHTML = `<span class="kbd">Chọn Đúng hoặc Sai cho cả 4 ý rồi bấm Nộp. Đúng 1 ý: 0,1 · 2 ý: 0,25 · 3 ý: 0,5 · 4 ý: 1 điểm.</span><button class="go alt" type="button" id="tfGo" disabled>Nộp câu này</button>`;
+    $('tflist').querySelectorAll('.tfrow').forEach(row=>{
+      const i = +row.dataset.i;
+      row.querySelectorAll('button').forEach(btn=> btn.onclick = ()=>{
+        pick[i] = btn.dataset.v === '1';
+        row.querySelectorAll('button').forEach(x=> x.setAttribute('aria-pressed', x===btn));
+        $('tfGo').disabled = pick.some(v=> v===null);
+      });
+    });
+    $('tfGo').onclick = ()=>{ if(!pick.some(v=> v===null)) submitAnswer(pick.slice()); };
+  } else {
+    $('opts').innerHTML = `<div class="sabox"><input id="saInput" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="Nhập số" aria-label="Đáp án (chỉ nhập số)"><button class="go alt" type="button" id="saGo">Nộp đáp án</button></div>`;
+    $('ctrl').innerHTML = `<span class="kbd">Câu trả lời ngắn: chỉ nhập số. Chỉ được nộp một lần.</span>`;
+    const inp = $('saInput');
+    inp.addEventListener('input', ()=>{ inp.value = inp.value.replace(/[^0-9,.\-]/g,''); });
+    const go = ()=>{ const v = inp.value.trim(); if(!v || !Number.isFinite(Number(v.replace(',','.')))){ inp.focus(); return; } submitAnswer(v); };
+    $('saGo').onclick = go; inp.addEventListener('keydown', ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); go(); } });
+  }
   $('deck').hidden = false; $('act').hidden = true; clearKeys(); save();
 }
-function choose(i){
+const choose = i => submitAnswer(i);
+function submitAnswer(ans){
   if(phase!=='ask' || locked || reason) return;
   phase = 'reveal';
-  const cell = current, q = cell.q, st = STAGES[cell.stage], e = cell.el, t = teams[0];
-  const ok = i === q.ans;
-  Object.assign(cell, {chosen:i, ok, by:0, done:true, winners: ok ? [0] : []});
-  t.answered++; if(ok){ t.score += st.pts; t.correct++; }
+  const cell = current, q = cell.q, kind = q.kind || 'mc', e = cell.el, t = teams[0];
+  let earned = 0, ok = false, verdict = '';
+  if(kind==='mc'){
+    ok = ans === q.ans; earned = ok ? MC_POINTS : 0; cell.chosen = ans;
+    $('opts').querySelectorAll('.opt').forEach((b,j)=>{ b.disabled = true; b.classList.add(j===q.ans ? 'ok' : (j===ans ? 'no' : 'dim')); });
+    verdict = ok ? `Chính xác! +1 điểm` : `Chưa đúng. Đáp án đúng là ${'ABCD'[q.ans]}.`;
+  } else if(kind==='tf'){
+    const right = q.items.map((it,i)=> it.truth === ans[i]), n = right.filter(Boolean).length;
+    earned = TF_SCORE[n]; ok = n===4; cell.chosen = ans; cell.nRight = n;
+    $('tflist').querySelectorAll('.tfrow').forEach((row,i)=>{
+      row.classList.add(right[i] ? 'ok' : 'no'); row.querySelectorAll('button').forEach(b=> b.disabled = true);
+      row.insertAdjacentHTML('beforeend', `<span class="key">${right[i] ? '✓' : '✗'} Ý này ${q.items[i].truth ? 'ĐÚNG' : 'SAI'}</span>`);
+    });
+    verdict = `Đúng ${n}/4 ý · +${fmtPt(earned)} điểm`;
+  } else {
+    const v = Number(String(ans).replace(',','.')); ok = v === Number(q.ans); earned = ok ? SA_POINTS : 0; cell.chosen = String(ans);
+    const inp = $('saInput'); inp.disabled = true; inp.classList.add(ok ? 'ok' : 'no'); $('saGo').remove();
+    if(!ok) $('opts').querySelector('.sabox').insertAdjacentHTML('beforeend', `<span class="key">Đáp án đúng: ${esc(q.ans)}</span>`);
+    verdict = ok ? `Chính xác! +0,5 điểm` : `Chưa đúng. Đáp án đúng là ${esc(q.ans)}.`;
+  }
+  Object.assign(cell, {ok, earned, by:0, done:true, winners: ok ? [0] : []});
+  t.answered++; t.score = Math.round((t.score + earned)*100)/100; if(ok) t.correct++;
   opened++; history.push(cell); $('qi').textContent = opened;
-  $('opts').querySelectorAll('.opt').forEach((b,j)=>{ b.disabled = true; b.classList.add(j===q.ans ? 'ok' : (j===i ? 'no' : 'dim')); });
   const info = placeText(e);
   $('why').innerHTML = shellsSVG(info.sh, e.sym) + `<p>${info.txt}<br>Thửa ruộng này đã mở: ô <b>${e.sym}</b>, tầng <b>Chu kì ${e.p}</b>, cột <b>nhóm ${GROUP[e.c]}</b>.</p>`; $('why').hidden = false;
   $('qplace').textContent = `Ô ${e.sym} · Chu kì ${e.p} · Nhóm ${GROUP[e.c]}`;
   revealCell(e); refreshStake(cell);
-  const pop = $('tm0'); if(ok && pop){ pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
+  const pop = $('tm0'); if(earned > 0 && pop){ pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
   renderTeams();
-  $('ctrl').innerHTML = `<span class="verdict ${ok ? 'good' : 'bad'}">${ok ? `Chính xác! +${st.pts} điểm` : `Chưa đúng. Đáp án đúng là ${'ABCD'[q.ans]}.`}</span>` +
-    `<button class="go" type="button" id="btnNext">${opened>=10 ? 'Xem kết quả' : 'Tiếp tục ›'}</button>`;
+  $('ctrl').innerHTML = `<span class="verdict ${ok ? 'good' : (earned > 0 ? '' : 'bad')}">${verdict}</span>` +
+    `<button class="go" type="button" id="btnNext">${opened>=qCells.length ? 'Xem kết quả' : 'Tiếp tục ›'}</button>`;
   $('btnNext').onclick = closeCell; $('btnNext').focus();
   save();
 }
 function closeCell(){
   if(phase!=='reveal') return;
   $('deck').hidden = true; current = null; phase = 'walk';
-  if(opened >= 10) finish('done'); else save();
+  if(opened >= qCells.length) finish('done'); else save();
 }
 
 /* ---------- exit button ---------- */
@@ -1216,21 +1328,27 @@ function showEnd(){
   showOnly('result');
   const t = teams[0];
   $('rEyebrow').textContent = `${player.lop} · ${player.group} · ${REASONS[reason] || ''}${player.sheet ? ' · Bảng: ' + player.sheet : ''}`;
-  $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Nhóm đã thoát trò chơi'}[reason] || 'Nhóm đã mở đủ 10 ô lúa';
-  $('rTotal').innerHTML = `<b>${t.score}</b> điểm · ${t.correct}/${opened} câu đúng`;
+  $('rTitle').textContent = {violation:'Trò chơi kết thúc vì rời màn hình lần 2', timeout:'Hết giờ! Mùa gặt kết thúc', quit:'Nhóm đã thoát trò chơi'}[reason] || 'Nhóm đã mở đủ 11 ô lúa';
+  $('rTotal').innerHTML = `<b>${fmtPt(t.score)}</b> / 10 điểm · ${t.correct}/${opened} câu đúng hoàn toàn`;
   $('rank').innerHTML = `<li class="info"><span>Lớp · Nhóm</span><b>${esc(player.lop)} · ${esc(player.group)}</b></li>`+
     `<li class="info"><span>Đăng nhập lúc</span><b>${clock24(startedAt)}</b></li>`+
     `<li class="info"><span>Thoát lúc</span><b>${clock24(endedAt)}</b></li><li class="info"><span>Thời gian chơi</span><b>${fmt((endedAt-startedAt)/1000)}</b></li>`;
   const ordered = history.concat(qCells.filter(c=>!c.done).sort((a,b)=>a.stage-b.stage));
-  $('review').innerHTML = ordered.map(c=>{ const q = c.q, st = STAGES[c.stage];
-    return `<li><i>Ô ${esc(c.el.sym)} (chu kì ${c.el.p}, nhóm ${GROUP[c.el.c]}) · ${st.pts} điểm.</i> ${esc(q.q)}<br>Đáp án: <b>${esc(q.opts[q.ans])}</b>${c.done ? ` · em chọn ${'ABCD'[c.chosen]} (${c.ok ? 'đúng' : 'sai'})` : ' <span class="skip">· chưa mở</span>'}</li>`; }).join('');
+  $('review').innerHTML = ordered.map(c=>{ const q = c.q, kind = q.kind || 'mc', K = KIND[kind];
+    const head = `<i>Ô ${esc(c.el.sym)} (chu kì ${c.el.p}, nhóm ${GROUP[c.el.c]}) · ${K.name}.</i> ${esc(q.q)}<br>`;
+    if(!c.done) return `<li>${head}<span class="skip">Chưa mở</span></li>`;
+    if(kind==='mc') return `<li>${head}Đáp án: <b>${esc(q.opts[q.ans])}</b> · nhóm chọn ${'ABCD'[c.chosen]} (${c.ok ? 'đúng' : 'sai'}) · +${fmtPt(c.earned)} điểm</li>`;
+    if(kind==='tf') return `<li>${head}${q.items.map((it,i)=>`${'abcd'[i]}) ${esc(it.text)} → <b>${it.truth ? 'Đúng' : 'Sai'}</b>${c.chosen && c.chosen[i]===it.truth ? ' ✓' : ' ✗'}`).join('<br>')}<br>Đúng ${c.nRight}/4 ý · +${fmtPt(c.earned)} điểm</li>`;
+    return `<li>${head}Đáp án: <b>${esc(q.ans)}</b> · nhóm nhập ${esc(c.chosen)} (${c.ok ? 'đúng' : 'sai'}) · +${fmtPt(c.earned)} điểm</li>`; }).join('');
   $('newConfirm').hidden = true; $('btnNew').textContent = 'Lượt chơi mới';
 }
 function buildReport(){
   const t = teams[0];
   return {kind:'result', game:'Ruộng lúa Chu kì', id:sessionId, lop:player.lop, group:player.group, sheet:player.sheet || '',
-    score:t.score, correct:t.correct, answered:t.answered, startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves,
-    detail: history.map(c=> `Câu ${c.order} ô ${c.el.sym} (${STAGES[c.stage].pts}đ): chọn ${'ABCD'[c.chosen]}, ${c.ok ? 'đúng' : 'sai'}`).join('; ')};
+    score:Math.round(t.score*100)/100, correct:t.correct, answered:t.answered, startedAt, endedAt, reason:REASONS[reason] || reason, violations:leaves,
+    detail: history.map(c=>{ const k = c.q.kind || 'mc';
+      const what = k==='mc' ? `chọn ${'ABCD'[c.chosen]}` : k==='tf' ? `đúng ${c.nRight}/4 ý` : `nhập ${c.chosen} (đáp án ${c.q.ans})`;
+      return `Câu ${c.order} ô ${c.el.sym} [${KIND[k].name}]: ${what}, +${fmtPt(c.earned)}đ`; }).join('; ')};
 }
 let sending = false;
 async function sendResult(){
@@ -1307,15 +1425,15 @@ function restore(){
   const fx = d.fx ?? START.x, fz = d.fz ?? START.z; farmer.position.set(fx, H(fx,fz), fz); fy = farmer.position.y;
   if(reason){ phase = 'end'; running = false; revealAll(); showOnly('result'); $('top').hidden = false; $('mapbox').hidden = false; $('exitBtn').hidden = true; renderTeams(); showEnd(); sendResult(); return true; }
   running = true; phase = 'walk'; showOnly(null); showHud(true); renderTeams(); drawTurn(); snapCam();
-  if(opened >= 10){ finish('done'); return true; }
+  if(opened >= qCells.length){ finish('done'); return true; }
   if(Date.now() >= deadline){ finish('timeout'); return true; }
   if(d.locked){ showLock(); } else lockGame();
   return true;
 }
 
 /* ---------- setup UI ---------- */
-$('growth').innerHTML = STAGES.map(s=>`<div style="--c:${s.css}">${s.rows}<b>${s.pts} điểm</b>${s.name}</div>`).join('');
-$('stages').innerHTML = STAGES.map(s=>`<i style="--c:${s.css}"></i><span>${s.rows}: ${s.name}</span><b>${s.pts}</b>`).join('');
+$('growth').innerHTML = STAGES.map(s=>`<div style="--c:${s.css}">${s.rows}<b>${s.name}</b></div>`).join('');
+$('stages').innerHTML = STAGES.map(s=>`<i style="--c:${s.css}"></i><span>${s.rows}: ${s.name}</span><b></b>`).join('');
 
 /* ---------- input ---------- */
 const keys = {}, joy = {x:0,y:0};
@@ -1333,7 +1451,7 @@ addEventListener('keydown', e=>{
     keys[e.code] = true;
     if((e.code==='KeyE'||e.code==='Enter'||e.code==='Space') && hereCell && !hereCell.done) openCell(hereCell);
   } else if(phase==='ask'){
-    const n = parseInt(e.key,10); if(n>=1 && n<=4){ e.preventDefault(); choose(n-1); }
+    const n = parseInt(e.key,10); if(n>=1 && n<=4 && current && (current.q.kind||'mc')==='mc'){ e.preventDefault(); choose(n-1); }
   } else if(phase==='reveal'){
     if(e.code==='Space'){ e.preventDefault(); closeCell(); }
   }
@@ -1451,7 +1569,7 @@ function tick(){
   if(running && !locked && phase==='walk'){
     hereCell = cellAt(p.x,p.z);
     const act = $('act');
-    if(hereCell && !hereCell.done){ act.hidden = false; act.textContent = `Mở ô bí ẩn · ${STAGES[hereCell.stage].pts} điểm (E)`; } else act.hidden = true;
+    if(hereCell && !hereCell.done){ act.hidden = false; act.textContent = `Mở ô bí ẩn · ${KIND[hereCell.q.kind||'mc'].name} (E)`; } else act.hidden = true;
   } else hereCell = null;
   qCells.forEach((c,i)=>{ c.badge.position.y = 4.3 + (RM ? 0 : Math.sin(t*2+i)*.18); if(c.ring.visible) c.ring.material.opacity = .55 + (RM ? 0 : Math.sin(t*4+i)*.3); });
   boat.position.y = -.7 + Math.sin(t*1.3)*.04;
