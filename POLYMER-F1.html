@@ -185,7 +185,7 @@ dl.info dt{color:var(--muted)}dl.info dd{margin:0;font-weight:600;font-variant-n
     <div class="pad">
       <div class="split">
         <div>
-          <div class="eyebrow">Hóa học 12 · Đại cương về polymer</div>
+          <div class="eyebrow">Hóa học 12 · Bài 12, 13 · Polymer</div>
           <h1>Polymer <span>Grand Prix</span></h1>
           <p>Lái mô tô quanh trường đua. Mỗi cổng <strong>TRẠM</strong> là một pit stop: xe dừng lại và em trả lời một câu hỏi. Qua đủ 10 trạm trước khi hết giờ. Lỡ ra khỏi đường, bấm <strong>R</strong> hoặc nút <strong>Về đường</strong>.</p>
           <div class="rules">
@@ -274,40 +274,17 @@ dl.info dt{color:var(--muted)}dl.info dd{margin:0;font-weight:600;font-variant-n
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="POLYMER-CAUHOI.js"></script>
 <script>
-/* ===== Câu hỏi: Đại cương về polymer (đáp án đúng luôn là phương án đầu tiên, trò chơi tự xáo) ===== */
-const QUESTIONS = [
- {ten:'Khái niệm polymer', q:'Polymer là gì?',
-  o:['Hợp chất có phân tử khối rất lớn, do nhiều đơn vị nhỏ (mắt xích) liên kết với nhau tạo nên','Hợp chất có phân tử khối nhỏ, dễ bay hơi','Hỗn hợp nhiều chất có cùng công thức phân tử','Hợp chất chỉ được tạo thành từ phản ứng trùng ngưng'],
-  ex:'Polymer là những hợp chất có phân tử khối rất lớn, do nhiều mắt xích liên kết với nhau. Polymer có thể tạo thành từ trùng hợp hoặc trùng ngưng.'},
- {ten:'Hệ số polymer hóa', q:'Trong công thức polyethylene –(CH<sub>2</sub>–CH<sub>2</sub>)<sub>n</sub>–, số <i>n</i> được gọi là',
-  o:['Hệ số polymer hóa (độ polymer hóa)','Số nguyên tử carbon trong phân tử','Số phân tử monomer chưa phản ứng','Số nhánh của mạch polymer'],
-  ex:'<i>n</i> là số mắt xích trong một phân tử polymer, gọi là hệ số polymer hóa hay độ polymer hóa.'},
- {ten:'Monomer tạo PE', q:'Monomer dùng để tổng hợp polyethylene (PE) là',
-  o:['CH<sub>2</sub>=CH<sub>2</sub>','CH<sub>2</sub>=CHCl','CH<sub>2</sub>=CH–CH<sub>3</sub>','C<sub>6</sub>H<sub>5</sub>–CH=CH<sub>2</sub>'],
-  ex:'Trùng hợp ethylene CH<sub>2</sub>=CH<sub>2</sub> thu được PE. CH<sub>2</sub>=CHCl tạo PVC, propylene tạo PP, styrene tạo PS.'},
- {ten:'Điều kiện trùng hợp', q:'Điều kiện về cấu tạo để một monomer tham gia phản ứng trùng hợp là',
-  o:['Phân tử có liên kết bội (như C=C) hoặc vòng kém bền','Phân tử có ít nhất hai nhóm chức có khả năng phản ứng','Phân tử phải chứa nguyên tử nitrogen','Phân tử phải có phân tử khối lớn'],
-  ex:'Monomer trùng hợp cần liên kết bội hoặc vòng kém bền có thể mở ra. Có từ hai nhóm chức trở lên là điều kiện của trùng ngưng.'},
- {ten:'Phản ứng trùng ngưng', q:'Điểm đặc trưng của phản ứng trùng ngưng so với trùng hợp là',
-  o:['Tạo polymer đồng thời giải phóng phân tử nhỏ như H<sub>2</sub>O','Monomer bắt buộc phải có liên kết đôi C=C','Không tạo ra hợp chất cao phân tử','Chỉ xảy ra với các chất vô cơ'],
-  ex:'Trùng ngưng là quá trình kết hợp nhiều monomer thành polymer kèm theo giải phóng phân tử nhỏ (thường là H<sub>2</sub>O), ví dụ tổng hợp nylon-6,6.'},
- {ten:'Polymer thiên nhiên', q:'Polymer nào sau đây là polymer thiên nhiên?',
-  o:['Cellulose','Poly(vinyl chloride)','Polyethylene','Nylon-6,6'],
-  ex:'Cellulose có sẵn trong tự nhiên (bông, gỗ). PVC, PE và nylon-6,6 là polymer tổng hợp.'},
- {ten:'Mạch mạng không gian', q:'Polymer nào sau đây có cấu trúc mạch mạng không gian?',
-  o:['Cao su lưu hóa','Amylopectin','Polyethylene','Poly(vinyl chloride)'],
-  ex:'Cao su lưu hóa có các cầu nối disulfide –S–S– nối các mạch thành mạng không gian. Amylopectin là mạch phân nhánh; PE và PVC là mạch không phân nhánh.'},
- {ten:'Tính chất vật lí', q:'Nhận xét nào đúng về tính chất vật lí chung của polymer?',
-  o:['Đa số là chất rắn, không bay hơi, không có nhiệt độ nóng chảy xác định','Đều là chất lỏng ở điều kiện thường','Đều tan tốt trong nước','Có nhiệt độ nóng chảy xác định và dễ bay hơi'],
-  ex:'Polymer là hỗn hợp các phân tử có <i>n</i> khác nhau nên nóng chảy trong một khoảng nhiệt độ; đa số là chất rắn, không bay hơi, không tan trong nước.'},
- {ten:'Lưu hóa cao su', q:'Lưu hóa cao su (tạo cầu nối –S–S– giữa các mạch) thuộc loại phản ứng nào?',
-  o:['Phản ứng tăng mạch polymer','Phản ứng cắt mạch polymer','Phản ứng giữ nguyên mạch polymer','Phản ứng trùng ngưng'],
-  ex:'Cầu nối –S–S– liên kết các mạch cao su với nhau làm mạch polymer lớn hơn, nên đây là phản ứng tăng mạch.'},
- {ten:'Tính hệ số n', q:'Một mẫu polyethylene có phân tử khối trung bình 42 000. Hệ số polymer hóa trung bình của mẫu là',
-  o:['1 500','1 200','3 000','1 000'],
-  ex:'Mỗi mắt xích –CH<sub>2</sub>–CH<sub>2</sub>– có M = 28. Vậy n = 42 000 : 28 = 1 500.'}
-];
+/* ===== Câu hỏi: lấy từ ngân hàng POLYMER-CAUHOI.js (Bài 12, 13). Mỗi lượt chơi chọn ngẫu nhiên 10 câu, trải đều các chủ đề. ===== */
+const QUESTIONS=window.CAU_HOI||[];
+function pickQuestions(){
+  const by={};QUESTIONS.forEach((q,i)=>{(by[q.cd]=by[q.cd]||[]).push(i);});
+  const topics=shuffle(Object.keys(by));topics.forEach(t=>shuffle(by[t]));
+  const out=[];let r=0;
+  while(out.length<10&&r<50){for(const t of topics){if(out.length>=10)break;const v=by[t][r];if(v!==undefined)out.push(v);}r++;}
+  return out;
+}
 const GAME_NAME='Polymer Grand Prix';
 const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
 const SAVE='polymerf1-v1';
@@ -429,7 +406,7 @@ let standPos;
 }
 
 /* Trạm */
-let order=shuffle([...Array(10).keys()]);
+let order=pickQuestions();
 const stations=[];
 for(let i=0;i<10;i++){
   const idx=Math.round((i+1)/11*N),g=placeAt(new THREE.Group(),idx),pm=std(0x22292c);
@@ -715,12 +692,11 @@ function showEnd(){
   $('#result').hidden=false;
 }
 function buildReport(){
-  const byQ=QUESTIONS.map((Q,qi)=>stations.find(s=>s.qi===qi));
   return {kind:'result',game:GAME_NAME,id:sessionId,name:player.name,lop:player.lop,sbd:player.sbd,sheet:player.sheet||'',
     score:score(),correct:score(),answered:stations.filter(s=>s.status!=='pending').length,startedAt,endedAt,
     reason:REASON_TEXT[reason]||reason,violations:leaves,
-    pattern:byQ.map(s=>s.status==='right'?'1':s.status==='wrong'?'0':'-').join(''),
-    detail:byQ.map((s,qi)=>`Câu ${qi+1} (${QUESTIONS[qi].ten}, trạm ${s.i+1}): `+(s.status==='pending'?'chưa làm':`chọn "${plain(QUESTIONS[qi].o[s.chosen])}", ${s.status==='right'?'đúng':'sai'}`)).join('; ')};
+    pattern:stations.map(s=>s.status==='right'?'1':s.status==='wrong'?'0':'-').join(''),
+    detail:stations.map(s=>{const Q=QUESTIONS[s.qi];return `Trạm ${s.i+1} – câu #${s.qi+1} (${Q.ten}): `+(s.status==='pending'?'chưa làm':`chọn "${plain(Q.o[s.chosen])}", ${s.status==='right'?'đúng':'sai'}`);}).join('; ')};
 }
 let sending=false;
 async function sendResult(){
@@ -830,7 +806,7 @@ document.addEventListener('visibilitychange',()=>{last=performance.now();});
 /* ===== Khôi phục khi tải lại trang ===== */
 function restore(){
   let d=null;try{d=JSON.parse(localStorage.getItem(SAVE)||'null');}catch(_){}
-  if(!d||!d.player||!Array.isArray(d.order)||d.order.length!==10)return;
+  if(!d||!d.player||!Array.isArray(d.order)||d.order.length!==10||d.order.some(v=>!QUESTIONS[v]))return;
   player=d.player;sessionId=d.sessionId||'';startedAt=d.startedAt;deadline=d.deadline;endedAt=d.endedAt||0;LIMIT=d.LIMIT||LIMIT;
   leaves=d.leaves||0;submitted=d.submitted===true?true:(d.submitted||false);order=d.order;
   stations.forEach((s,i)=>{s.qi=order[i];const v=(d.st||[])[i]||['pending',null];s.status=v[0];s.chosen=v[1];paintStation(s);});

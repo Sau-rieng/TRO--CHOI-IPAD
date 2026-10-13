@@ -26,7 +26,7 @@ const CONFIG_SHEET = 'CauHinh';
 const SBD_PREFIX = { '9D01': '260901', '9D03': '260903', '10E01': '261001', '12G01': '261201', '12G02': '261202' };
 const CLASSES = Object.keys(SBD_PREFIX);
 const HEADERS = ['Thời điểm gửi', 'Họ và tên', 'Lớp', 'SBD', 'Điểm', 'Số câu đúng', 'Số trạm đã qua',
-  'Đăng nhập lúc', 'Thoát lúc', 'Thời gian chơi', 'Kết thúc', 'Số lần rời màn hình', 'Đúng/sai theo câu (1→10)',
+  'Đăng nhập lúc', 'Thoát lúc', 'Thời gian chơi', 'Kết thúc', 'Số lần rời màn hình', 'Đúng/sai theo trạm (1→10)',
   'Chi tiết câu trả lời', 'Mã lượt chơi'];
 
 /** Chạy một lần để tạo trang tính và cấp quyền. */
@@ -164,11 +164,11 @@ function stats_(p) {
     const last = sh.getLastRow();
     if (last < 2) return;
     const times = sh.getRange(2, 1, last - 1, 1).getValues();
-    sh.getRange(2, 1, last - 1, 13).getDisplayValues().forEach(function (r, i) {
+    sh.getRange(2, 1, last - 1, 14).getDisplayValues().forEach(function (r, i) {
       if (!r[1] || !r[2]) return;
       const t = times[i][0];
       rows.push({ t: t instanceof Date ? t.getTime() : 0, name: r[1], lop: r[2], sbd: r[3], score: Number(r[4]) || 0,
-        answered: Number(r[6]) || 0, used: r[9], reason: r[10], leaves: Number(r[11]) || 0, pattern: r[12], sheet: sh.getName() });
+        answered: Number(r[6]) || 0, used: r[9], reason: r[10], leaves: Number(r[11]) || 0, pattern: r[12], detail: r[13], sheet: sh.getName() });
     });
   });
   return { ok: true, rows: rows, sheets: sheets, current: c.session ? sheetName_(c.session) : '' };

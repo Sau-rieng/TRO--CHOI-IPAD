@@ -55,7 +55,7 @@ h2{margin:0 0 2px;font-size:18px}
 #dist .bar{fill:var(--bar)}
 #dist .mlab{fill:var(--mean);font-weight:700}
 .qrows{display:grid;gap:6px}
-.qrow{display:grid;grid-template-columns:28px minmax(0,1fr) 110px;gap:8px;align-items:center;font-size:14px}
+.qrow{display:grid;grid-template-columns:40px minmax(0,1fr) 110px;gap:8px;align-items:center;font-size:14px}
 .qrow b{font:800 15px/1 var(--display);color:var(--muted)}
 .qrow .name{min-width:0;display:grid;gap:3px}
 .qrow .name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -121,30 +121,34 @@ td.flag{color:var(--bad);font-weight:700}
         <svg id="dist" role="img" aria-label="Biểu đồ phân bố điểm"></svg>
       </div>
       <div class="card">
-        <h2>Tỉ lệ trả lời đúng từng câu</h2>
-        <p class="sub">Tính trên số học sinh đã qua trạm có câu đó. Thanh đỏ: dưới 50% trả lời đúng.</p>
+        <h2>Tỉ lệ đúng theo chủ đề</h2>
+        <p class="sub">Tính trên các câu học sinh đã trả lời. Thanh đỏ: dưới 50% trả lời đúng.</p>
         <div class="qrows" id="qrows"></div>
+        <h2 style="margin-top:18px">Các câu sai nhiều nhất</h2>
+        <p class="sub">Chỉ tính câu có ít nhất 2 lượt trả lời.</p>
+        <div class="qrows" id="hard"></div>
       </div>
     </div>
 
     <div class="card">
       <div class="tools">
-        <div><h2>Bảng điểm học sinh</h2><p class="sub" style="margin:0">Bấm tiêu đề cột để sắp xếp. Cột "Từng câu": 1 đúng, 0 sai, – chưa qua (câu 1 → 10).</p></div>
+        <div><h2>Bảng điểm học sinh</h2><p class="sub" style="margin:0">Bấm tiêu đề cột để sắp xếp. Cột "Từng trạm": 1 đúng, 0 sai, – chưa qua (trạm 1 → 10).</p></div>
         <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink2)">Tìm học sinh<input id="fFind" placeholder="Tên hoặc SBD" autocomplete="off"></label>
       </div>
       <div class="tablewrap"><table>
-        <thead><tr><th data-k="i">#</th><th data-k="name">Họ và tên</th><th data-k="lop">Lớp</th><th data-k="sbd">SBD</th><th data-k="score" aria-sort="descending">Điểm</th><th data-k="answered">Trạm đã qua</th><th data-k="usedS">Thời gian</th><th data-k="leaves">Rời MH</th><th data-k="reason">Kết thúc</th><th data-k="pattern">Từng câu</th><th data-k="t">Nộp lúc</th></tr></thead>
+        <thead><tr><th data-k="i">#</th><th data-k="name">Họ và tên</th><th data-k="lop">Lớp</th><th data-k="sbd">SBD</th><th data-k="score" aria-sort="descending">Điểm</th><th data-k="answered">Trạm đã qua</th><th data-k="usedS">Thời gian</th><th data-k="leaves">Rời MH</th><th data-k="reason">Kết thúc</th><th data-k="pattern">Từng trạm</th><th data-k="t">Nộp lúc</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table></div>
     </div>
   </div>
 </div>
 
+<script src="POLYMER-CAUHOI.js"></script>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
 const SHEET_URL=((window.CAU_HINH||{}).SHEET_URL||'').trim();
-const QNAMES=['Khái niệm polymer','Hệ số polymer hóa','Monomer tạo PE','Điều kiện trùng hợp','Phản ứng trùng ngưng','Polymer thiên nhiên','Mạch mạng không gian','Tính chất vật lí','Lưu hóa cao su','Tính hệ số n'];
+const BANK=window.CAU_HOI||[];const TOPICS=[...new Set(BANK.map(q=>q.cd))];
 let rows=[],sheets=[],current='',code='',sortK='score',sortDir=-1;
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:d}):'–';
@@ -231,12 +235,18 @@ function drawDist(avg){
   svg.outerHTML=s.replace('<svg ','<svg id="dist" role="img" aria-label="Biểu đồ phân bố điểm" ');
   $('distSub').textContent=SEL.length?'Mỗi cột là số học sinh đạt mức điểm đó (trục ngang: điểm 0–10). Đường đỏ là điểm trung bình.':'Chưa có bài nộp trong phạm vi đã chọn.';
 }
+function answers(){
+  const out=[];
+  SEL.forEach(r=>{const re=/câu #(\d+)[^:]*:\s*(chưa làm|chọn "[^"]*", (đúng|sai))/g;let m;while((m=re.exec(r.detail||''))){if(m[3])out.push({id:+m[1],ok:m[3]==='đúng'});}});
+  return out;
+}
+const bar=(label,title,ok,seen,tag)=>{const p=seen?ok/seen*100:NaN;return `<div class="qrow"><b>${tag}</b><div class="name"><span title="${esc(title)}">${esc(label)}</span><div class="track"><i class="${Number.isFinite(p)&&p<50?'low':''}" style="width:${Number.isFinite(p)?p:0}%"></i></div></div><div class="pct">${Number.isFinite(p)?num(p,0)+'%':'–'}<small>${ok}/${seen} đúng</small></div></div>`;};
 function drawQ(){
-  $('qrows').innerHTML=QNAMES.map((name,i)=>{
-    let ok=0,seen=0;SEL.forEach(r=>{const ch=String(r.pattern||'')[i];if(ch==='1'){ok++;seen++;}else if(ch==='0')seen++;});
-    const p=seen?ok/seen*100:NaN;
-    return `<div class="qrow"><b>C${i+1}</b><div class="name"><span title="${esc(name)}">${esc(name)}</span><div class="track"><i class="${Number.isFinite(p)&&p<50?'low':''}" style="width:${Number.isFinite(p)?p:0}%"></i></div></div><div class="pct">${Number.isFinite(p)?num(p,0)+'%':'–'}<small>${ok}/${seen} đúng</small></div></div>`;
-  }).join('');
+  const A=answers();
+  $('qrows').innerHTML=TOPICS.map((t,i)=>{const xs=A.filter(a=>BANK[a.id-1]&&BANK[a.id-1].cd===t);return bar(t,t,xs.filter(a=>a.ok).length,xs.length,i+1);}).join('');
+  const by={};A.forEach(a=>{const o=by[a.id]=by[a.id]||{id:a.id,ok:0,n:0};o.n++;if(a.ok)o.ok++;});
+  const hard=Object.values(by).filter(o=>o.n>=2&&o.ok<o.n).sort((x,y)=>(x.ok/x.n)-(y.ok/y.n)||y.n-x.n).slice(0,10);
+  $('hard').innerHTML=hard.length?hard.map(o=>{const q=BANK[o.id-1]||{ten:'Câu '+o.id,q:''};return bar(q.ten,q.q.replace(/<[^>]+>/g,''),o.ok,o.n,'#'+o.id);}).join(''):'<p class="sub">Chưa đủ dữ liệu.</p>';
 }
 function renderTable(){
   const q=$('fFind').value.trim().toLowerCase();
