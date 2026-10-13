@@ -569,9 +569,11 @@ const H = (x,z) => terrain(x,z).h;
 
 /* ================= Three ================= */
 const app = $('app'), canvas = $('scene');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const TOUCH = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+const renderer = new THREE.WebGLRenderer({canvas, antialias:!TOUCH, powerPreference:'high-performance'});
+let PR = Math.min(devicePixelRatio, TOUCH ? 1.5 : 1.75); renderer.setPixelRatio(PR);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = TOUCH ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+canvas.addEventListener('webglcontextlost', e=> e.preventDefault(), false);   // iPad thiếu bộ nhớ đồ hoạ: không treo trang
 renderer.outputEncoding = THREE.sRGBEncoding;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
@@ -585,7 +587,7 @@ const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 scene.fog = new THREE.Fog(0xd9e6e2, 110, 300);
 scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x5a6b3a, 0.78));
 const sun = new THREE.DirectionalLight(0xfff0d6, 0.9);
-sun.castShadow = true; sun.shadow.mapSize.set(2048,2048);
+sun.castShadow = true; sun.shadow.mapSize.set(TOUCH ? 1024 : 2048, TOUCH ? 1024 : 2048);
 Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:140});
 scene.add(sun, sun.target);
 
@@ -1416,7 +1418,7 @@ resize(); snapCam();
 let stopped = false;
 function tick(){
   if(stopped) return;
-  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime; perfTick(dt);
   if(running && !reason && Date.now() >= deadline) finish('timeout');
   if(running || phase==='end'){
     const left = ((reason ? endedAt : Date.now()) <= deadline ? deadline - (reason ? endedAt : Date.now()) : 0)/1000;
@@ -1461,6 +1463,59 @@ function tick(){
   if(running || phase==='end') drawMap();
   renderer.render(scene, camera);
 }
+/* ---------- gộp các khối đứng yên (bậc gỗ, cây, nhà, biển…) để iPad vẽ ít lần hơn ---------- */
+function bakeStatic(){
+  const dyn = new Set([farmer, boat, signsGroup, sun, sun.target]);
+  animals.forEach(a=> dyn.add(a.g)); birds.forEach(b=> dyn.add(b.g)); egretsStanding.forEach(e=> e && dyn.add(e.b ? e.b.g : (e.g || e)));
+  scene.updateMatrixWorld(true);
+  const cand = [], loose = [];
+  scene.children.slice().forEach(o=>{
+    if(dyn.has(o) || o.isLight) return;
+    if(o.isMesh){ if(!o.isInstancedMesh && !o.isSkinnedMesh) cand.push(o); return; }
+    if(o.isGroup){
+      let ok = true; o.traverse(c=>{ if(dyn.has(c) || c.isLight || c.isInstancedMesh) ok = false; });
+      if(!ok) return;
+      o.traverse(c=>{ if(c.isMesh) cand.push(c); else if(c.isSprite) loose.push(c); });
+      o.userData.bake = true;
+    }
+  });
+  const count = new Map(); cand.forEach(m=> count.set(m.material, (count.get(m.material)||0) + 1));
+  const buckets = new Map();
+  cand.forEach(m=>{
+    if(count.get(m.material) < 2 || Array.isArray(m.material)){ loose.push(m); return; }
+    const k = m.material.uuid + (m.castShadow ? 'c' : '') + (m.receiveShadow ? 'r' : '');
+    if(!buckets.has(k)) buckets.set(k, {mat:m.material, cast:m.castShadow, recv:m.receiveShadow, list:[]});
+    buckets.get(k).list.push(m);
+  });
+  loose.forEach(o=>{ if(o.parent && o.parent !== scene) scene.attach(o); });
+  buckets.forEach(b=>{
+    const geos = b.list.map(m=>{ let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); g.applyMatrix4(m.matrixWorld); return g; });
+    const out = new THREE.BufferGeometry();
+    ['position','normal','uv','color'].forEach(n=>{
+      if(!geos.every(g=> g.attributes[n])) return;
+      const size = geos[0].attributes[n].itemSize, arr = new Float32Array(geos.reduce((a,g)=> a + g.attributes[n].count*size, 0));
+      let o = 0; geos.forEach(g=>{ const src = g.attributes[n]; for(let i=0;i<src.count;i++) for(let j=0;j<size;j++) arr[o++] = src.array[i*size+j] ?? 0; });
+      out.setAttribute(n, new THREE.BufferAttribute(arr, size));
+    });
+    geos.forEach(g=> g.dispose());
+    b.list.forEach(m=>{ if(m.parent) m.parent.remove(m); });
+    const mesh = new THREE.Mesh(out, b.mat); mesh.castShadow = b.cast; mesh.receiveShadow = b.recv;
+    mesh.matrixAutoUpdate = false; scene.add(mesh);
+  });
+  scene.children.slice().forEach(o=>{ if(o.userData.bake){ let left = 0; o.traverse(c=>{ if(c !== o && (c.isMesh || c.isSprite)) left++; }); if(!left) scene.remove(o); } });
+}
+bakeStatic();
+/* tự hạ độ nét nếu iPad không theo kịp */
+const perf = {f:0, t:0};
+function perfTick(dt){
+  perf.f++; perf.t += dt;
+  if(perf.t >= 2){ const fps = perf.f/perf.t; perf.f = 0; perf.t = 0;
+    if(fps < 38 && PR > 0.75){ PR = Math.max(0.75, +(PR-0.25).toFixed(2)); renderer.setPixelRatio(PR); resize(); } }
+}
+/* chặn phóng to trang bằng hai ngón / chạm đúp */
+['gesturestart','gesturechange','gestureend'].forEach(t=> document.addEventListener(t, e=> e.preventDefault(), {passive:false}));
+document.addEventListener('touchmove', e=>{ if(e.touches && e.touches.length > 1) e.preventDefault(); }, {passive:false});
+document.addEventListener('dblclick', e=> e.preventDefault(), {passive:false});
 renderer.setAnimationLoop(tick);
 if(document.fonts && document.fonts.load){
   Promise.all([document.fonts.load(`800 60px ${FONT}`), document.fonts.load(`600 40px ${FONT}`), document.fonts.load(`700 40px ${FONT}`)]).then(()=>{ ELS.forEach(e=> redraw(e.tex)); BOARD_TEX.forEach(redraw); qCells.forEach(refreshStake); drawTurn(); }).catch(()=>{});
