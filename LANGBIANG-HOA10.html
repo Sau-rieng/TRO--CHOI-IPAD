@@ -230,6 +230,8 @@ button{font-family:var(--f-body)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script>
 (function(){
 /* ---------- terrain model (1 unit = 10 m horizontally) ---------- */
@@ -759,7 +761,7 @@ function setSend(st,extra){const el=document.getElementById('sendSt'),b=document
     fail:'Chưa gửi được kết quả'+(extra?' ('+extra+')':'')+'. Kiểm tra mạng rồi bấm Gửi lại.'}[st];
   el.className='sendst'+(st==='ok'?' ok':st==='fail'?' fail':'');
   b.hidden=!(SHEET_URL&&(st==='fail'||st==='maybe'||st==='idle'));}
-async function sendResult(){if(!finished||!player)return;if(!SHEET_URL){setSend('none');return;}
+async function sendResult(){if(!finished||!player)return;try{guiSoTheoDoi(buildReport(),'LANGBIANG-HOA10','Leo Langbiang – Hóa 10',0);}catch(_){}if(!SHEET_URL){setSend('none');return;}
   if(sending)return;sending=true;setSend('sending');
   const body=JSON.stringify(buildReport()),headers={'Content-Type':'text/plain;charset=utf-8'};
   try{const res=await fetch(SHEET_URL,{method:'POST',body,headers,redirect:'follow'});const j=await res.json();

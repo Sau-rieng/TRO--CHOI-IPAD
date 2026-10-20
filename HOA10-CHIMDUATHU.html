@@ -238,6 +238,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script>
 /* ================= Câu hỏi (SGK Hóa 10 – Kết nối tri thức) ================= */
 const ISO=(a,z,s)=>`<span class="iso"><span>${a}</span><span>${z}</span></span>${s}`;
@@ -947,7 +949,7 @@ let sending=false;
 async function sendResult(){
   const m=$('sendMsg'),rb=$('resendBtn');
   const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
-  if(!player||!reason)return;
+  if(!player||!reason)return;try{guiSoTheoDoi(buildReport(),'CHIMDUATHU-HOA10','Chim đưa thư – Hóa 10',10);}catch(_){}
   if(submitted===true){show('Đã gửi kết quả và bài làm cho giáo viên ✓','ok');return;}
   const gs=window.google&&google.script&&google.script.run;
   if(gs){

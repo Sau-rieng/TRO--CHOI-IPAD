@@ -290,6 +290,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script>
 /* ================= Câu hỏi (SGK Hóa 10 – Kết nối tri thức) ================= */
 const ISO=(a,z,s)=>`<span class="iso"><span>${a}</span><span>${z}</span></span>${s}`;
@@ -1160,7 +1162,7 @@ let sending=false;
 async function sendResult(){
   const m=$('sendMsg'),rb=$('resendBtn');
   const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
-  if(!player||!reason)return;
+  if(!player||!reason)return;try{guiSoTheoDoi(buildReport(),'DUAXEF1-HOA10','Đua xe F1 – Hóa 10',11);}catch(_){}
   if(submitted===true){show('Đã gửi kết quả của em về Google Sheet của giáo viên ✓','ok');return;}
   if(!SHEET_URL){show('Chưa cài địa chỉ Google Sheet nên kết quả chỉ lưu trên máy này. Hãy chụp màn hình gửi giáo viên.');return;}
   if(sending)return;sending=true;show('Đang gửi kết quả cho giáo viên…');
