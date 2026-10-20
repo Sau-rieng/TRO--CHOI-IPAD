@@ -29,12 +29,35 @@
         .then(function (j) { if (j && j.ok) { try { localStorage.setItem(key, '1'); } catch (e) {} } }).catch(function () {});
     } catch (e) {}
   };
+  // Tro choi nhom: gui 1 dong vao tab TRO CHOI NHOM cua so lop (tim lop theo ten lop da chon)
+  window.guiNhomSoTheoDoi = function (rep, maTro, tenTro, tong) {
+    try {
+      if (!rep || !rep.group) return;
+      var ten = String(rep.lop || rep.cls || '').trim().toUpperCase(), ds = window.DS_LOP || [];
+      var lop = ds.filter(function (l) { return l.ten.toUpperCase() === ten; })[0];
+      if (!lop || !/^https:\/\//.test(lop.url)) return;
+      var key = 'noiso_nhom_' + maTro + '_' + (rep.id || ten + rep.group + (rep.endedAt || ''));
+      try { if (localStorage.getItem(key)) return; } catch (e) {}
+      var dung = Number(rep.correct) || 0, t = Number(tong) || Number(rep.answered) || 0;
+      var du = { loai: 'nhom', nhom: String(rep.group), matro: maTro, tentro: tenTro, diem: rep.score != null ? rep.score : dung,
+        dungsai: dung + '/' + t, thoigian: giay(rep), maluot: rep.id || '' };
+      fetch(lop.url, { method: 'POST', body: JSON.stringify(du) }).then(function (r) { return r.json(); })
+        .then(function (j) { if (j && j.ok) { try { localStorage.setItem(key, '1'); } catch (e) {} } }).catch(function () {});
+    } catch (e) {}
+  };
+  // Ban dung thu: may chu gia cho cac tro dung api() (dang nhap ma 1111, mo khoa ma 2222)
+  window.demoApi = function (d) {
+    var k = d && d.kind, c = String((d && d.code) || '').trim();
+    if (k === 'login') return Promise.resolve(c === '1111' ? { ok: true, minutes: 5, sheet: 'DEMO' } : { ok: false, error: 'code' });
+    if (k === 'unlock') return Promise.resolve(c === '2222' ? { ok: true } : { ok: false, error: 'code' });
+    if (k === 'stats') return Promise.resolve({ ok: true, rows: [] });
+    return Promise.resolve({ ok: true });
+  };
   // Ban dung thu: them lop DEMO vao o chon lop
   if (DEMO) document.addEventListener('DOMContentLoaded', function () {
-    var co = false;
-    try { if (typeof SBD_PREFIX === 'object') { SBD_PREFIX.DEMO = '269999'; co = true; } } catch (e) {}
+    try { if (typeof SBD_PREFIX === 'object') SBD_PREFIX.DEMO = '269999'; } catch (e) {}
     var s = document.getElementById('fClass');
-    if (co && s && !/DEMO/.test(s.innerHTML)) { var o = document.createElement('option'); o.textContent = 'DEMO'; o.value = 'DEMO'; s.appendChild(o); }
+    if (s && !/DEMO/.test(s.innerHTML)) { var o = document.createElement('option'); o.textContent = 'DEMO'; o.value = 'DEMO'; s.appendChild(o); }
     var b = document.createElement('div');
     b.textContent = 'BẢN DÙNG THỬ · lớp DEMO';
     b.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;background:#a06b00;color:#fff;font:600 13px system-ui,sans-serif;padding:4px 10px;border-radius:8px;pointer-events:none';

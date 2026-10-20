@@ -807,7 +807,7 @@ document.getElementById('exitYes').onclick=()=>{exitAskEl.hidden=true;finishGame
 
 /* ---- đăng nhập ---- */
 // SBD = 26 + khối (2 số) + số thứ tự lớp (2 số) + 2 số học sinh tự nhập. VD 10E01 → 261001__
-const sbdPrefix=cls=>{const m=/^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls||'');return m?'26'+m[1].padStart(2,'0')+m[2]:'';};
+const sbdPrefix=cls=>{if(cls==='DEMO')return '269999';const m=/^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls||'');return m?'26'+m[1].padStart(2,'0')+m[2]:'';};
 const fClass=document.getElementById('fClass'),fSbd=document.getElementById('fSbd'),sbdPre=document.getElementById('sbdPrefix');
 fClass.addEventListener('change',()=>{const pre=sbdPrefix(fClass.value);sbdPre.textContent=pre||'______';fSbd.disabled=!pre;if(pre)fSbd.focus();});
 fSbd.addEventListener('input',()=>{const v=fSbd.value.replace(/\D/g,'').slice(0,2);if(v!==fSbd.value)fSbd.value=v;});

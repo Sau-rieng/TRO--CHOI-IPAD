@@ -287,6 +287,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="POLYMER-CAUHOI.js"></script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script>
 /* ================= Câu hỏi Hóa 12 – Kết nối tri thức – Bài 12 Đại cương về polymer, Bài 13 Vật liệu polymer =================
    Trắc nghiệm lấy từ ngân hàng chung POLYMER-CAUHOI.js (trò Polymer Grand Prix): phương án đầu tiên là đáp án đúng, trò chơi tự xáo.
@@ -916,7 +918,7 @@ let sending=false;
 async function sendResult(){
   const m=$('sendMsg'),rb=$('resendBtn');
   const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
-  if(!player||!reason)return;
+  if(!player||!reason)return;try{guiNhomSoTheoDoi(buildReport(),'DUAXEF1-POLYMER-H12-NHOM','Đua xe F1 Polymer – Hóa 12 (nhóm)',11);}catch(_){}
   if(submitted===true){show('Đã gửi kết quả của nhóm về Google Sheet của giáo viên ✓','ok');return;}
   if(!SHEET_URL){show('Chưa cài địa chỉ Google Sheet nên kết quả chỉ lưu trên máy này. Hãy chụp màn hình gửi giáo viên.');return;}
   if(sending)return;sending=true;show('Đang gửi kết quả cho giáo viên…');
@@ -949,7 +951,7 @@ function newPlayer(){
   $('login').reset();$('loginErr').hidden=true;$('start').hidden=false;$('fClass').focus();
 }
 async function api(data){
-  if(!SHEET_URL)throw new Error('nourl');
+  if(!SHEET_URL){if(window.LAM_DEMO&&window.demoApi)return window.demoApi(data);throw new Error('nourl');}
   const res=await fetch(SHEET_URL,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain;charset=utf-8'},redirect:'follow'});
   return res.json();
 }

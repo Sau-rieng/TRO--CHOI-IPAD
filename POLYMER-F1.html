@@ -557,7 +557,7 @@ fClass.addEventListener('change',()=>{syncSbd();if(!fSbd.disabled)fSbd.focus();}
 fSbd.addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
 if(TRIAL){$('#codeWrap').hidden=true;$('#trialNote').hidden=false;$('#unlockFields').hidden=true;}
 async function api(data){
-  if(!SHEET_URL)throw new Error('nourl');
+  if(!SHEET_URL){if(window.LAM_DEMO&&window.demoApi)return window.demoApi(data);throw new Error('nourl');}
   const res=await fetch(SHEET_URL,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain;charset=utf-8'},redirect:'follow'});
   return res.json();
 }

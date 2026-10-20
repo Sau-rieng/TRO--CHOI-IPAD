@@ -337,6 +337,8 @@ summary{cursor:pointer;font-weight:700}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script>
 (function(){
 const $ = id => document.getElementById(id);
@@ -1134,7 +1136,7 @@ const clock24 = ms => ms ? new Date(ms).toLocaleTimeString('vi-VN', {hour:'2-dig
 
 /* ---------- talking to the teacher's Google Sheet ---------- */
 async function api(data){
-  if(!SHEET_URL) throw new Error('nourl');
+  if(!SHEET_URL){if(window.LAM_DEMO&&window.demoApi)return window.demoApi(data);throw new Error('nourl');}
   const res = await fetch(SHEET_URL, {method:'POST', body:JSON.stringify(data), headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow'});
   return res.json();
 }
@@ -1354,7 +1356,7 @@ let sending = false;
 async function sendResult(){
   const m = $('sendMsg'), rb = $('resendBtn');
   const show = (t, cls, resend)=>{ m.textContent = t; m.className = 'sendmsg ' + (cls||''); m.hidden = false; rb.hidden = !resend; };
-  if(!reason) return;
+  if(!reason) return;try{guiNhomSoTheoDoi(buildReport(),'RUONGLUA-CHUKI-NHOM','Ruộng lúa Chu kì (nhóm)',0);}catch(_){}
   if(submitted === true){ show('Đã gửi kết quả về Google Sheet của giáo viên ✓', 'ok'); return; }
   if(!SHEET_URL){ show('Chưa nối với Google Sheet nên kết quả chỉ nằm trên máy này. Hãy chụp màn hình gửi giáo viên.'); return; }
   if(sending) return; sending = true; show('Đang gửi kết quả cho giáo viên…');
