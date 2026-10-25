@@ -207,6 +207,7 @@ button{font-family:var(--f-body)}
     <label class="field" for="fName">Họ và tên<input id="fName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"></label>
     <div class="frow"><label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
     <label class="field" for="fSbd">Số báo danh (2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label></div>
+    <label class="field" for="fAccess">Mã vào chơi<input id="fAccess" type="password" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Giáo viên đọc mã"></label>
     <div class="err" id="loginErr"></div>
     <div class="q-actions"><button class="btn" type="submit">Bắt đầu leo núi</button></div>
   </form>
@@ -691,7 +692,7 @@ const quizEl=document.getElementById('quiz'),qNum=document.getElementById('qNum'
   finEl=document.getElementById('finish'),finText=document.getElementById('finText'),qdots=document.getElementById('qdots'),qcountText=document.getElementById('qcountText');
 stations.forEach(()=>{qdots.appendChild(document.createElement('i'));});
 const scoreEl=document.getElementById('score'),timerEl=document.getElementById('timer');
-const TEACHER_CODE='7070',LIMIT=5*60*1000,SKEY='langbiang-hoa10-v1';
+let LIMIT=5*60*1000;const SKEY='langbiang-hoa10-v1';
 let player=null,startAt=0,leaves=0,endReason='',qset=null;
 function save(){try{localStorage.setItem(SKEY,JSON.stringify({player,startAt,leaves,progress,finished,endReason,endAt,
   id:attemptId,sub:submitted,set:qset,ans:stations.map(q=>q.done?{c:q.choice}:null)}));}catch(e){}}
@@ -812,18 +813,25 @@ const fClass=document.getElementById('fClass'),fSbd=document.getElementById('fSb
 fClass.addEventListener('change',()=>{const pre=sbdPrefix(fClass.value);sbdPre.textContent=pre||'______';fSbd.disabled=!pre;if(pre)fSbd.focus();});
 fSbd.addEventListener('input',()=>{const v=fSbd.value.replace(/\D/g,'').slice(0,2);if(v!==fSbd.value)fSbd.value=v;});
 function beginPlay(){loggedIn=true;loginEl.hidden=true;dpad.hidden=false;renderCount();host.focus({preventScroll:true});}
-document.getElementById('loginForm').addEventListener('submit',e=>{e.preventDefault();
+document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();
   const name=document.getElementById('fName').value.trim(),cls=fClass.value,tail=fSbd.value.trim(),sbd=sbdPrefix(cls)+tail;
   const err=document.getElementById('loginErr');
   if(!name){err.textContent='Nhập họ và tên.';return;} if(!cls){err.textContent='Chọn lớp.';return;} if(!/^\d{2}$/.test(tail)){err.textContent='Nhập đủ 2 số cuối của số báo danh.';return;}
-  player={name,cls,sbd};attemptId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);qset=drawSet();applySet(qset);startAt=Date.now();leaves=0;save();beginPlay();});
+  const fA=document.getElementById('fAccess'),maVao=fA.value.trim(),nut=e.target.querySelector('button[type=submit]');
+  if(!maVao){err.textContent='Nhập mã vào chơi do giáo viên đọc.';fA.focus();return;}
+  nut.disabled=true;nut.textContent='Đang kiểm tra mã…';err.textContent='';
+  const v=window.TC?await TC.vao(cls,maVao,sbd):{ok:true,phut:5};
+  nut.disabled=false;nut.textContent='Bắt đầu leo núi';
+  if(!v.ok){err.textContent=v.msg;fA.select();return;}
+  LIMIT=v.phut*60000;fA.value='';
+  player={name,cls,sbd,lim:LIMIT};attemptId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);qset=drawSet();applySet(qset);startAt=Date.now();leaves=0;save();beginPlay();});
 
 /* ---- khóa khi rời màn hình ---- */
 function lockGame(){if(!loggedIn||finished)return;leaves++;exitAskEl.hidden=true;finishGame('leave');}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)lockGame();});
 addEventListener('blur',()=>{setTimeout(()=>{if(!document.hasFocus())lockGame();},150);});
 /* ---- khôi phục khi tải lại trang: vẫn bị khóa, không làm lại từ đầu được ---- */
-(function restore(){let d=null;try{d=JSON.parse(localStorage.getItem(SKEY)||'null');}catch(e){}
+(function restore(){let d=null;try{d=JSON.parse(localStorage.getItem(SKEY)||'null');}catch(e){}if(d&&d.player&&d.player.lim)LIMIT=d.player.lim;
   dpad.hidden=true;if(!d||!d.player)return;
   player=d.player;attemptId=d.id||'';submitted=d.sub===true?true:d.sub==='maybe'?'maybe':false;qset=d.set||drawSet();applySet(qset);startAt=d.startAt;leaves=d.leaves||0;endReason=d.endReason||'';endAt=d.endAt||0;
   (d.ans||[]).forEach((a,i)=>{if(a&&stations[i]){stations[i].done=true;stations[i].choice=a.c;paintStation(stations[i]);}});

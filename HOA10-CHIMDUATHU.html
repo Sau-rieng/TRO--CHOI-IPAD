@@ -198,6 +198,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
       <label for="fSbd">Số báo danh</label>
       <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled aria-describedby="sbdHint"></div>
       <span></span><small class="hintline" id="sbdHint">Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.</small>
+      <label for="fAccess">Mã vào chơi</label><input id="fAccess" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Giáo viên đọc mã">
     </div>
     <p class="err" id="loginErr" hidden></p>
     <div class="row"><button class="btn" type="submit" id="go">Vào chơi</button></div>
@@ -892,7 +893,7 @@ function next(){
   aimAt(cur);
   if(cur>0)startTakeoff();else startFree();
 }
-const SAVE='chimhoa10-v1',CODE='7070',LIMIT=5*60*1000;
+const SAVE='chimhoa10-v1';let LIMIT=5*60*1000;
 let picks=null,chosen=[],sessionId='',submitted=false,player=null,deadline=0,startedAt=0,endedAt=0,locked=false,reason='',lockPurpose='resume',leaves=0;
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({picks,chosen,sessionId,submitted,player,deadline,startedAt,endedAt,answers,locked,reason,leaves,finished:!!reason}));}catch(_){}}
 function clearSave(){try{localStorage.removeItem(SAVE);}catch(_){}}
@@ -994,7 +995,7 @@ function beginPlay(){
   if(document.activeElement)document.activeElement.blur();
   next();
 }
-const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
+const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){
   const pre=SBD_PREFIX[$('fClass').value],inp=$('fSbd');
   $('sbdPre').textContent=pre||'••••••';inp.disabled=!pre;
@@ -1003,13 +1004,19 @@ function syncSbd(){
 $('fClass').addEventListener('change',()=>{syncSbd();if(!$('fSbd').disabled)$('fSbd').focus();});
 $('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
 $('login').addEventListener('reset',()=>setTimeout(syncSbd,0));
-$('login').addEventListener('submit',e=>{
+$('login').addEventListener('submit',async e=>{
   e.preventDefault();
   const name=$('fName').value.trim().replace(/\s+/g,' '),lop=$('fClass').value,tail=$('fSbd').value.trim();
   const miss=[!name&&'họ và tên',!lop&&'lớp',!tail&&'2 số cuối của số báo danh'].filter(Boolean);
   if(miss.length){$('loginErr').textContent='Em cần nhập '+miss.join(', ')+'.';$('loginErr').hidden=false;return;}
   if(!/^\d{2}$/.test(tail)){$('loginErr').textContent='Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.';$('loginErr').hidden=false;$('fSbd').focus();return;}
-  const sbd=SBD_PREFIX[lop]+tail;
+  const sbd=SBD_PREFIX[lop]+tail, maVao=$('fAccess').value.trim();
+  if(!maVao){$('loginErr').textContent='Em cần nhập mã vào chơi do giáo viên đọc.';$('loginErr').hidden=false;$('fAccess').focus();return;}
+  $('go').disabled=true;$('go').textContent='Đang kiểm tra mã…';$('loginErr').hidden=true;
+  const v=window.TC?await TC.vao(lop,maVao,sbd):{ok:true,phut:5};
+  $('go').disabled=false;$('go').textContent='Vào chơi';
+  if(!v.ok){$('loginErr').textContent=v.msg;$('loginErr').hidden=false;$('fAccess').select();return;}
+  LIMIT=v.phut*60000;$('fAccess').value='';
   picks=pickQuestions();buildQuestions(picks);
   sessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);submitted=false;
   player={name,lop,sbd};startedAt=Date.now();deadline=startedAt+LIMIT;reason='';leaves=0;
@@ -1039,9 +1046,10 @@ $('again').onclick=()=>{
   $('lockCancel').hidden=false;$('code').value='';$('codeErr').hidden=true;$('lock').hidden=false;$('code').focus();
 };
 $('lockCancel').onclick=()=>{$('lock').hidden=true;};
-$('unlockForm').addEventListener('submit',e=>{
+$('unlockForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if($('code').value.trim()!==(window.LAM_DEMO?'2222':CODE)){$('codeErr').hidden=false;$('code').select();return;}
+  const dungMa=window.TC?await TC.moKhoa($('code').value,v=>window.LAM_DEMO&&String(v).trim()==='2222'):false;
+  if(!dungMa){$('codeErr').hidden=false;$('code').select();return;}
   $('code').value='';
   if(lockPurpose==='new'){newPlayer();return;}
   locked=false;$('lock').hidden=true;save();

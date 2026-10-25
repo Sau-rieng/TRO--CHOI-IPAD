@@ -928,7 +928,7 @@ function intro(){ holdUntil=performance.now()+12000; say('Xin chào! Mình là T
 const SHEET_URL = ((window.CAU_HINH||{}).SHEET_URL||'').trim();
 
 /* ---------- player session: sign-in, 5-minute timer, lock on leaving ---------- */
-const TCH='g1yemw', isTeacher=v=>{let x=2166136261>>>0;for(const ch of 'dn-salt:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===TCH;}, STORE='dainoi-hoa10-session-v3', LIMIT=5*60*1000;
+const TCH='g1yemw', isTeacher=v=>{let x=2166136261>>>0;for(const ch of 'dn-salt:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===TCH;}, STORE='dainoi-hoa10-session-v3'; let LIMIT=5*60*1000;
 let S=null, graceUntil=0, wasFull=false;
 const $=id=>document.getElementById(id);
 function saveS(){ try{ localStorage.setItem(STORE,JSON.stringify(S)); }catch(_){} }
@@ -941,7 +941,7 @@ function setWho(){ $('who').textContent=S?`${S.name} · ${S.cls} · SBD ${S.sbd}
 function goFull(){ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(()=>{}); }
 
 const ACC='rbivhq', accessOk=v=>{let x=2166136261>>>0;for(const ch of 'dn-access:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===ACC;};
-const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
+const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){ const pre=SBD_PREFIX[$('fClass').value]; $('sbdPre').textContent=pre||'——————'; $('fSbd').disabled=!pre; if(!pre) $('fSbd').value=''; }
 $('fClass').addEventListener('change',()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
 $('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,2); if(v!==$('fSbd').value) $('fSbd').value=v; });
@@ -967,6 +967,7 @@ $('loginForm').addEventListener('submit',async e=>{
   if(!j || !j.ok || !j.ticket){ $('loginErr').textContent=(j&&j.error)||'Mã vào chơi không đúng.'; $('fAccess').select(); return; }
   }
   $('fAccess').value='';
+  if(j&&Number(j.minutes)>0) LIMIT=Number(j.minutes)*60000;
   const now=Date.now();
   S={id:now.toString(36)+Math.random().toString(36).slice(2,8),name,cls,sbd,ticket:j.ticket,started:now,deadline:now+LIMIT,picks:deal(),status:Array(10).fill(null),ans:Array(10).fill(null),state:'playing',locked:false,violations:0,sent:false};
   applyPicks(S.picks); resetWorld(); saveS(); setWho();
@@ -984,9 +985,13 @@ function lock(msg){
   $('lockMsg').textContent=(msg||'Bạn đã rời khỏi màn hình chơi.')+' Mời giáo viên nhập mã để tiếp tục. Đồng hồ vẫn tiếp tục chạy. Lưu ý: nếu rời màn hình thêm 1 lần nữa, bài làm sẽ tự kết thúc và tính điểm.';
   $('fCode').value=''; $('lockErr').textContent=''; gate('gLock'); setTimeout(()=>$('fCode').focus(),50);
 }
-$('lockForm').addEventListener('submit',e=>{
+$('lockForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(!(window.LAM_DEMO ? $('fCode').value.trim()==='2222' : isTeacher($('fCode').value))){ $('lockErr').textContent='Mã không đúng. Hãy nhờ giáo viên nhập lại.'; $('fCode').select(); return; }
+  const maMK=$('fCode').value, cu=v=>window.LAM_DEMO ? String(v).trim()==='2222' : isTeacher(v);
+  $('lockErr').textContent='Đang kiểm tra mã…';
+  const dungMa=window.TC ? await TC.moKhoa(maMK,cu) : cu(maMK);
+  $('lockErr').textContent='';
+  if(!dungMa){ $('lockErr').textContent='Mã không đúng. Hãy nhờ giáo viên nhập lại.'; $('fCode').select(); return; }
   if(!S) return; S.locked=false; saveS(); gate(null); graceUntil=performance.now()+1500; goFull(); canvas.focus({preventScroll:true});
   if(Date.now()>=S.deadline) timeUp(); else say('Đã mở khóa. Tiếp tục hành trình nhé – nhớ không rời khỏi màn hình!');
 });

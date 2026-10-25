@@ -288,7 +288,7 @@ function pickQuestions(){
   return out;
 }
 const GAME_NAME='Polymer Grand Prix';
-const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
+const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 const SAVE='polymerf1-v1';
 const SHEET_URL=((window.CAU_HINH||{}).SHEET_URL||'').trim();
 const TRIAL=!SHEET_URL;
@@ -705,7 +705,7 @@ async function sendResult(){
   const m=$('#sendMsg'),rb=$('#resendBtn');
   const show=(t,cls,resend)=>{m.textContent=t;m.className='sendmsg '+(cls||'');m.hidden=false;rb.hidden=!resend;};
   if(!player||!reason)return;
-  if(window.LAM_DEMO){try{guiSoTheoDoi(buildReport(),'POLYMER-F1','Polymer F1 – Hóa 12',0);}catch(_){}}if(TRIAL){show(window.LAM_DEMO?'Bản dùng thử: kết quả đã gửi về lớp DEMO.':'Chế độ chơi thử: kết quả không được gửi đi.');return;}try{guiSoTheoDoi(buildReport(),'POLYMER-F1','Polymer F1 – Hóa 12',0);}catch(_){}
+  if(TRIAL){show(window.LAM_DEMO?'Bản dùng thử: kết quả đã gửi về lớp DEMO.':'Chế độ chơi thử: kết quả không được gửi đi.');return;}try{guiSoTheoDoi(buildReport(),'POLYMER-F1','Polymer F1 – Hóa 12',0);}catch(_){}
   if(submitted===true){show('Đã gửi kết quả về Google Sheet của giáo viên ✓','ok');return;}
   if(sending)return;sending=true;show('Đang gửi kết quả cho giáo viên…');
   const body=JSON.stringify(buildReport()),headers={'Content-Type':'text/plain;charset=utf-8'};

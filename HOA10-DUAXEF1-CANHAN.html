@@ -1206,7 +1206,7 @@ function beginPlay(){
   if(document.activeElement)document.activeElement.blur();
   next();
 }
-const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};
+const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){const pre=SBD_PREFIX[$('fClass').value],inp=$('fSbd');$('sbdPre').textContent=pre||'••••••';inp.disabled=!pre;if(!pre)inp.value='';}
 $('fClass').addEventListener('change',()=>{syncSbd();if(!$('fSbd').disabled)$('fSbd').focus();});
 $('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
