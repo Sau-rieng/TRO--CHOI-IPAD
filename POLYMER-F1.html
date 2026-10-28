@@ -277,6 +277,7 @@ dl.info dt{color:var(--muted)}dl.info dd{margin:0;font-weight:600;font-variant-n
 <script src="POLYMER-CAUHOI.js"></script>
 <script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
 <script src="noi-so-theo-doi.js"></script>
+<script src="xuat-phat.js"></script>
 <script>
 /* ===== Câu hỏi: lấy từ ngân hàng POLYMER-CAUHOI.js (Bài 12, 13). Mỗi lượt chơi chọn ngẫu nhiên 10 câu, trải đều các chủ đề. ===== */
 const QUESTIONS=window.CAU_HOI||[];
@@ -570,24 +571,33 @@ $('#login').addEventListener('submit',async e=>{
   if(miss.length)return fail('Em cần nhập '+miss.join(', ')+'.');
   if(!/^\d{2}$/.test(tail)){fSbd.focus();return fail('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');}
   const sbd=SBD_PREFIX[lop]+tail;
-  let sheet='';
+  let sheet='',lr=null;
   if(!TRIAL){
     err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
     try{
       const r=await api({kind:'login',code,lop,name,sbd});
       if(!r.ok){$('#fCode').value='';$('#fCode').focus();return fail(r.error==='code'?'Mã giáo viên không đúng.':(r.error||'Máy chủ từ chối đăng nhập.'));}
-      LIMIT=(Number(r.minutes)||5)*60*1000;sheet=r.sheet||'';
+      LIMIT=(Number(r.minutes)||5)*60*1000;sheet=r.sheet||'';lr=r;
     }catch(ex){return fail(netMsg(ex));}
     finally{btn.disabled=false;btn.textContent='Vào đường đua';}
   }
+  let xp=null;
+  if(lr&&window.XuatPhat){btn.disabled=true;btn.textContent='Ở vạch xuất phát…';try{xp=await XuatPhat.cho(lr,{ten:`${name} · Lớp ${lop}`});}catch(ex){return fail(ex&&ex.xp?ex.message:netMsg(ex));}finally{btn.disabled=false;btn.textContent='Vào đường đua';}}
   $('#fCode').value='';err.hidden=true;
   sessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);submitted=false;
-  player={name,lop,sbd,sheet};startedAt=Date.now();deadline=startedAt+LIMIT;reason='';leaves=0;
-  save();startLights();
+  player={name,lop,sbd,sheet};startedAt=xp?xp.startAt:Date.now();deadline=xp?xp.endAt:startedAt+LIMIT;reason='';leaves=0;
+  save();if(xp)startNow();else startLights();
 });
 function showHud(){
   ['#hudL','#hudC','#hudR','#hudB','#tLeft','#tRight'].forEach(s=>$(s).hidden=false);
   $('#who').textContent=`${player.name} · ${player.lop} · SBD ${player.sbd}`;
+}
+/* Xuat phat theo lenh giao vien: den do da dem o vach xuat phat, vao dua ngay */
+function startNow(){
+  $('#intro').hidden=true;if(document.activeElement)document.activeElement.blur();
+  showHud();stations.forEach(s=>s.prevAlong=null);
+  const g=$('#gomsg');g.hidden=false;setTimeout(()=>g.hidden=true,900);
+  state='race';
 }
 function startLights(){
   $('#intro').hidden=true;if(document.activeElement)document.activeElement.blur();

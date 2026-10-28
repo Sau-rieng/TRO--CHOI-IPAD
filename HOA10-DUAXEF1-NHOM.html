@@ -288,6 +288,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
 <script src="noi-so-theo-doi.js"></script>
+<script src="xuat-phat.js"></script>
 <script>
 /* ================= Câu hỏi (SGK Hóa 10 – Kết nối tri thức) ================= */
 const ISO=(a,z,s)=>`<span class="iso"><span>${a}</span><span>${z}</span></span>${s}`;
@@ -1214,11 +1215,12 @@ $('login').addEventListener('submit',async e=>{
     if(!r.ok){$('fCode').value='';$('fCode').focus();return fail(r.error==='code'?'Mã giáo viên không đúng.':(r.error||'Máy chủ từ chối đăng nhập.'));}
     $('fCode').value='';
     LIMIT=(Number(r.minutes)||5)*60*1000;
+    btn.textContent='Ở vạch xuất phát…';const xp=window.XuatPhat?await XuatPhat.cho(r,{ten:`${group} · Lớp ${lop}`}):null;
     picks=pickQuestions();buildQuestions(picks);
     sessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,8);submitted=false;
-    player={lop,group,sheet:r.sheet||''};startedAt=Date.now();deadline=startedAt+LIMIT;reason='';leaves=0;
+    player={lop,group,sheet:r.sheet||''};startedAt=xp?xp.startAt:Date.now();deadline=xp?xp.endAt:startedAt+LIMIT;reason='';leaves=0;
     resetWorld();save();beginPlay();
-  }catch(ex){fail(netMsg(ex));}
+  }catch(ex){fail(ex&&ex.xp?ex.message:netMsg(ex));}
   finally{btn.disabled=false;btn.textContent='Vào chơi';}
 });
 function lockGame(){

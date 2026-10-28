@@ -63,10 +63,13 @@
       luuLop(tenLop);
       var l = timLop(tenLop, d.sbd);
       if (!l) return Promise.resolve({ ok: false, error: 'Chưa có sổ theo dõi của lớp ' + tenLop + '.' });
+      var tGui = Date.now();
       return guiSo(l.url, { action: 'tc_vao', matro: MATRO, lop: tenLop, ma: String(d.code || '').trim() }).then(function (r) {
         if (chuaCapNhat(r)) return duPhong(d, body);
         cheDoCu = false;
-        if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten };
+        var tNhan = Date.now();
+        if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten,
+          tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui };
         return { ok: false, error: (r && r.msg) || 'Máy chủ từ chối đăng nhập.' };
       }, function () { return { ok: false, error: LOI_MANG }; });
     }
@@ -99,6 +102,18 @@
     vao: function (lop, ma, sbd) {
       return xuLy(JSON.stringify({ kind: 'login', lop: lop, code: ma, sbd: sbd })).then(function (r) {
         return { ok: !!r.ok, phut: Number(r.minutes) || 5, msg: r.ok ? '' : (r.error === 'code' ? 'Mã vào chơi không đúng.' : r.error) };
+      });
+    },
+    // May o vach xuat phat hoi trang thai tro: {tt: MO/CHO/DONG, xp: gio xuat phat (gio may chu), phut, lech, rtt}
+    trangThai: function () {
+      var l = timLop(docLop());
+      if (!l) return Promise.reject(new Error('Chưa có sổ theo dõi của lớp.'));
+      var tGui = Date.now();
+      return guiSo(l.url, { action: 'tc_tt', matro: MATRO }).then(function (r) {
+        if (chuaCapNhat(r)) return { ok: true, tt: 'MO', xp: 0 };
+        var tNhan = Date.now();
+        return { ok: true, tt: r.tt || 'MO', xp: Number(r.xp) || 0, phut: Number(r.phut) || 0,
+          lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui };
       });
     },
     moKhoa: function (ma, kiemCu) {
