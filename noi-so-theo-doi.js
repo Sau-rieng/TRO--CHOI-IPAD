@@ -8,19 +8,19 @@
    Dat 2 the <script> nay TRUOC script chinh cua tro choi:
      <script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
      <script src="noi-so-theo-doi.js"></script>
-   Tro moi: them ten file + ma tro vao TC_TRO duoi day VA vao TC_MAC_DINH trong SoTheoDoi.gs. */
+   Tro moi: ten file theo mau HOA<khoi>-<TEN>.html (tro nhom them -NHOM); them ten file + ma tro vao TC_TRO duoi day VA vao TC_MAC_DINH trong SoTheoDoi.gs. */
 (function () {
   var DEMO = /[?&]demo(=|&|$)/i.test(location.search);
   var TC_TRO = {
-    'DAINOI-HOA10.html': 'DAINOI-HOA10', 'DAINOI-KHTN9.html': 'DAINOI-KHTN9',
+    'HOA10-DAINOI.html': 'DAINOI-HOA10', 'KHTN9-DAINOI.html': 'DAINOI-KHTN9',
     'HOA10-CHIMDUATHU.html': 'CHIMDUATHU-HOA10', 'HOA10-DUAXEF1-CANHAN.html': 'DUAXEF1-HOA10',
-    'LANGBIANG-HOA10.html': 'LANGBIANG-HOA10', 'HOA10-CHIMDUATHU-NHOM.html': 'CHIMDUATHU-HOA10-NHOM',
-    'HOA10-DUAXEF1-NHOM.html': 'DUAXEF1-HOA10-NHOM', 'RUONGLUA-CHUKI-NHOM.html': 'RUONGLUA-CHUKI-NHOM',
-    'HOA12-DUAXEF1-POLYMER-CANHAN.html': 'DUAXEF1-POLYMER-H12', 'POLYMER-F1.html': 'POLYMER-F1',
-    'HOA12-DUAXEF1-POLYMER.html': 'DUAXEF1-POLYMER-H12-NHOM',
+    'HOA10-LANGBIANG.html': 'LANGBIANG-HOA10', 'HOA10-CHIMDUATHU-NHOM.html': 'CHIMDUATHU-HOA10-NHOM',
+    'HOA10-DUAXEF1-NHOM.html': 'DUAXEF1-HOA10-NHOM', 'HOA10-RUONGLUA-CHUKI-NHOM.html': 'RUONGLUA-CHUKI-NHOM',
+    'HOA12-DUAXEF1-POLYMER-CANHAN.html': 'DUAXEF1-POLYMER-H12', 'HOA12-POLYMER-F1.html': 'POLYMER-F1',
+    'HOA12-DUAXEF1-POLYMER-NHOM.html': 'DUAXEF1-POLYMER-H12-NHOM',
     'HOA12-PIN-F1-NHOM.html': 'PIN-F1-H12-NHOM',
-    'HOA12CHUONG123.html': 'CHUONG123-H12', 'H12-CHUONG123-NHOM.html': 'CHUONG123-H12-NHOM',
-    'cave-explore.html': 'HANGDONG-H12'
+    'HOA12-CHUONG123.html': 'CHUONG123-H12', 'HOA12-CHUONG123-NHOM.html': 'CHUONG123-H12-NHOM',
+    'HOA12-HANGDONG.html': 'HANGDONG-H12'
   };
   var tep = decodeURIComponent(location.pathname.split('/').pop() || '');
   var MATRO = TC_TRO[tep] || (window.CAU_HINH && window.CAU_HINH.MA_TRO) || '';
