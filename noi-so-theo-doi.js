@@ -18,7 +18,9 @@
     'HOA10-DUAXEF1-NHOM.html': 'DUAXEF1-HOA10-NHOM', 'RUONGLUA-CHUKI-NHOM.html': 'RUONGLUA-CHUKI-NHOM',
     'HOA12-DUAXEF1-POLYMER-CANHAN.html': 'DUAXEF1-POLYMER-H12', 'POLYMER-F1.html': 'POLYMER-F1',
     'HOA12-DUAXEF1-POLYMER.html': 'DUAXEF1-POLYMER-H12-NHOM',
-    'HOA12-PIN-F1-NHOM.html': 'PIN-F1-H12-NHOM'
+    'HOA12-PIN-F1-NHOM.html': 'PIN-F1-H12-NHOM',
+    'HOA12CHUONG123.html': 'CHUONG123-H12', 'H12-CHUONG123-NHOM.html': 'CHUONG123-H12-NHOM',
+    'cave-explore.html': 'HANGDONG-H12'
   };
   var tep = decodeURIComponent(location.pathname.split('/').pop() || '');
   var MATRO = TC_TRO[tep] || (window.CAU_HINH && window.CAU_HINH.MA_TRO) || '';
