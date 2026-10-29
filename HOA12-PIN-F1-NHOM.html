@@ -604,7 +604,7 @@ function startNow(){
   $('#intro').hidden=true;if(document.activeElement)document.activeElement.blur();
   showHud();stations.forEach(s=>s.prevAlong=null);
   const g=$('#gomsg');g.hidden=false;setTimeout(()=>g.hidden=true,900);
-  state='race';
+  state='race';try{window.TC&&TC.tienDo(buildReport());}catch(_){}
 }
 function startLights(){
   $('#intro').hidden=true;if(document.activeElement)document.activeElement.blur();
@@ -615,7 +615,7 @@ function startLights(){
     dots.forEach(d=>d.classList.remove('on'));L.hidden=true;
     if(reason)return;
     const g=$('#gomsg');g.hidden=false;setTimeout(()=>g.hidden=true,900);
-    stations.forEach(s=>s.prevAlong=null);state='race';
+    stations.forEach(s=>s.prevAlong=null);state='race';try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   },300+5*500+300+Math.random()*400);
 }
 
@@ -641,7 +641,7 @@ function choose(k){
   const done=stations.every(s=>s.status!=='pending');
   $('#qNext').textContent=done?'Về đích':'Tiếp tục đua';
   $('#qFb').hidden=false;$('#qNext').focus({preventScroll:true});
-  paintStation(st);updateSegs();save();
+  paintStation(st);updateSegs();save();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
 }
 $('#qNext').addEventListener('click',resume);
 function resume(){

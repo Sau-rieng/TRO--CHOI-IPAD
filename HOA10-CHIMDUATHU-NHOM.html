@@ -866,7 +866,7 @@ function showQuestion(i){
 function answer(i,k){
   if(state!=='landed'||locked||reason||answers[i]!==undefined)return;
   const Q=QUESTIONS[i],ok=k===Q.a;
-  answers[i]=ok;chosen[i]=k;if(ok)score++;
+  answers[i]=ok;chosen[i]=k;if(ok)score++;try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   card.querySelectorAll('.opt').forEach(b=>{b.disabled=true;const kk=+b.dataset.k;if(kk===Q.a)b.classList.add('right');else if(kk===k)b.classList.add('wrong');});
   const last=i===9;
   $('after').innerHTML=`<div class="explain">${ok?'<strong>Chính xác!</strong> ':'<strong>Chưa đúng.</strong> Đáp án đúng là '+'ABCD'[Q.a]+'. '}${Q.e}</div>
@@ -1001,7 +1001,7 @@ function beginPlay(){
   $('who').textContent=`${player.lop} · ${player.group}`;
   $('timer').hidden=false;$('exitBtn').hidden=false;$('start').hidden=true;
   if(document.activeElement)document.activeElement.blur();
-  next();
+  next();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
 }
 $('login').addEventListener('submit',async e=>{
   e.preventDefault();

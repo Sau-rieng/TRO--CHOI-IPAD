@@ -121,6 +121,16 @@
           lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui };
       });
     },
+    // Tro nhom gui diem hien tai sau moi cau de trang giao vien ve cot moc dan (khong cho tra loi)
+    tienDo: function (rep, ket) {
+      try {
+        if (!rep || !rep.group || !MATRO) return;
+        var l = timLop(rep.lop || rep.cls || docLop());
+        if (!l || !/^https:\/\//.test(l.url)) return;
+        gocFetch(l.url, { method: 'POST', body: JSON.stringify({ action: 'tc_tiendo', matro: MATRO, nhom: String(rep.group), maluot: rep.id || '',
+          diem: rep.score != null ? rep.score : (rep.correct || 0), xong: rep.answered || 0, ket: !!ket }) }).catch(function () {});
+      } catch (e) {}
+    },
     moKhoa: function (ma, kiemCu) {
       return xuLy(JSON.stringify({ kind: 'unlock', code: ma })).then(function (r) {
         if (cheDoCu && typeof kiemCu === 'function') return !!kiemCu(ma);

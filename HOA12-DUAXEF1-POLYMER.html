@@ -818,7 +818,7 @@ const isFull=(i,pts)=>pts!==undefined&&pts>=QUESTIONS[i].max-1e-9;
 function answer(i,resp){
   if(state!=='landed'||locked||reason||answers[i]!==undefined)return;
   const Q=QUESTIONS[i],pts=gradeOf(Q,resp),full=pts>=Q.max-1e-9;
-  answers[i]=pts;chosen[i]=resp;score=totalScore();
+  answers[i]=pts;chosen[i]=resp;score=totalScore();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   let verdict='',secs=7;
   if(Q.t==='mc'){
     card.querySelectorAll('.opt').forEach(b=>{b.disabled=true;const kk=+b.dataset.k;if(kk===Q.a)b.classList.add('right');else if(kk===resp)b.classList.add('wrong');});
@@ -961,7 +961,7 @@ function beginPlay(){
   $('who').textContent=`${player.lop} · ${player.group}`;
   $('timer').hidden=false;$('exitBtn').hidden=false;$('start').hidden=true;
   if(document.activeElement)document.activeElement.blur();
-  next();
+  next();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
 }
 $('login').addEventListener('submit',async e=>{
   e.preventDefault();

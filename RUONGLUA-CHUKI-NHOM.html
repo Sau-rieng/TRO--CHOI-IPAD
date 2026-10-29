@@ -1219,7 +1219,7 @@ function startGame(minutes){
   showOnly(null); showHud(true); $('exitBtn').hidden = false;
   $('who').textContent = `${player.lop} · ${player.group}`;
   $('qi').textContent = 0;
-  renderTeams(); drawTurn(); snapCam(); save();
+  renderTeams(); drawTurn(); snapCam(); save(); try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   if(document.activeElement) document.activeElement.blur();
 }
 function renderTeams(){
@@ -1294,7 +1294,7 @@ function submitAnswer(ans){
     verdict = ok ? `Chính xác! +0,5 điểm` : `Chưa đúng. Đáp án đúng là ${esc(q.ans)}.`;
   }
   Object.assign(cell, {ok, earned, by:0, done:true, winners: ok ? [0] : []});
-  t.answered++; t.score = Math.round((t.score + earned)*100)/100; if(ok) t.correct++;
+  t.answered++; t.score = Math.round((t.score + earned)*100)/100; if(ok) t.correct++; try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   opened++; history.push(cell); $('qi').textContent = opened;
   const info = placeText(e);
   $('why').innerHTML = shellsSVG(info.sh, e.sym) + `<p>${info.txt}<br>Thửa ruộng này đã mở: ô <b>${e.sym}</b>, tầng <b>Chu kì ${e.p}</b>, cột <b>nhóm ${GROUP[e.c]}</b>.</p>`; $('why').hidden = false;
