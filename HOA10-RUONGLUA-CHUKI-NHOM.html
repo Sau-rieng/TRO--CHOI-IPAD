@@ -511,6 +511,11 @@ function periodWrongs(e){
 }
 const symNear = z => [z-2, z-1, z+1, z+2, z+3].filter(k=> k>=1 && k<=118).map(k=> SYM[k-1]);
 
+/* ---------- Kiến thức (đúng tên trong Danh-muc-kien-thuc.md) và mức độ của từng dạng câu ---------- */
+const KT_VT = 'Xác định vị trí nguyên tố từ cấu hình electron và ngược lại', KT_CH = 'Cấu hình electron, sơ đồ ô orbital; đặc điểm lớp electron ngoài cùng';
+const KT_DANG = {sym:['Cấu tạo bảng tuần hoàn: ô, chu kì, nhóm','Biết'], z:[KT_CH,'Hiểu'], e_out:[KT_CH,'Hiểu'], bohr_z:[KT_CH,'Hiểu'], orb_id:[KT_CH,'Vận dụng'],
+  p:[KT_VT,'Hiểu'], g:[KT_VT,'Hiểu'], pg:[KT_VT,'Vận dụng'], pgz:[KT_VT,'Vận dụng'], short_pg:[KT_VT,'Vận dụng'], bohr_pg:[KT_VT,'Vận dụng'], orb_pg:[KT_VT,'Vận dụng']};
+
 /* ---------- one question for one element ---------- */
 function makeQuestion(e, type){
   const C = configOf(e.z), g = GROUP[e.c], name = NAME[e.z] || e.sym;
@@ -536,7 +541,7 @@ function makeQuestion(e, type){
       fig = orbSVG(C.val, `[${C.core}]`); right = `Chu kì ${e.p}, nhóm ${g}`; wrong = pgWrong(); break;
   }
   const opts = shuffle([right, ...wrong.slice(0,3)]);
-  return {q, fig, opts, ans:opts.indexOf(right), type};
+  return {q, fig, opts, ans:opts.indexOf(right), type, kt:KT_DANG[type][0], md:KT_DANG[type][1]};
 }
 function typesFor(e, stage){
   return STAGE_PLAN[stage].types.filter(t=> (t!=='sym' || DESC[e.sym]) && !(t==='g' && e.sym==='He') && !(t==='orb_pg' && !configOf(e.z).core));
@@ -571,7 +576,7 @@ function makeTF(e, stage){
   let truth = pick.map(()=> Math.random() < .5);
   if(truth.every(x=>x)) truth[(Math.random()*4)|0] = false;
   if(truth.every(x=>!x)) truth[(Math.random()*4)|0] = true;
-  return {kind:'tf', q:stem, fig:'', items: pick.map((s,i)=> ({text: truth[i] ? s.t : s.f, truth: truth[i]}))};
+  return {kind:'tf', q:stem, fig:'', items: pick.map((s,i)=> ({text: truth[i] ? s.t : s.f, truth: truth[i]})), kt:KT_VT, md:'Vận dụng'};
 }
 
 function makeSA(e, stage){
@@ -590,7 +595,7 @@ function makeSA(e, stage){
     d3 && {q:`Nguyên tử X có Z = ${e.z}. Phân lớp 3d của X có bao nhiêu electron?`, a:d3},
   ];
   const o = shuffle(opts.filter(Boolean))[0];
-  return {kind:'sa', q:o.q, fig:o.fig || '', ans:String(o.a)};
+  return {kind:'sa', q:o.q, fig:o.fig || '', ans:String(o.a), kt:KT_CH, md:'Vận dụng'};
 }
 function makeCellQuestion(e, stage, kind, avoidType){
   if(kind==='tf') return makeTF(e, stage);
