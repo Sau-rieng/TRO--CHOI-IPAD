@@ -1,6 +1,6 @@
 /* NGÂN HÀNG CÂU HỎI – HÓA 12 KẾT NỐI TRI THỨC – BÀI 12 ĐẠI CƯƠNG VỀ POLYMER, BÀI 13 VẬT LIỆU POLYMER (SGK trang 51–63).
    Mỗi câu: cd = chủ đề, ten = tên ngắn, q = câu hỏi, o = 4 phương án (PHƯƠNG ÁN ĐẦU TIÊN LÀ ĐÁP ÁN ĐÚNG, trò chơi tự xáo), ex = lời giải.
-   Dùng chung cho POLYMER-F1.html và THONGKE-POLYMER.html. Thêm/sửa câu: giữ đúng dạng, KHÔNG đổi thứ tự các câu cũ (số câu dùng để thống kê). */
+   Dùng chung cho HOA12-POLYMER-F1.html, các trò Đua xe F1 Polymer và cu/THONGKE-POLYMER.html. Thêm/sửa câu: giữ đúng dạng, KHÔNG đổi thứ tự các câu cũ (số câu dùng để thống kê). */
 window.CAU_HOI = [
 /* ---------- 1. KHÁI NIỆM, DANH PHÁP, CÔNG THỨC, NGUYÊN TỐ ---------- */
 {cd:'Khái niệm – danh pháp',ten:'Khái niệm polymer',q:'Polymer là gì?',
