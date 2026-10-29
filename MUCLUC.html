@@ -43,26 +43,22 @@ const GROUPS=[
    [KT+'LAM-BAI.html','Làm bài kiểm tra','Chọn lớp, nhập SBD và mã giáo viên','Kiểm tra'],
    [KT+'XEM-LAI.html','Xem lại bài làm','Nhập SBD và mã xem bài để xem câu đúng, câu sai','Xem lại']]],
  ['Hóa học 12',[
-   ['POLYMER-F1.html','Polymer Grand Prix','Đại cương về polymer · đua mô tô 3D','Cá nhân','THONGKE-POLYMER.html'],
-   ['HOA12-DUAXEF1-POLYMER.html','Đua xe F1 Polymer','Bài 12, 13 · 7 TN + 2 Đ/S + 2 TLN','Nhóm','THONGKE-DUAXEF1-POLYMER.html'],
+   ['HOA12-POLYMER-F1.html','Polymer Grand Prix','Đại cương về polymer · đua mô tô 3D','Cá nhân','THONGKE-POLYMER.html'],
+   ['HOA12-DUAXEF1-POLYMER-NHOM.html','Đua xe F1 Polymer','Bài 12, 13 · 7 TN + 2 Đ/S + 2 TLN','Nhóm','THONGKE-DUAXEF1-POLYMER.html'],
    ['HOA12-PIN-F1-NHOM.html','Grand Prix Điện hoá','Bài 15 · Thế điện cực và nguồn điện hoá học · đua mô tô 3D, 7 phút','Nhóm'],
    ['HOA12-DUAXEF1-POLYMER-CANHAN.html','Đua xe F1 Polymer','Bài 12, 13 · 7 TN + 2 Đ/S + 2 TLN','Cá nhân','THONGKE-DUAXEF1-POLYMER-CANHAN.html'],
-   ['HOA12CHUONG123.html','Escape the Cartoon Forest','Chương 1, 2, 3','Cá nhân'],
-   ['H12-CHUONG123-NHOM.html','Escape the Cartoon Forest','Chương 1, 2, 3 · thi đua nhóm','Nhóm'],
-   ['index.html','Escape the Cartoon Forest','Bài 1: Ester','Cá nhân']]],
+   ['HOA12-CHUONG123.html','Escape the Cartoon Forest','Chương 1, 2, 3','Cá nhân'],
+   ['HOA12-CHUONG123-NHOM.html','Escape the Cartoon Forest','Chương 1, 2, 3 · thi đua nhóm','Nhóm'],
+   ['HOA12-HANGDONG.html','Khám phá hang động','Bài 1: Ester','Cá nhân']]],
  ['Hóa học 10',[
    ['HOA10-CHIMDUATHU.html','Chim Đưa Thư','Vạn Lý Trường Thành','Cá nhân'],
    ['HOA10-CHIMDUATHU-NHOM.html','Chim Đưa Thư','Vạn Lý Trường Thành · theo nhóm','Nhóm','THONGKE-CHIMDUATHU.html'],
    ['HOA10-DUAXEF1-NHOM.html','Đua xe F1','Theo nhóm','Nhóm','THONGKE-DUAXEF1.html'],
    ['HOA10-DUAXEF1-CANHAN.html','Đua xe F1','Bài 1–4 · 7 TN + 2 Đ/S + 2 TLN','Cá nhân','THONGKE-DUAXEF1-CANHAN.html'],
-   ['RUONGLUA-CHUKI-NHOM.html','Ruộng lúa Chu kì','Theo nhóm','Nhóm','THONGKE-RUONGLUA.html'],
-   ['DAINOI-HOA10.html','Đại Nội Huế 3D','','Cá nhân'],
-   ['LANGBIANG-HOA10.html','Langbiang 3D','','Cá nhân']]],
- ['KHTN 9',[['DAINOI-KHTN9.html','Đại Nội Huế','KHTN 9','Cá nhân']]],
- ['Toán',[
-   ['TOANLOP6.html','Escape the Cartoon Forest','Toán lớp 6 (có nhạc)','Cá nhân'],
-   ['LOP3-CUUCHUONG.html','Escape the Cartoon Forest','Toán lớp 3 · cửu chương','Cá nhân']]],
- ['Khác',[['cave-explore.html','Khám phá hang động','','Cá nhân']]]
+   ['HOA10-RUONGLUA-CHUKI-NHOM.html','Ruộng lúa Chu kì','Theo nhóm','Nhóm','THONGKE-RUONGLUA.html'],
+   ['HOA10-DAINOI.html','Đại Nội Huế 3D','','Cá nhân'],
+   ['HOA10-LANGBIANG.html','Langbiang 3D','','Cá nhân']]],
+ ['KHTN 9',[['KHTN9-DAINOI.html','Đại Nội Huế','KHTN 9','Cá nhân']]]
 ];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('list').innerHTML=GROUPS.map(([g,items])=>`<section><h2>${esc(g)}</h2><ul>${items.map(([f,n,d,t,s])=>`<li><div class="g"><a href="${f}">${esc(n)}</a>${d?`<small>${esc(d)}</small>`:''}</div><span class="tag">${t}</span>${s?`<a class="stat" href="${s}">Thống kê</a>`:''}</li>`).join('')}</ul></section>`).join('');
