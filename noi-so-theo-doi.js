@@ -35,6 +35,10 @@
     return dsLop().filter(function (l) { return t && l.ten.toUpperCase() === t; })[0]
       || dsLop().filter(function (l) { return s.length === 8 && s.indexOf(l.tiento) === 0; })[0] || null;
   }
+  // Ma rieng cua may + ten hien o vach xuat phat (de giao vien thay ai da san sang)
+  var MAY = '', TEN_VACH = '';
+  try { MAY = localStorage.getItem('tc_may') || ''; if (!MAY) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('tc_may', MAY); } }
+  catch (e) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function luuLop(t) { try { if (t) localStorage.setItem(KL, t); } catch (e) {} }
   function docLop() { try { return localStorage.getItem(KL) || ''; } catch (e) { return ''; } }
   var gocFetch = window.fetch ? window.fetch.bind(window) : null;
@@ -61,10 +65,11 @@
     if (k === 'login' || k === 'check') {
       var tenLop = d.lop || d.cls || '';
       luuLop(tenLop);
+      TEN_VACH = String(d.group || d.name || d.member || '').trim();
       var l = timLop(tenLop, d.sbd);
       if (!l) return Promise.resolve({ ok: false, error: 'Chưa có sổ theo dõi của lớp ' + tenLop + '.' });
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_vao', matro: MATRO, lop: tenLop, ma: String(d.code || '').trim() }).then(function (r) {
+      return guiSo(l.url, { action: 'tc_vao', matro: MATRO, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH }).then(function (r) {
         if (chuaCapNhat(r)) return duPhong(d, body);
         cheDoCu = false;
         var tNhan = Date.now();
@@ -109,7 +114,7 @@
       var l = timLop(docLop());
       if (!l) return Promise.reject(new Error('Chưa có sổ theo dõi của lớp.'));
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_tt', matro: MATRO }).then(function (r) {
+      return guiSo(l.url, { action: 'tc_tt', matro: MATRO, may: MAY, ten: TEN_VACH, lop: l.ten }).then(function (r) {
         if (chuaCapNhat(r)) return { ok: true, tt: 'MO', xp: 0 };
         var tNhan = Date.now();
         return { ok: true, tt: r.tt || 'MO', xp: Number(r.xp) || 0, phut: Number(r.phut) || 0,
