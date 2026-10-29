@@ -50,19 +50,26 @@
 <div id="progress">💎 Đã trả lời 0/10 • Điểm: 0</div>
 <div id="timer" style="display:none">⏱ 5:00</div>
 <canvas id="mm" width="136" height="152"></canvas>
-<div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><input id="in-class" placeholder="Lớp" autocomplete="off"><input id="in-sbd" placeholder="Số báo danh" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để được cấp lại lượt chơi (sẽ bắt đầu lại từ đầu với bộ 10 câu hỏi mới).</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Bắt đầu lại</button></div></div></div>
+<div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><select id="in-class"><option value="">Chọn lớp</option><option>12G01</option><option>12G02</option></select><input id="in-sbd" inputmode="numeric" maxlength="2" placeholder="Số báo danh: chọn lớp rồi gõ 2 số cuối" autocomplete="off"><input id="in-access" type="password" inputmode="numeric" maxlength="12" placeholder="Mã vào chơi (giáo viên đọc)" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để được cấp lại lượt chơi (sẽ bắt đầu lại từ đầu với bộ 10 câu hỏi mới).</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Bắt đầu lại</button></div></div></div>
 <div id="end-overlay" style="display:none"><div id="end-box"><h2>🏁 Kết thúc</h2><div id="end-text" style="white-space:pre-line;line-height:1.7;font-size:15px"></div></div></div>
-<div id="lock-overlay"><div id="lock-box"><h2>🔒 Màn hình đã bị khóa</h2><p>Bạn đã thoát khỏi chế độ toàn màn hình khi đang làm bài. Nhờ giáo viên nhập mã để tiếp tục.</p><input id="in-code" placeholder="Mã giáo viên" autocomplete="off"><div id="lock-err"></div><button class="quiz-opt" id="unlock-btn" style="text-align:center;width:100%">Mở khóa</button></div></div>
+<div id="lock-overlay"><div id="lock-box"><h2>🔒 Màn hình đã bị khóa</h2><p>Bạn đã thoát khỏi chế độ toàn màn hình khi đang làm bài. Nhờ giáo viên nhập mã để tiếp tục.</p><input id="in-code" type="password" inputmode="numeric" placeholder="Mã mở khóa của giáo viên" autocomplete="off"><div id="lock-err"></div><button class="quiz-opt" id="unlock-btn" style="text-align:center;width:100%">Mở khóa</button></div></div>
 <div id="quiz-overlay"><div id="quiz-box"><div id="quiz-num">CÂU HỎI</div><div id="quiz-q"></div><div id="quiz-options"></div><div id="quiz-feedback"></div></div></div>
 <div id="complete-banner"><div id="result-title" style="font-size:19px;font-weight:700;margin-bottom:6px"></div><div id="result-sub" style="font-size:14px;line-height:1.5"></div><div id="send-status" style="font-size:13px;color:#ffd27a;margin-top:8px"></div><button class="quiz-opt" id="close-btn">Đóng</button></div>
 <div id="hud">↑ tiến • ↓ lùi • ←/→ xoay người — trả lời 10 khối pha lê (mỗi câu 1 điểm, chỉ 1 lần) rồi về cổng ở đích</div>
 
+<script>window.CAU_HINH = { SHEET_URL: '' };</script>
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
   // ===== CẤU HÌNH GOOGLE SHEET =====
   // Dán link Web App của Google Apps Script vào đây (hoặc thêm ?sheet=LINK vào địa chỉ trang).
-  const SHEET_URL = new URLSearchParams(location.search).get('sheet') || 'https://script.google.com/macros/s/AKfycbx-HO4-x2AwWacdZGqen_5aiIuXgsWCAh9gJjmNj_hiK4GoaacYfGdp-EZ2WjegixN7/exec';
+  // Ket qua gui ve So theo doi cua lop qua noi-so-theo-doi.js (khong dung Sheet rieng).
+  const MA_TRO='HANGDONG-H12', TEN_TRO='Khám phá hang động – Ester (Hóa 12)';
+  // SBD = 6 so dau cua lop + 2 so cuoi hoc sinh go. VD 12G01 -> 261201__
+  const sbdPrefix=cls=>{ if(cls==='DEMO') return '269999'; const m=/^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls||''); return m?'26'+m[1].padStart(2,'0')+m[2]:''; };
+  let playerSbd='';
 
   // Ngân hàng 51 câu hỏi (mã hóa base64+XOR để không hiện thẳng dạng chữ khi xem mã nguồn trang -
   // đây KHÔNG phải bảo mật thật sự, chỉ chặn việc đọc lướt qua, xem README/ghi chú của lập trình viên).
@@ -340,11 +347,9 @@
   let sid='', pendingSid='', busy=false;
   let myQuestions=[]; // 10 câu (đã bốc ngẫu nhiên + xáo đáp án) cho phiên chơi hiện tại, chấm ngay tại trình duyệt
   const sendStatus=document.getElementById('send-status');
-  async function api(payload){
-    payload.sid=sid;
-    const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    return r.json();
-  }
+  { const sel=document.getElementById('in-class');
+    if(/[?&]demo(=|&|$)/i.test(location.search)){ const o=document.createElement('option'); o.textContent='DEMO'; sel.appendChild(o); }
+    sel.addEventListener('change',()=>{ const pre=sbdPrefix(sel.value); document.getElementById('in-sbd').placeholder=pre?'Số báo danh: '+pre+'__ (gõ 2 số cuối)':'Số báo danh: chọn lớp rồi gõ 2 số cuối'; }); }
   function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function drawQuestions(){
     const idx=shuffle(QBANK.map((_,i)=>i)).slice(0,TOTAL);
@@ -359,7 +364,7 @@
   function updateProgress(){ progressEl.textContent='💎 Đã trả lời '+solvedCount+'/'+TOTAL+' • Điểm: '+score; }
   function hideBlock(b){ b.solved=true; b.mesh.visible=false; b.sprite.visible=false; }
 
-  const TIME_LIMIT_MS = 5*60*1000; // 5 phút
+  let TIME_LIMIT_MS = 5*60*1000; // mac dinh 5 phut, lay theo thoi gian giao vien dat khi dang nhap
   const timerEl=document.getElementById('timer');
   function startTimer(startedAtIso){
     deadline = (startedAtIso ? new Date(startedAtIso).getTime() : Date.now()) + TIME_LIMIT_MS;
@@ -375,7 +380,11 @@
     if(left<=0){ clearInterval(timerHandle); timeUp(); }
   }
   async function submitFinal(){
-    try{ await api({action:'finish', score:score, answered:solvedCount, answers:answerLog.slice(0,solvedCount)}); sendStatus.textContent='Điểm đã được ghi vào hệ thống.'; }
+    try{
+      guiSoTheoDoi({sbd:playerSbd, correct:score, score:score, startedAt:startTime, endedAt:Date.now()}, MA_TRO, TEN_TRO, TOTAL);
+      const r=await (window.__tcGui||Promise.resolve({ok:false}));
+      sendStatus.textContent=r&&r.ok?'Điểm đã được ghi vào sổ theo dõi.':'Không gửi được điểm'+(r&&r.msg?' ('+r.msg+')':'')+'. Báo giáo viên.';
+    }
     catch(e){ sendStatus.textContent='Không gửi được điểm lên hệ thống (kiểm tra mạng).'; }
   }
   async function timeUp(){
@@ -385,7 +394,7 @@
     quizOverlay.style.display='none';
     await submitFinal();
     ended=true;
-    document.getElementById('end-text').textContent='⏰ Đã hết thời gian làm bài (5 phút).\n'+playerName+' — lớp '+playerClass+'\nĐiểm: '+score+'/'+TOTAL+' (đã trả lời '+solvedCount+'/'+TOTAL+' câu).\nCảm ơn bạn đã tham gia!';
+    document.getElementById('end-text').textContent='⏰ Đã hết thời gian làm bài ('+Math.round(TIME_LIMIT_MS/60000)+' phút).\n'+playerName+' — lớp '+playerClass+'\nĐiểm: '+score+'/'+TOTAL+' (đã trả lời '+solvedCount+'/'+TOTAL+' câu).\nCảm ơn bạn đã tham gia!';
     document.getElementById('end-overlay').style.display='flex';
   }
 
@@ -439,11 +448,11 @@
   document.getElementById('unlock-btn').onclick=async ()=>{
     const codeEl=document.getElementById('in-code'), err=document.getElementById('lock-err'), btn=document.getElementById('unlock-btn');
     const code=codeEl.value.trim();
-    if(!code){ err.textContent='Nhập mã giáo viên.'; return; }
+    if(!code){ err.textContent='Nhập mã mở khóa của giáo viên.'; return; }
     btn.disabled=true; err.textContent='Đang kiểm tra...';
     try{
-      const r=await api({action:'unlock', code:code});
-      if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
+      const ok=window.TC?await TC.moKhoa(code):false;
+      if(!ok){ err.textContent='Mã không đúng.'; btn.disabled=false; return; }
       locked=false; document.getElementById('lock-overlay').style.display='none';
       requestFS(); btn.disabled=false;
     }catch(e){ err.textContent='Không kết nối được máy chủ.'; btn.disabled=false; }
@@ -451,43 +460,21 @@
   document.getElementById('start-btn').onclick=async ()=>{
     const n=document.getElementById('in-name').value.trim(), c=document.getElementById('in-class').value.trim();
     const err=document.getElementById('start-err'), btn=document.getElementById('start-btn');
-    const sbd=document.getElementById('in-sbd').value.trim();
-    if(!n || !c || !sbd){ err.textContent='Vui lòng nhập đủ họ tên, lớp và số báo danh.'; return; }
-    if(!/^https:\/\/script\.google\.com\//.test(SHEET_URL)){ err.textContent='Chưa cấu hình máy chủ chấm điểm (SHEET_URL).'; return; }
+    const tail=document.getElementById('in-sbd').value.trim(), ma=document.getElementById('in-access').value.trim();
+    if(!n || !c || !tail){ err.textContent='Vui lòng nhập đủ họ tên, lớp và số báo danh.'; return; }
+    if(!/^\d{2}$/.test(tail)){ err.textContent='Gõ đủ 2 số cuối của số báo danh.'; return; }
+    if(!ma){ err.textContent='Nhập mã vào chơi do giáo viên đọc.'; return; }
     requestFS();
-    btn.disabled=true; err.textContent='Đang kết nối...';
-    try{
-      const r=await api({action:'start', name:n, cls:c, sbd:sbd});
-      if(!r.ok){
-        if(r.error==='exists'){
-          pendingSid=r.sid;
-          err.textContent='Bạn đã bắt đầu bài này trước đó (có thể do mất kết nối hoặc thoát trang).';
-          document.getElementById('resume-section').style.display='block';
-          btn.disabled=false; return;
-        }
-        err.textContent=r.error||'Không bắt đầu được.'; btn.disabled=false; return;
-      }
-      sid=r.sid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
-      score=0; solvedCount=0; answerLog=[]; drawQuestions(); updateProgress();
-      document.getElementById('start-overlay').style.display='none';
-      quizOpen=false; ensureAudio(); startTimer(r.startedAt);
-    }catch(e){ err.textContent='Không kết nối được máy chủ. Kiểm tra mạng và link Apps Script.'; btn.disabled=false; }
-  };
-  document.getElementById('resume-btn').onclick=async ()=>{
-    const n=document.getElementById('in-name').value.trim(), c=document.getElementById('in-class').value.trim();
-    const codeEl=document.getElementById('in-resume-code'), err=document.getElementById('resume-err'), btn=document.getElementById('resume-btn');
-    const code=codeEl.value.trim();
-    if(!code){ err.textContent='Nhập mã giáo viên.'; return; }
-    if(!pendingSid){ err.textContent='Thiếu phiên làm bài, hãy bấm Bắt đầu lại.'; return; }
-    btn.disabled=true; err.textContent='Đang kiểm tra...';
-    try{
-      const r=await api({action:'resume', sid:pendingSid, code});
-      if(!r.ok){ err.textContent=r.error||'Mã không đúng.'; btn.disabled=false; return; }
-      sid=pendingSid; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
-      score=0; solvedCount=0; answerLog=[]; drawQuestions(); updateProgress();
-      document.getElementById('start-overlay').style.display='none';
-      quizOpen=false; ensureAudio(); requestFS(); startTimer(r.startedAt); btn.disabled=false;
-    }catch(e){ err.textContent='Không kết nối được máy chủ.'; btn.disabled=false; }
+    btn.disabled=true; err.textContent='Đang kiểm tra mã...';
+    const sbd=sbdPrefix(c)+tail;
+    const v=window.TC?await TC.vao(c,ma,sbd):{ok:true,phut:5};
+    if(!v.ok){ err.textContent=v.msg; btn.disabled=false; return; }
+    document.getElementById('in-access').value=''; err.textContent='';
+    TIME_LIMIT_MS=(Number(v.phut)||5)*60*1000;
+    playerSbd=sbd; playerName=n; playerClass=c; startTime=Date.now(); gameStarted=true;
+    score=0; solvedCount=0; answerLog=[]; drawQuestions(); updateProgress();
+    document.getElementById('start-overlay').style.display='none';
+    quizOpen=false; ensureAudio(); startTimer();
   };
   let heading=Math.PI, walkT=0, lastStep=0;
   const speed=4.0, turnSpeed=2.2;

@@ -75,6 +75,9 @@
         .dpad-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); border: 3px solid rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-size: 24px; color: #333; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; -webkit-user-select: none; touch-action: none; }
         .dpad-btn:active { background: rgba(255, 204, 0, 0.8); transform: scale(0.95); }
     </style>
+    <script>window.CAU_HINH = { SHEET_URL: '' };</script>
+    <script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+    <script src="noi-so-theo-doi.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -92,12 +95,11 @@
                 <input type="text" id="input-name" placeholder="Họ và Tên Học Sinh" autocomplete="off">
                 <select id="input-class">
                     <option value="" disabled selected>-- Chọn Lớp --</option>
-                    <option value="12G1">Lớp 12G1</option>
-                    <option value="12G2">Lớp 12G2</option>
-                    <option value="12G5">Lớp 12G5</option>
-                    <option value="12G6">Lớp 12G6</option>
+                    <option value="12G01">Lớp 12G01</option>
+                    <option value="12G02">Lớp 12G02</option>
                 </select>
-                <input type="text" id="input-id" placeholder="Số Báo Danh (VD: 26120101)" autocomplete="off">
+                <input type="text" id="input-id" inputmode="numeric" maxlength="2" placeholder="SBD: chọn lớp rồi gõ 2 số cuối" autocomplete="off">
+                <input type="password" id="input-code" inputmode="numeric" maxlength="12" placeholder="Mã vào chơi (giáo viên đọc)" autocomplete="off">
             </div>
 
             <button type="button" id="btn-start" onclick="startGame()">BẮT ĐẦU CHƠI</button>
@@ -147,37 +149,16 @@
     <script>
     (function() {
         
-        // === 1. DÁN ĐƯỜNG DẪN GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ===
-        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwwu58Eza1r4E6PIW6r7BQW4atxluE2cH0PeOw-cY4fBos7tDmkK_nWI8aNJ4WeUCLMsA/exec";
-
-        // === 2. DANH SÁCH SỐ BÁO DANH HỢP LỆ ===
-        const validStudentIDs = {
-            "12G1": [
-                "26120101", "26120102", "26120103", "26120104", "26120105", "26120106", "26120107", "26120108", "26120109", "26120110",
-                "26120111", "26120112", "26120113", "26120114", "26120115", "26120116", "26120117", "26120118", "26120119", "26120120",
-                "26120121", "26120122", "26120123", "26120124", "26120125", "26120126", "26120127", "26120128", "26120129", "26120130",
-                "26120131", "26120132", "26120133", "26120134", "26120135", "26120136", "26120137", "26120138", "26120139", "26120140"
-            ],
-            "12G2": [
-                "26120201", "26120202", "26120203", "26120204", "26120205", "26120206", "26120207", "26120208", "26120209", "26120210",
-                "26120211", "26120212", "26120213", "26120214", "26120215", "26120216", "26120217", "26120218", "26120219", "26120220",
-                "26120221", "26120222", "26120223", "26120224", "26120225", "26120226", "26120227", "26120228", "26120229", "26120230",
-                "26120231", "26120232", "26120233", "26120234", "26120235", "26120236", "26120237", "26120238", "26120239", "26120240",
-                "26120241", "26120242", "26120243"
-            ],
-            "12G5": [
-                "26120501", "26120502", "26120503", "26120504", "26120505", "26120506", "26120507", "26120508", "26120509", "26120510",
-                "26120511", "26120512", "26120513", "26120514", "26120515", "26120516", "26120517", "26120518", "26120519", "26120520",
-                "26120521", "26120522", "26120523", "26120524", "26120525", "26120526", "26120527", "26120528", "26120529", "26120530",
-                "26120531", "26120532", "26120533", "26120534", "26120535", "26120536", "26120537"
-            ],
-            "12G6": [
-                "26120601", "26120602", "26120603", "26120604", "26120605", "26120606", "26120607", "26120608", "26120609", "26120610",
-                "26120611", "26120612", "26120613", "26120614", "26120615", "26120616", "26120617", "26120618", "26120619", "26120620",
-                "26120621", "26120622", "26120623", "26120624", "26120625", "26120626", "26120627", "26120628", "26120629", "26120630",
-                "26120631", "26120632", "26120633", "26120634", "26120635", "26120636"
-            ]
-        };
+        // Ket qua gui ve So theo doi cua lop qua noi-so-theo-doi.js (khong dung Sheet rieng).
+        // SBD = 6 so dau cua lop + 2 so cuoi hoc sinh go. VD 12G01 -> 261201__
+        const MA_TRO = 'CHUONG123-H12', TEN_TRO = 'Escape the Cartoon Forest – Hóa 12 Chương 1-2-3', TONG_CAU = 20;
+        const sbdPrefix = cls => { if (cls === 'DEMO') return '269999'; const m = /^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls || ''); return m ? '26' + m[1].padStart(2, '0') + m[2] : ''; };
+        let playerSbd = "";
+        if (/[?&]demo(=|&|$)/i.test(location.search)) { const o = document.createElement('option'); o.value = o.textContent = 'DEMO'; document.getElementById('input-class').appendChild(o); }
+        document.getElementById('input-class').addEventListener('change', function () {
+            const pre = sbdPrefix(this.value);
+            document.getElementById('input-id').placeholder = pre ? 'SBD: ' + pre + '__ (gõ 2 số cuối)' : 'SBD: chọn lớp rồi gõ 2 số cuối';
+        });
 
         const bank1 = [
             { q: "Ester sinh ra từ phản ứng giữa carboxylic acid và alcohol có dạng chung là?", a: ["RCOOR'", "R-O-R'", "RCOOH", "R-CO-R'"], c: 0 },
@@ -371,27 +352,31 @@
             if(!isMuted) sfxWrong.play();
         }
 
-        window.startGame = function() {
+        window.startGame = async function() {
             const nameInput = document.getElementById('input-name').value.trim();
             const classSelect = document.getElementById('input-class');
             const classInput = classSelect.value; 
             const idInput = document.getElementById('input-id').value.trim();
+            const codeInput = document.getElementById('input-code').value.trim();
             
             if(nameInput === "" || classInput === "" || idInput === "") { 
                 showFormError("⚠️ Vui lòng điền đủ Tên, Lớp và SBD!");
                 return; 
             }
+            if (!/^\d{2}$/.test(idInput)) { showFormError("❌ Gõ đủ 2 số cuối của SBD!"); return; }
+            if (codeInput === "") { showFormError("⚠️ Nhập mã vào chơi do giáo viên đọc!"); return; }
 
-            if (idInput !== "9999") {
-                let allowedIDs = validStudentIDs[classInput];
-                if (!allowedIDs || !allowedIDs.includes(idInput)) {
-                    showFormError("❌ SBD không hợp lệ hoặc sai Lớp!"); 
-                    return;
-                }
-            }
+            const btn = document.getElementById('btn-start');
+            btn.disabled = true; btn.innerText = "ĐANG KIỂM TRA MÃ…";
+            const sbd = sbdPrefix(classInput) + idInput;
+            const v = window.TC ? await TC.vao(classInput, codeInput, sbd) : { ok: true, phut: 7 };
+            btn.disabled = false; btn.innerText = "BẮT ĐẦU CHƠI";
+            if (!v.ok) { showFormError("❌ " + v.msg); return; }
+            gameTimeLimit = (Number(v.phut) || 7) * 60;
+            playerSbd = sbd;
 
             playerName = nameInput; 
-            playerId = classInput + " - " + idInput; 
+            playerId = playerSbd; 
             currentScore = 0;
             answeredQuestions = 0;
             loginTimeString = getFormattedTime();
@@ -404,7 +389,7 @@
             document.getElementById('progress-box').style.display = 'block';
             document.getElementById('progress-box').innerText = `📝 Câu: 0/20`;
             
-            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | SBD: ${idInput}`;
+            document.getElementById('player-info').innerText = `${playerName} | Lớp: ${classInput} | SBD: ${playerSbd}`;
             updateScoreUI();
             
             if(!isMuted) bgMusic.play().catch(e => console.log("Trình duyệt chặn autoplay audio"));
@@ -427,39 +412,27 @@
             document.getElementById('btn-unlock').style.display = 'block';
         }
 
-        function unlockGame() {
-            let pin = prompt("Vui lòng nhập MÃ BẢO MẬT của Giáo Viên:");
-            if (pin === "123456") { 
+        async function unlockGame() {
+            let pin = prompt("Vui lòng nhập MÃ MỞ KHÓA của Giáo Viên:");
+            if (pin === null) return;
+            const ok = window.TC ? await TC.moKhoa(pin.trim()) : false;
+            if (ok) { 
                 localStorage.removeItem('daThiHoa12');
                 alert("Mở khóa thành công! Học sinh có thể làm lại bài.");
                 location.reload();
-            } else if (pin !== null) {
-                alert("Mã bảo mật không chính xác!");
+            } else {
+                alert("Mã mở khóa không chính xác!");
             }
         }
 
         function sendScoreToSheet(name, id, score, seconds) {
-            if (GOOGLE_SHEET_URL.includes("DÁN_URL")) return; 
-            
             let safeScore = parseInt(score);
-            if (safeScore > 20 || safeScore < 0) {
-                safeScore = 0; 
-            }
-
-            let completeTimeString = getFormattedTime();
-
-            fetch(GOOGLE_SHEET_URL, {
-                method: "POST", mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    name: name, 
-                    id: id, 
-                    score: safeScore, 
-                    time: seconds,
-                    loginTime: loginTimeString,
-                    completeTime: completeTimeString
-                })
-            }).catch(err => console.log("Lỗi gửi dữ liệu: ", err));
+            if (!(safeScore >= 0 && safeScore <= TONG_CAU)) safeScore = 0;
+            const endedAt = Date.now();
+            try {
+                guiSoTheoDoi({ sbd: playerSbd, name: name, correct: safeScore, score: safeScore,
+                    startedAt: endedAt - seconds * 1000, endedAt: endedAt }, MA_TRO, TEN_TRO, TONG_CAU);
+            } catch (e) { console.log("Lỗi gửi dữ liệu: ", e); }
         }
 
         function triggerAntiCheat() {
