@@ -23,7 +23,9 @@
     'HOA12-HANGDONG.html': 'HANGDONG-H12'
   };
   var tep = decodeURIComponent(location.pathname.split('/').pop() || '');
-  var MATRO = TC_TRO[tep] || (window.CAU_HINH && window.CAU_HINH.MA_TRO) || '';
+  // Khung tro choi (KHUNG-F1.html...): noi dung = bo cau GV chon; ma tro (F1-K10...) do so lop tra ve theo khoi cua lop
+  var KHUNG = (/^KHUNG-([A-Z0-9]+)\.html$/i.exec(tep) || [])[1] || '';
+  var MATRO = TC_TRO[tep] || (window.CAU_HINH && window.CAU_HINH.MA_TRO) || (KHUNG ? 'KHUNG-' + KHUNG : '');
   var SO = 'https://so-theo-doi.lop/exec';             // dia chi ao: moi yeu cau toi day do file nay xu ly
   var CU = DEMO ? '' : String((window.CAU_HINH || {}).SHEET_URL || '').trim();   // Sheet rieng cu (du phong)
   if (MATRO) { window.CAU_HINH = window.CAU_HINH || {}; window.CAU_HINH.SHEET_URL = SO; }
@@ -71,12 +73,14 @@
       var l = timLop(tenLop, d.sbd);
       if (!l) return Promise.resolve({ ok: false, error: 'Chưa có sổ theo dõi của lớp ' + tenLop + '.' });
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_vao', matro: MATRO, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH }).then(function (r) {
-        if (chuaCapNhat(r)) return duPhong(d, body);
+      return guiSo(l.url, { action: 'tc_vao', matro: KHUNG ? '' : MATRO, khung: KHUNG, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH }).then(function (r) {
+        if (chuaCapNhat(r)) return KHUNG ? { ok: false, error: 'Sổ theo dõi lớp chưa cập nhật bản có bộ câu trò chơi. Báo giáo viên.' } : duPhong(d, body);
         cheDoCu = false;
         var tNhan = Date.now();
+        if (r && r.ok && KHUNG && r.matro) MATRO = r.matro;
         if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten,
-          tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui };
+          tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui,
+          matro: r.matro, kieu: r.kieu, boCau: r.boCau, tenBo: r.tenBo, maKQ: r.maKQ, tenKQ: r.tenKQ };
         return { ok: false, error: (r && r.msg) || 'Máy chủ từ chối đăng nhập.' };
       }, function () { return { ok: false, error: LOI_MANG }; });
     }
@@ -106,6 +110,16 @@
   // Goi truc tiep tu tro choi (tro khong dung api()): TC.vao(lop, ma) -> {ok, phut, msg}; TC.moKhoa(ma) -> true/false
   window.TC = {
     matro: MATRO,
+    khung: KHUNG,
+    // Khung: hoi so lop truoc khi dang nhap -> {tt, kieu (CA NHAN/NHOM), tenBo, phut}
+    cauHinh: function (tenLop) {
+      var l = timLop(tenLop);
+      if (!l) return Promise.reject(new Error('Chưa có sổ theo dõi của lớp ' + tenLop + '.'));
+      return guiSo(l.url, { action: 'tc_tt', khung: KHUNG, lop: l.ten }).then(function (r) {
+        if (chuaCapNhat(r) || (r && r.ok && !r.khung)) throw new Error('Sổ theo dõi lớp ' + l.ten + ' chưa cập nhật bản có bộ câu trò chơi. Báo giáo viên.');
+        return r;
+      });
+    },
     vao: function (lop, ma, sbd) {
       return xuLy(JSON.stringify({ kind: 'login', lop: lop, code: ma, sbd: sbd })).then(function (r) {
         return { ok: !!r.ok, phut: Number(r.minutes) || 5, msg: r.ok ? '' : (r.error === 'code' ? 'Mã vào chơi không đúng.' : r.error) };
