@@ -47,3 +47,15 @@ Claude ở kênh này **phải đọc và làm đúng** các quy định dưới
 - [ ] Đẩy lên GitHub qua **nhánh + Pull Request**, ghi rõ đã sửa vùng nào.
 
 Nếu yêu cầu của giáo viên buộc phải sửa VÙNG KHUNG (ví dụ đổi cách tính điểm), **dừng lại hỏi giáo viên** trước, vì phần này phải sửa đồng bộ với sổ theo dõi và trang giáo viên.
+
+## 6. Trò chơi CŨ (file `HOA10-…`, `HOA12-…`, `KHTN9-…`, không phải `KHUNG-`)
+
+Các trò cũ có câu hỏi viết sẵn trong file và **không** dùng bộ câu giáo viên nạp. Được làm cho hấp dẫn hơn (cảnh, nhân vật, hiệu ứng, âm thanh, cách chơi), nhưng phải **giữ**:
+
+1. **Tên file**: sổ theo dõi nhận trò theo tên file.
+2. Các dòng `<script src=…>` đang có: `cau-hinh-lop.js`, `noi-so-theo-doi.js`, `xuat-phat.js` (nếu có).
+3. Dòng gửi kết quả `guiSoTheoDoi(…, '<MÃ TRÒ>', …)` hoặc `guiNhomSoTheoDoi(…)`: **giữ nguyên mã trò**, ví dụ `'CHIMDUATHU-HOA10'`.
+4. Phần đăng nhập (lớp, số báo danh hoặc nhóm, mã giáo viên), khóa khi rời màn hình, cách tính điểm.
+5. Câu hỏi trong file: được sửa hoặc thêm, nhưng mỗi câu vẫn phải có `kt` (kiến thức) và `md` (Biết/Hiểu/Vận dụng).
+
+Muốn trò cũ **dùng bộ câu giáo viên nạp** thì không sửa file cũ. Hãy làm một **khung mới** từ `KHUNG-F1.html` theo mục 4 (ví dụ `KHUNG-CHIM.html`), mang cảnh của trò cũ sang VÙNG CẢNH. Sau đó báo giáo viên mang sang kênh làm bài kiểm tra để thêm dòng khung vào sổ theo dõi.
