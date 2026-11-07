@@ -246,7 +246,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
     <div class="fields">
       <label for="fClass">Lớp</label>
       <select id="fClass"><option value="">Chọn lớp</option></select>
-      <p class="hintline" id="cfgMsg" hidden></p>
+      <p class="hintline" id="cfgMsg">👉 Chọn lớp trước – máy sẽ hiện ô <b>chọn nhóm</b> (hoặc họ tên, số báo danh) theo cách chơi giáo viên đặt.</p>
       <div id="oCaNhan" hidden>
         <label for="fName">Họ và tên</label>
         <input id="fName" autocomplete="off" autocapitalize="words" maxlength="60" placeholder="Nguyễn Văn A">
@@ -900,7 +900,7 @@ function hienKieu(){
 }
 function cfgLop(){
   const lop=$('fClass').value,m=$('cfgMsg'),so=++cfgSo;CFG=null;hienKieu();
-  if(!lop){m.hidden=true;return;}
+  if(!lop){m.innerHTML='👉 Chọn lớp trước – máy sẽ hiện ô <b>chọn nhóm</b> (hoặc họ tên, số báo danh) theo cách chơi giáo viên đặt.';m.hidden=false;return;}
   m.textContent='Đang hỏi giáo viên cách chơi…';m.hidden=false;
   if(!window.TC||!TC.cauHinh){m.textContent='Trò chơi chưa nối với sổ theo dõi.';return;}
   TC.cauHinh(lop).then(r=>{
