@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Khung mẫu – Đi qua 11 trạm</title>
+<!-- KHUNG MẪU: trò đơn giản nhất dùng khung-chung.js. Dùng làm điểm xuất phát khi biến một trò chơi thành khung.
+     Trò chỉ lo CẢNH + DI CHUYỂN; tới trạm thì gọi KHUNG.hoiCau(). Mọi thứ khác (đăng nhập, bộ câu, chấm điểm,
+     khóa màn hình, kết quả) do khung-chung.js làm. Xem HUONG-DAN-KHUNG.md. -->
+<style>
+html,body{margin:0;height:100%;background:#7cc6f2;overflow:hidden;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+.dk{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:12px;z-index:30}
+.dk button{width:72px;height:72px;border-radius:50%;border:0;background:rgba(18,20,28,.8);color:#fff;font-size:30px;font-weight:700}
+.dk button:active{background:#c9271d}
+</style>
+</head>
+<body>
+<canvas id="canh"></canvas>
+<div class="dk" id="dieuKhien" hidden><button id="nutTien" aria-label="Đi tới">▶</button></div>
+
+<!-- 4 dòng nối: KHÔNG XÓA, KHÔNG ĐỔI THỨ TỰ (trò 3D thêm three.min.js r128 lên đầu) -->
+<script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+<script src="noi-so-theo-doi.js"></script>
+<script src="xuat-phat.js"></script>
+<script src="khung-chung.js"></script>
+
+<script>
+/* ████████ VÙNG CẢNH + DI CHUYỂN – ĐƯỢC SỬA TỰ DO (thay bằng cảnh của trò) ████████ */
+const cv = document.getElementById('canh'), g = cv.getContext('2d');
+let W = 0, H = 0, x = 0, chay = false, giu = false, tramTiep = 0, co = [];
+const DAI = 2400, TRAM = Array.from({ length: 11 }, (_, i) => 180 + i * 200);   // 11 trạm dọc đường
+function coGian() { W = cv.width = innerWidth * devicePixelRatio; H = cv.height = innerHeight * devicePixelRatio; }
+addEventListener('resize', coGian); coGian();
+function ve() {
+  const s = devicePixelRatio, cam = Math.max(0, x - W / s / 3);
+  g.setTransform(s, 0, 0, s, 0, 0); g.clearRect(0, 0, W, H);
+  g.fillStyle = '#5aa24a'; g.fillRect(0, H / s * 0.62, W / s, H / s);
+  g.fillStyle = '#c9b48a'; g.fillRect(0, H / s * 0.62, W / s, 40);
+  TRAM.forEach((t, i) => {                       // cột cờ ở mỗi trạm, màu theo kết quả
+    const px = t - cam; if (px < -40 || px > W / s + 40) return;
+    g.fillStyle = '#333'; g.fillRect(px, H / s * 0.62 - 90, 4, 90);
+    g.fillStyle = co[i] || (i === tramTiep ? '#f2c14e' : '#ddd'); g.fillRect(px + 4, H / s * 0.62 - 90, 34, 22);
+    g.fillStyle = '#222'; g.font = 'bold 13px sans-serif'; g.fillText(i + 1, px + 14, H / s * 0.62 - 74);
+  });
+  const nx = x - cam, ny = H / s * 0.62 - 28;   // nhân vật
+  g.fillStyle = '#c9271d'; g.beginPath(); g.arc(nx, ny, 18, 0, 7); g.fill();
+}
+let truoc = performance.now();
+function vong(t) {
+  const dt = Math.min(0.05, (t - truoc) / 1000); truoc = t;
+  if (chay && giu) {
+    x += 140 * dt;
+    if (tramTiep < TRAM.length && x >= TRAM[tramTiep]) {       // tới trạm → hỏi câu
+      x = TRAM[tramTiep]; giu = false;
+      KHUNG.hoiCau().then(kq => {
+        co[kq.i] = kq.dungHet ? '#3fae6b' : kq.diem > 0 ? '#c98b2b' : '#d9483b';
+        tramTiep = kq.i + 1;
+      });
+    }
+  }
+  ve(); requestAnimationFrame(vong);
+}
+requestAnimationFrame(vong);
+const nut = document.getElementById('nutTien');
+['pointerdown'].forEach(e => nut.addEventListener(e, () => giu = true));
+['pointerup', 'pointerleave', 'pointercancel'].forEach(e => nut.addEventListener(e, () => giu = false));
+addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') giu = true; });
+addEventListener('keyup', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowUp') giu = false; });
+
+/* ████████ NỐI VỚI KHUNG – GIỮ CẤU TRÚC, CHỈ ĐỔI NỘI DUNG CÁC HÀM ████████ */
+KHUNG.khoiTao({
+  ten: 'Đi qua 11 trạm',                  // tên trò hiện cho học sinh
+  tram: 'Trạm',                           // gọi chỗ hỏi là Cổng / Trạm / Cửa / Đảo…
+  luat: 'Giữ nút ▶ (hoặc phím →) để đi. Tới mỗi trạm có cờ vàng, trả lời câu hỏi rồi đi tiếp.',
+  batDau(tt) {                            // bắt đầu (hoặc chơi tiếp sau khi tải lại trang)
+    tramTiep = tt.daLam; x = tramTiep ? TRAM[tramTiep - 1] + 1 : 0;
+    chay = true; document.getElementById('dieuKhien').hidden = false;
+  },
+  tamDung() { chay = false; giu = false; }, // khi hiện câu hỏi / bị khóa / hỏi thoát / hết giờ
+  tiepTuc() { chay = true; },              // khi đóng bảng câu hỏi / mở khóa
+  ketQua(i, kq) {},                        // (tuỳ chọn) ngay khi chấm xong câu i: hiệu ứng thưởng
+  veDich(lyDo) { document.getElementById('dieuKhien').hidden = true; }   // hết câu / hết giờ / thoát
+});
+</script>
+</body>
+</html>

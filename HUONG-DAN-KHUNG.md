@@ -1,61 +1,94 @@
-# HƯỚNG DẪN SỬA TRÒ CHƠI DẠNG KHUNG (dành cho kênh "TẠO TRÒ CHƠI TRÊN IPAD")
+# HƯỚNG DẪN BIẾN TRÒ CHƠI THÀNH KHUNG (dành cho kênh "TẠO TRÒ CHƠI TRÊN IPAD")
 
-Tải file này vào kênh trước khi sửa bất kỳ file `KHUNG-*.html` nào (hiện có `KHUNG-F1.html`).
-Claude ở kênh này **phải đọc và làm đúng** các quy định dưới đây.
+Tải file này vào kênh. Claude ở kênh này **phải đọc và làm đúng** các quy định dưới đây mỗi khi tạo hoặc sửa trò chơi.
 
-## 1. Khung là gì
+## 1. Mục tiêu
 
-- **Khung** = cảnh 3D + cách điều khiển. **Nội dung câu hỏi KHÔNG nằm trong file.**
-- Câu hỏi là **bộ câu** giáo viên nạp ở trang giáo viên (Trò chơi → 📥 Bộ câu trò chơi). Khi học sinh đăng nhập, sổ lớp gửi bộ câu về.
-- Mỗi lượt có **11 cổng = 11 câu**: 6 trắc nghiệm (0.5đ) · 3 đúng/sai (2đ; đúng 1/2/3/4 ý được 0.3/0.7/1.2/2đ) · 2 trả lời ngắn (0.5đ) = **10 điểm**.
-- **Cá nhân hay nhóm** và **số phút** do giáo viên chọn trên bảng điều khiển. File không tự quyết hai điều này.
-- Một file dùng cho mọi khối. Học sinh chọn lớp, máy tự biết khối (dòng F1-K9 … F1-K12 trong sổ).
+- **Trò nào cũng là khung.** Câu hỏi không nằm trong file trò chơi, mà là **bộ câu** giáo viên nạp ở trang giáo viên (Trò chơi → 📥 Bộ câu trò chơi).
+- Giáo viên nạp bộ câu của khối nào thì mọi trò khung đều có ngay lượt chơi cho khối đó.
+- Mỗi lượt có **11 chỗ hỏi = 11 câu = 10 điểm**:
+  - 6 trắc nghiệm, mỗi câu 0.5đ.
+  - 3 đúng/sai, mỗi câu 2đ (đúng 1/2/3/4 ý được 0.3/0.7/1.2/2đ).
+  - 2 trả lời ngắn, mỗi câu 0.5đ.
+- **Cá nhân hay nhóm**, **số phút**, **bộ câu** do giáo viên chọn trên bảng điều khiển. Trò chơi không tự quyết những điều này.
 
-## 2. Trong file có 4 vùng, đánh dấu bằng dòng `/* ████████ VÙNG … ████████ */`
+## 2. Cách làm: trò chơi chỉ lo CẢNH + DI CHUYỂN
 
-| Vùng | Được làm gì |
-|---|---|
-| **VÙNG CẢNH – ĐƯỢC SỬA TỰ DO** | Thêm hoặc đổi cảnh: đường đua, khán đài, cây, núi, nhà, mây, ánh sáng, bầu trời, kiểu xe, màu xe. **Giữ**: đủ 11 cổng trong mảng `towers`, biến `START`, các hàm `trackAt`, `setStartLights`, `makeCar`. |
-| **VÙNG LÁI XE – SỬA CẨN THẬN** | Đổi tốc độ, độ nhạy lái, góc camera. **Giữ** tên các hàm `placeOnGrid`, `placeAtGate`, `flyTo`, `startFree`, `showFlightUI`, `hideFlightUI`; xe tới cổng thì phải dừng và gọi `showQuestion(i)`. |
-| **VÙNG KHUNG – KHÔNG SỬA** (hai chỗ: phần bộ câu ở đầu script, và từ `showQuestion` đến hết file) | **Không sửa** cách bốc câu, chấm điểm, lưu tạm, khóa khi rời màn hình, kết thúc, gửi kết quả, đăng nhập. Chỉ được đổi chữ hiển thị hoặc màu sắc. |
-| **Phần `<head>` và 4 dòng `<script src=…>`** | **Không xóa, không đổi thứ tự**: `three.min.js` (r128), `cau-hinh-lop.js`, `noi-so-theo-doi.js`, `xuat-phat.js`. |
+Toàn bộ phần khung nằm trong file dùng chung **`khung-chung.js`** (đã có trong repo, **KHÔNG SỬA**). File này lo:
+- Màn đăng nhập (lớp → hiện ô nhóm hoặc họ tên + SBD theo giáo viên đặt) và chờ ở vạch xuất phát.
+- Nhận bộ câu từ sổ lớp, bốc câu, hiện bảng câu hỏi 3 dạng, chấm điểm, hiện giải thích.
+- Thanh 11 ô tiến độ + điểm + đồng hồ, nút Thoát.
+- Khóa khi rời màn hình, chơi tiếp sau khi tải lại trang.
+- Bảng kết quả và gửi kết quả về sổ (cá nhân hoặc nhóm).
 
-## 3. Điều cấm
+Trò chơi chỉ cần làm 3 việc:
 
-1. **Không thêm câu hỏi** vào file (không mảng BANK, TF, SA…). Câu hỏi chỉ đến từ bộ câu.
-2. **Không đổi** số cổng (11), cách tính điểm, cách xếp hạng (điểm trước, thời gian sau).
-3. **Không đổi hay xóa** bất kỳ `id` nào đang được gọi bằng `$('…')` trong file. Ví dụ: `login`, `fClass`, `fName`, `fSbd`, `fGroup`, `fCode`, `go`, `oCaNhan`, `oNhom`, `cfgMsg`, `boChu`, `card`, `submit`, `next`, `after`, `saIn`, `end`, `final`, `resultBox`, `progress`, `timer`, `lock`, `start`, `who`, `tieuDe`, `speed`, `dist`, `pad`, `minimap`. Được thêm id mới.
-4. **Không đổi tên file** `KHUNG-F1.html`. Sổ theo dõi và mã QR trỏ tới đúng tên này.
-5. **Không bỏ** khóa màn hình khi rời trò (rời lần 1 khóa, lần 2 kết thúc).
+1. Nạp đúng các file theo thứ tự này (trò 3D thêm `three.min.js` r128 lên đầu):
+   ```html
+   <script src="https://sau-rieng.github.io/LAM-BAI-KIEM-TRA/cau-hinh-lop.js" data-banner="khong"></script>
+   <script src="noi-so-theo-doi.js"></script>
+   <script src="xuat-phat.js"></script>
+   <script src="khung-chung.js"></script>
+   ```
+2. Gọi `KHUNG.khoiTao({...})` một lần:
+   ```js
+   KHUNG.khoiTao({
+     ten: 'Chim đưa thư',        // tên trò hiện cho học sinh
+     tram: 'Trạm',               // gọi chỗ hỏi là Cổng / Trạm / Cửa / Đảo…
+     luat: 'Bay qua các trạm…',  // 1–2 câu luật chơi riêng của trò (cách điều khiển)
+     batDau(tt) {},   // bắt đầu chơi. tt.tiepTuc = true nếu chơi tiếp sau khi tải lại trang; tt.daLam = số câu đã làm → đặt nhân vật ở chỗ hỏi tiếp theo
+     tamDung(ly) {},  // dừng di chuyển: khi hiện câu hỏi, bị khóa, hỏi thoát, hết giờ
+     tiepTuc(ly) {},  // cho di chuyển lại: khi đóng bảng câu hỏi, mở khóa
+     ketQua(i, kq) {},// (tùy chọn) vừa chấm xong câu i: kq.diem, kq.max, kq.dungHet → hiệu ứng thưởng/phạt
+     veDich(ly) {}    // (tùy chọn) hết 11 câu / hết giờ / thoát → hiệu ứng về đích
+   });
+   ```
+3. Khi nhân vật tới **chỗ hỏi thứ i** (theo thứ tự 1 → 11), gọi:
+   ```js
+   KHUNG.hoiCau().then(kq => { /* kq.i, kq.diem, kq.max, kq.dungHet, kq.het */ });
+   ```
+   Khung tự hiện câu đúng thứ tự (6 TN → 3 Đ/S → 2 TLN) và gọi `tamDung`. Khi học sinh bấm "Chơi tiếp", khung gọi `tiepTuc` rồi trả `kq`. Sau câu 11, khung tự gọi `veDich` và hiện bảng kết quả.
+
+Các hàm phụ có thể dùng: `KHUNG.daLam()`, `KHUNG.diem()`, `KHUNG.dangChoi()` (true khi được di chuyển), `KHUNG.conLai()` (số mili giây còn lại), `KHUNG.kieu()` ('CA NHAN' hoặc 'NHOM').
+
+**File mẫu đầy đủ: `KHUNG-MAU.html`.** Khi làm khung mới, chép file này rồi thay phần cảnh.
+
+## 3. Biến một trò đang có thành khung
+
+1. Tạo file mới **`KHUNG-<TÊN>.html`**: chữ IN HOA không dấu, số, 2–12 ký tự. Ví dụ `KHUNG-CHIM.html`, `KHUNG-DAINOI.html`, `KHUNG-LANGBIANG.html`, `KHUNG-RUONGLUA.html`.
+2. Mang sang **cảnh, nhân vật, cách điều khiển, hiệu ứng** của trò cũ.
+3. **Bỏ hết** phần riêng của trò cũ: mảng câu hỏi, bảng câu hỏi, đăng nhập, đồng hồ, chấm điểm, khóa màn hình, màn kết quả, gửi kết quả. Khung lo những phần này.
+4. Bố trí **đúng 11 chỗ hỏi** trên đường đi (cổng, trạm, cửa, rương…), đánh số 1 → 11. Tới chỗ hỏi thì gọi `KHUNG.hoiCau()`.
+5. Không đặt nút hay chữ của trò ở **góc trên bên trái** và **góc trên bên phải**: khung đặt tên trò, nút Thoát, thanh tiến độ, đồng hồ ở đó. Bảng câu hỏi hiện ở bên phải (iPad nằm ngang) hoặc ở dưới (điện thoại).
+6. **Không sửa và không xóa file trò cũ.** Trò cũ chạy song song. Khi bản khung ổn, giáo viên tự đóng trò cũ.
+
+Riêng **`KHUNG-F1.html`** (Đua xe F1) là bản khung đầu tiên, phần khung viết ngay trong file. Nếu chỉ thêm cảnh cho F1 thì sửa trong vùng `████████ VÙNG CẢNH` và không đụng hai vùng `VÙNG KHUNG`.
+
+## 4. Điều cấm
+
+1. **Không sửa** `khung-chung.js`, `noi-so-theo-doi.js`, `xuat-phat.js`. Cần thay đổi gì ở những file này thì báo giáo viên mang sang kênh làm bài kiểm tra.
+2. **Không đưa câu hỏi** vào file trò chơi.
+3. **Không tự làm** màn đăng nhập, đồng hồ, chấm điểm hay gửi kết quả riêng.
+4. Không dùng `id` hoặc class bắt đầu bằng `kc` (khung dùng).
+5. **Không đổi tên file khung đã giao.** Sổ theo dõi và mã QR trỏ tới đúng tên đó.
 6. Giữ chạy mượt trên iPad đời cũ:
-   - Gộp hình bằng `mergeChildren`; vật lặp lại nhiều thì dùng InstancedMesh.
-   - Tránh bóng đổ thời gian thực và đèn điểm.
-   - Mỗi cảnh mới thêm không quá khoảng 30 000 tam giác.
+   - Gộp hình; vật lặp nhiều thì dùng InstancedMesh.
+   - Hạn chế bóng đổ thời gian thực và đèn điểm.
+   - Giới hạn tỉ lệ điểm ảnh khoảng 1.5.
+   - Dừng tính toán nặng khi `tamDung`.
 
-## 4. Muốn làm KHUNG MỚI (ví dụ chim bay, leo núi, thuyền…)
+## 5. Sau khi làm xong
 
-- Chép `KHUNG-F1.html` thành `KHUNG-<TÊN>.html`, ví dụ `KHUNG-CHIM.html`.
-- Chỉ thay **VÙNG CẢNH** và **VÙNG LÁI XE** (đổi xe thành chim…). **Giữ nguyên hai VÙNG KHUNG.**
-- Báo giáo viên: kênh làm bài kiểm tra cần thêm 4 dòng `<TÊN>-K9 … <TÊN>-K12` vào sổ (`TC_MAC_DINH` trong SoTheoDoi.gs). `noi-so-theo-doi.js` tự nhận mọi file `KHUNG-*.html`.
+1. Đẩy lên GitHub repo `Sau-rieng/TRO--CHOI-IPAD` bằng **nhánh + Pull Request**, ghi rõ tên file khung mới.
+2. Nhắn giáo viên làm bước cuối trên **trang giáo viên → Trò chơi → ➕ Thêm trò khung**: gõ tên file (vd `KHUNG-CHIM.html`) và tên trò (vd `Chim đưa thư`). Trò sẽ có 1 dòng cho mỗi khối (KHTN 9, Hóa 10, 11, 12) để chọn bộ câu, cá nhân/nhóm, số phút. **Không phải** sửa sổ theo dõi.
 
-## 5. Tự kiểm tra trước khi giao file
+## 6. Tự kiểm tra trước khi giao file
 
-- [ ] Còn đủ 4 dòng đánh dấu `████████ VÙNG …`; hai VÙNG KHUNG không đổi gì ngoài chữ hiển thị.
-- [ ] Trong file không có câu hỏi nào.
-- [ ] Mở file → chọn lớp → hiện ô Nhóm hoặc Họ tên + SBD → Vào chơi → đủ 11 cổng → điểm ra đúng thang 10.
-- [ ] Không có lỗi trong Console; trên iPad chạy mượt (khoảng 30 khung hình/giây trở lên).
-- [ ] Đẩy lên GitHub qua **nhánh + Pull Request**, ghi rõ đã sửa vùng nào.
+- [ ] Có đủ 4 dòng `<script src>` đúng thứ tự, `KHUNG.khoiTao` được gọi đúng một lần.
+- [ ] Trong file không có câu hỏi nào; không có đăng nhập, đồng hồ, chấm điểm riêng.
+- [ ] Đúng 11 chỗ hỏi; tới chỗ hỏi mới gọi `KHUNG.hoiCau()`; trong lúc hỏi nhân vật đứng yên.
+- [ ] `batDau(tt)` đặt nhân vật đúng chỗ khi `tt.tiepTuc` (tải lại trang giữa chừng).
+- [ ] Chơi thử: chọn lớp → hiện ô nhóm hoặc họ tên → Vào chơi → đủ 11 câu → bảng kết quả 10 điểm.
+- [ ] Không lỗi trong Console; iPad chạy mượt (khoảng 30 khung hình/giây trở lên).
 
-Nếu yêu cầu của giáo viên buộc phải sửa VÙNG KHUNG (ví dụ đổi cách tính điểm), **dừng lại hỏi giáo viên** trước, vì phần này phải sửa đồng bộ với sổ theo dõi và trang giáo viên.
-
-## 6. Trò chơi CŨ (file `HOA10-…`, `HOA12-…`, `KHTN9-…`, không phải `KHUNG-`)
-
-Các trò cũ có câu hỏi viết sẵn trong file và **không** dùng bộ câu giáo viên nạp. Được làm cho hấp dẫn hơn (cảnh, nhân vật, hiệu ứng, âm thanh, cách chơi), nhưng phải **giữ**:
-
-1. **Tên file**: sổ theo dõi nhận trò theo tên file.
-2. Các dòng `<script src=…>` đang có: `cau-hinh-lop.js`, `noi-so-theo-doi.js`, `xuat-phat.js` (nếu có).
-3. Dòng gửi kết quả `guiSoTheoDoi(…, '<MÃ TRÒ>', …)` hoặc `guiNhomSoTheoDoi(…)`: **giữ nguyên mã trò**, ví dụ `'CHIMDUATHU-HOA10'`.
-4. Phần đăng nhập (lớp, số báo danh hoặc nhóm, mã giáo viên), khóa khi rời màn hình, cách tính điểm.
-5. Câu hỏi trong file: được sửa hoặc thêm, nhưng mỗi câu vẫn phải có `kt` (kiến thức) và `md` (Biết/Hiểu/Vận dụng).
-
-Muốn trò cũ **dùng bộ câu giáo viên nạp** thì không sửa file cũ. Hãy làm một **khung mới** từ `KHUNG-F1.html` theo mục 4 (ví dụ `KHUNG-CHIM.html`), mang cảnh của trò cũ sang VÙNG CẢNH. Sau đó báo giáo viên mang sang kênh làm bài kiểm tra để thêm dòng khung vào sổ theo dõi.
+Nếu yêu cầu của giáo viên buộc phải đổi luật khung (số câu, cách tính điểm, cách đăng nhập), **dừng lại hỏi giáo viên**. Phần đó phải sửa đồng bộ ở kênh làm bài kiểm tra.
