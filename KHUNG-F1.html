@@ -467,13 +467,68 @@ const startLights=[];
  for(let k=0;k<5;k++){const L=new THREE.Mesh(new THREE.CircleGeometry(0.45,14),lm.clone());L.position.set((k-2)*1.3,8.4,-0.52);L.rotation.y=Math.PI;g.add(L);startLights.push(L);}
  scene.add(g);mergeChildren(g,ch=>startLights.includes(ch));}
 function setStartLights(n){startLights.forEach((L,k)=>L.material.color.set(k<n?'#ff2a1c':'#3a1412'));}
+/* người phất cờ xuất phát: đứng trên bục cạnh vạch, phất cờ caro liên tục */
+{const o=trackAt(START*DS+14,HALF+3.4),mar=new THREE.Group();mar.position.copy(o.p);
+ mar.rotation.y=Math.atan2(-T[START].z,T[START].x);   // quay mặt vào đường đua
+ const add=(geo,mat,x,y,z,par)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);(par||mar).add(m);return m;};
+ const vest=lam('#ff7a1a'),pants=lam('#24324a'),skinM=lam('#e0ac69'),cap=lam('#f4f4f4'),dark=lam('#2b2d33');
+ add(new THREE.BoxGeometry(2.4,1.6,2.4),lam('#c4271d'),0,0.8,0);add(new THREE.BoxGeometry(2.6,0.12,2.6),lam('#f4f4f4'),0,1.66,0);   // bục
+ for(const s of[-1,1])add(new THREE.BoxGeometry(0.32,1.0,0.34),pants,s*0.2,2.22,0);   // chân
+ add(new THREE.BoxGeometry(0.8,0.95,0.46),vest,0,3.2,0);                               // áo phản quang
+ add(new THREE.BoxGeometry(0.82,0.12,0.48),cap,0,3.0,0);                               // sọc áo
+ add(new THREE.SphereGeometry(0.27,10,8),skinM,0,3.95,0);add(new THREE.CylinderGeometry(0.29,0.3,0.14,10),cap,0,4.15,0);   // đầu, mũ
+ add(new THREE.BoxGeometry(0.2,0.8,0.22),vest,-0.52,3.25,0);                           // tay trái buông
+ const arm=new THREE.Group();arm.position.set(0.5,3.6,0);mar.add(arm);                 // tay phải cầm cờ (khớp vai)
+ add(new THREE.BoxGeometry(0.2,0.85,0.22),vest,0,0.4,0,arm);
+ add(new THREE.BoxGeometry(0.07,2.4,0.07),dark,0,1.6,0,arm);                           // cán cờ
+ const ck=tex(128,80,(g)=>{for(let y=0;y<5;y++)for(let x=0;x<8;x++){g.fillStyle=(x+y)%2?'#111':'#fff';g.fillRect(x*16,y*16,16,16);}});
+ const fg=new THREE.PlaneGeometry(2.0,1.25,8,4);fg.translate(1.0,0,0);const base=fg.attributes.position.array.slice();
+ const flag=add(fg,new THREE.MeshLambertMaterial({map:ck,side:THREE.DoubleSide}),0.04,2.15,0,arm);
+ scene.add(mar);mergeChildren(mar,ch=>false);mar.scale.setScalar(1.25);
+ flag.onBeforeRender=()=>{const t=performance.now()/1000,a=fg.attributes.position.array;
+   arm.rotation.z=-0.35+Math.sin(t*4.2)*0.85;                                          // phất qua lại
+   for(let i=0;i<a.length;i+=3){const x=base[i];a[i+2]=Math.sin(x*3.2-t*11)*0.18*x;}
+   fg.attributes.position.needsUpdate=true;};}
+
+/* ---------- Khán giả hình người (dùng chung cho mọi khán đài) ----------
+   Thân áo màu + đầu màu da, mỗi phần một InstancedMesh (vài lần vẽ cho cả nghìn người); khoảng 1/8 số người phất cờ nhỏ.
+   Mỗi khán đài một bộ riêng có vùng bao đúng chỗ, nên khán đài nằm ngoài khung nhìn thì không phải vẽ. */
+const crowdRC=(()=>{let s=4242;return()=>{s=(s*16807)%2147483647;return s/2147483647;};})();
+function makeCrowd(MAX){const rc=crowdRC;
+ const bodyG=new THREE.BoxGeometry(0.62,0.8,0.42);bodyG.translate(0,0.4,0);
+ const headG=new THREE.OctahedronGeometry(0.22,0);headG.rotateY(Math.PI/4);
+ const stickG=new THREE.BoxGeometry(0.04,1.3,0.04);stickG.translate(0,0.65,0);
+ const flagG=new THREE.PlaneGeometry(0.8,0.5);flagG.translate(0.42,1.05,0);
+ const pts=[];
+ const bodies=new THREE.InstancedMesh(bodyG,new THREE.MeshLambertMaterial(),MAX);
+ const heads=new THREE.InstancedMesh(headG,new THREE.MeshLambertMaterial(),MAX);
+ const sticks=new THREE.InstancedMesh(stickG,lam('#3b2f25'),MAX>>2);
+ const flags=new THREE.InstancedMesh(flagG,new THREE.MeshLambertMaterial({side:THREE.DoubleSide}),MAX>>2);
+ const shirt=['#d33a2c','#f0c419','#2d6cdf','#ffffff','#1d1d1d','#e27d29','#2fa35a','#9b59b6','#e85a8a'].map(c=>new THREE.Color(c));
+ const skin=['#f1c9a0','#e0ac69','#c68642','#8d5524','#ffdbac'].map(c=>new THREE.Color(c));
+ const flagC=['#d8261c','#ffd23f','#1f4fa8','#ffffff','#2fa35a'].map(c=>new THREE.Color(c));
+ let n=0,f=0;const wav=[];
+ function add(x,y,z,yaw,hs,ci){   // (x,y,z): chỗ ngồi; yaw: hướng dọc đường đua; hs: độ cao người
+   if(n>=MAX)return;pts.push(new THREE.Vector3(x,y,z));
+   dummy.position.set(x,y,z);dummy.rotation.set(0,yaw,0);dummy.scale.set(1,hs,1);dummy.updateMatrix();bodies.setMatrixAt(n,dummy.matrix);bodies.setColorAt(n,shirt[ci%shirt.length]);
+   dummy.position.y=y+0.8*hs+0.2;dummy.scale.set(1,1.1,1);dummy.updateMatrix();heads.setMatrixAt(n,dummy.matrix);heads.setColorAt(n,skin[Math.floor(rc()*skin.length)]);n++;
+   if(rc()<0.13&&f<(MAX>>2)){flags.setColorAt(f,flagC[Math.floor(rc()*flagC.length)]);wav.push({x:x+Math.cos(yaw)*0.3,y:y+0.55*hs,z:z-Math.sin(yaw)*0.3,yaw:yaw+Math.PI/2,ph:rc()*6.28,sp:4+rc()*3});f++;}
+ }
+ const e=new THREE.Euler();
+ function wave(t){wav.forEach((w,k)=>{e.set(0,w.yaw,Math.sin(t*w.sp+w.ph)*0.55);dummy.position.set(w.x,w.y,w.z);dummy.rotation.copy(e);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   sticks.setMatrixAt(k,dummy.matrix);flags.setMatrixAt(k,dummy.matrix);});sticks.instanceMatrix.needsUpdate=flags.instanceMatrix.needsUpdate=true;}
+ function finish(){bodies.count=heads.count=n;sticks.count=flags.count=f;
+   [bodies,heads,flags].forEach(m=>{if(m.instanceColor)m.instanceColor.needsUpdate=true;});
+   wave(0);let last=0;
+   flags.onBeforeRender=()=>{const t=performance.now()/1000;if(t-last<1/30)return;last=t;wave(t);};   // cờ phất (chỉ tính khi khán đài trong khung nhìn)
+   const sph=new THREE.Sphere().setFromPoints(pts);sph.radius+=3;   // vùng bao cả khán đài để loại khi ngoài khung nhìn
+   [bodies,heads,sticks,flags].forEach(m=>{m.geometry.boundingSphere=sph;m.frustumCulled=true;scene.add(m);});}
+ return {add,finish};}
 
 /* ---------- Khán đài và khu pit dọc đường thẳng chính ---------- */
 {const stands=new THREE.Group();scene.add(stands);
  const conc=lam('#b9b4aa'),roof=lam('#e6e6e6'),steel=lam('#5b5f66');
- const crowdN=900,crowd=new THREE.InstancedMesh(new THREE.BoxGeometry(0.7,1.0,0.6),new THREE.MeshLambertMaterial(),crowdN);
- const pal=['#d33a2c','#f0c419','#2d6cdf','#ffffff','#1d1d1d','#e27d29','#2fa35a','#9b59b6','#e85a8a'].map(c=>new THREE.Color(c));
- let cn=0;
+ const crowdN=900,PALN=9,CROWD=makeCrowd(crowdN);let cn=0;
  for(const s0 of [0.105,0.145,0.175]){const s=s0*LEN,o=trackAt(s,-(BAR+4));const g=new THREE.Group();g.position.copy(o.p);g.rotation.y=o.yaw;
    for(let t=0;t<5;t++){const step=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.2+t*1.4,70),conc);step.position.set(-(1.1+t*2.2),(1.2+t*1.4)/2,0);g.add(step);}
    const back=new THREE.Mesh(new THREE.BoxGeometry(0.6,12,70),conc);back.position.set(-11.6,6,0);g.add(back);
@@ -482,9 +537,9 @@ function setStartLights(n){startLights.forEach((L,k)=>L.material.color.set(k<n?'
    g.updateMatrixWorld(true);
    for(let t=0;t<5;t++)for(let z=-33;z<=33&&cn<crowdN;z+=1.15){if(rnd()<.18)continue;
      const v=new THREE.Vector3(-(0.6+t*2.2)-rnd()*0.6,1.2+t*1.4+0.45,z+rnd()*0.3).applyMatrix4(g.matrixWorld);
-     dummy.position.copy(v);dummy.rotation.set(0,o.yaw,0);dummy.scale.set(1,0.8+rnd()*0.4,1);dummy.updateMatrix();crowd.setMatrixAt(cn,dummy.matrix);crowd.setColorAt(cn,pal[Math.floor(rnd()*pal.length)]);cn++;}
+     const hs=0.8+rnd()*0.4;CROWD.add(v.x,v.y-0.45,v.z,o.yaw,hs,Math.floor(rnd()*PALN));cn++;}
    stands.add(g);mergeChildren(g);}
- crowd.count=cn;crowd.instanceColor.needsUpdate=true;scene.add(crowd);
+ CROWD.finish();
  /* khu pit: đường pit, tường pit, dãy garage */
  const pit=new THREE.Group(),o=trackAt(0.14*LEN,BAR+2);pit.position.copy(o.p);pit.rotation.y=o.yaw;scene.add(pit);
  const lane=new THREE.Mesh(new THREE.PlaneGeometry(14,170),lam('#5a5c62'));lane.rotation.x=-Math.PI/2;lane.position.set(6,0.04,0);pit.add(lane);
@@ -514,13 +569,11 @@ const STAND_ZONES=[[0.06,0.21,80]];   // vùng không trồng cây [từ, đến
  const flagM=['#c4271d','#ffd23f','#1f4fa8','#2fa35a'].map(c=>new THREE.MeshLambertMaterial({color:c,side:THREE.DoubleSide}));
  const NT=7,TD=2.4,TH=1.25,OFF0=BAR+7;
  const SPOTS=[[0.241,0.300],[0.446,0.498]];
- const crowdMax=1500,crowd=new THREE.InstancedMesh(new THREE.BoxGeometry(0.7,1.0,0.6),new THREE.MeshLambertMaterial(),crowdMax);
- const pal=['#d33a2c','#f0c419','#2d6cdf','#ffffff','#1d1d1d','#e27d29','#2fa35a','#9b59b6','#e85a8a'].map(c=>new THREE.Color(c));
  let cn=0;
  SPOTS.forEach(([f0,f1])=>{
    const i0=Math.round(f0*M),i1=Math.round(f1*M),mid=Math.round((i0+i1)/2),side=Ks[mid]>0?-1:1;   // luôn đặt ở phía ngoài khúc cua
    STAND_ZONES.push([f0-0.01,f1+0.01,70]);
-   const grp=new THREE.Group();
+   const grp=new THREE.Group(),CROWD=makeCrowd(800);cn=0;
    const hTop=TH*NT,aEnd=OFF0+NT*TD,HR=hTop+5;
    grp.add(band(i0-2,i1+2,side,BAR+0.6,aEnd+2,0.03,0.03,apron));                                  // sân bê tông
    for(let t=0;t<NT;t++){const a=OFF0+t*TD,h=0.9+t*TH,hp=t?0.9+(t-1)*TH:0;
@@ -536,12 +589,11 @@ const STAND_ZONES=[[0.06,0.21,80]];   // vùng không trồng cây [từ, đến
      const pole=new THREE.Mesh(new THREE.BoxGeometry(0.15,4,0.15),steel),o2=aEnd;pole.position.set(P[q].x+S[q].x*side*o2,HR+2,P[q].z+S[q].z*side*o2);grp.add(pole);
      const fl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.3),flagM[(k/6|0)%flagM.length]);fl.position.set(pole.position.x+T[q].x*1.15,HR+3.3,pole.position.z+T[q].z*1.15);fl.rotation.y=Math.atan2(T[q].x,T[q].z)+Math.PI/2;grp.add(fl);}
    scene.add(grp);mergeChildren(grp);
-   for(let t=0;t<NT;t++)for(let s=i0*DS+1;s<i1*DS-1&&cn<crowdMax;s+=1.2){if(rnd2()<.2)continue;   // khán giả ngồi trên từng bậc
+   for(let t=0;t<NT;t++)for(let s=i0*DS+1;s<i1*DS-1&&cn<800;s+=1.2){if(rnd2()<.2)continue;   // khán giả ngồi trên từng bậc
      const o=trackAt(s,side*(OFF0+t*TD+0.8+rnd2()*0.7));
-     dummy.position.set(o.p.x,0.9+t*TH+0.45,o.p.z);dummy.rotation.set(0,o.yaw,0);dummy.scale.set(1,0.8+rnd2()*0.4,1);dummy.updateMatrix();
-     crowd.setMatrixAt(cn,dummy.matrix);crowd.setColorAt(cn,pal[Math.floor(rnd2()*pal.length)]);cn++;}
- });
- crowd.count=cn;crowd.instanceColor.needsUpdate=true;scene.add(crowd);}
+     const hs=0.8+rnd2()*0.4;CROWD.add(o.p.x,0.9+t*TH,o.p.z,o.yaw,hs,Math.floor(rnd2()*9));cn++;}
+   CROWD.finish();
+ });}
 
 /* ---------- Biển quảng cáo nội dung Hóa 10 ---------- */
 {const msgs=[['HÓA HỌC 10','Kết nối tri thức'],['A = Z + N','Số khối = proton + neutron'],['p⁺  n⁰  e⁻','Thành phần nguyên tử'],['1s² 2s² 2p⁶','Cấu hình electron'],['¹²C  ¹³C  ¹⁴C','Đồng vị của carbon'],['NGUYÊN LÍ PAULI','Mỗi AO tối đa 2 electron']];
