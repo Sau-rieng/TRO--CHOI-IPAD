@@ -388,7 +388,7 @@
     var ma = $('kcMaMo').value.trim(), loi = $('kcKhoaLoi'), b = $('kcMoNut');
     if (!ma) { loi.textContent = 'Giáo viên nhập mã mở khóa.'; loi.hidden = false; return; }
     b.disabled = true; b.textContent = 'Đang kiểm tra…';
-    api({ kind: 'unlock', code: ma }).then(function (r) {
+    api({ kind: 'unlock', code: ma, lop: player.lop, sbd: player.sbd || '' }).then(function (r) {
       if (!r.ok) { loi.textContent = 'Mã không đúng. Chỉ giáo viên mới có mã mở khóa.'; loi.hidden = false; return; }
       locked = false; $('kcKhoa').hidden = true; luu();
       if (Date.now() >= deadline) { ketThuc('timeout'); return; }
@@ -405,8 +405,10 @@
     if (reason) { $('kcVao').hidden = true; hienHet(); guiKQ(); return; }
     if (Date.now() >= deadline) { $('kcVao').hidden = true; ketThuc('timeout'); return; }
     batDauChoi(true);
-    // tải lại trang = rời màn hình
-    leaves++; if (leaves >= 2) { ketThuc('violation'); return; } hienKhoa();
+    // Tải lại trang = rời màn hình. Lúc trang cũ đóng (blur/pagehide) thường đã tính 1 lần và lưu locked=true,
+    // nên chỉ hiện khóa, không tính thêm; chưa kịp lưu khóa thì mới tính lần rời này.
+    if (d.locked) hienKhoa();
+    else { leaves++; if (leaves >= 2) { ketThuc('violation'); return; } hienKhoa(); }
   }
 
   /* ---------- khởi tạo ---------- */
