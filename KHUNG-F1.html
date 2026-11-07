@@ -305,6 +305,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 <script src="noi-so-theo-doi.js"></script>
 <script src="xuat-phat.js"></script>
 <script>
+/* ████████ VÙNG KHUNG – KHÔNG SỬA: bộ câu do sổ lớp gửi khi đăng nhập, bốc 6 TN + 3 Đ/S + 2 TLN, NQ = 11. ████████ */
 /* ================= Bộ câu (giáo viên nạp, sổ lớp trả về khi đăng nhập) =================
    BO = {ma, ten, tn:[{c,q,o[4],a,h,kt,md,e}], ds:[{c,q,s:[[ý,đúng?,giải thích]×4],h,kt,md,e}], tln:[{c,q,a,h,kt,md,e}]}
    Mỗi lượt: 6 trắc nghiệm (0.5đ) · 3 đúng/sai (2đ) · 2 trả lời ngắn (0.5đ) = 10 điểm. */
@@ -336,6 +337,7 @@ function buildQuestions(picks){
     const Q=BO.tn[p.id];return {t:'mc',bai:Q.kt||BO.ten,q:Q.q,f:hinhHTML(Q.h),o:p.perm.map(k=>Q.o[k]),a:p.perm.indexOf(Q.a),e:Q.e||'',max:0.5};
   });
 }
+/* ████████ VÙNG CẢNH – ĐƯỢC SỬA TỰ DO: đường đua, cảnh vật, khán đài, cây, núi, mây, ánh sáng, xe. GIỮ: đủ NQ (11) cổng trong mảng towers, biến START, hàm trackAt, setStartLights, makeCar. ████████ */
 (function(){
 if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<p style="position:fixed;inset:auto 16px 16px;">Không tải được thư viện 3D.</p>');return;}
 const canvas=document.getElementById('scene');
@@ -630,6 +632,7 @@ const rivals=[['#1f55c9','#ffd23f','#ffffff',36,0.03],['#f2b705','#1d1d1d','#d32
 function spinWheels(car,speed,steerAng,dt){const u=car.userData;u.wheels.forEach(w=>w.rotation.x+=speed*dt/0.55);u.steer.forEach(p=>p.rotation.y=steerAng);}
 
 /* ---------- Trạng thái lái xe ---------- */
+/* ████████ VÙNG LÁI XE – SỬA CẨN THẬN: được đổi tốc độ, cách lái, góc camera; GIỮ các tên hàm placeOnGrid, placeAtGate, flyTo, startFree, showFlightUI, hideFlightUI và việc xe dừng ở cổng thì gọi showQuestion(i). ████████ */
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let state='intro',cur=-1,score=0,answers=[];
 let fl=null; // {from,to,fromYaw,toYaw,t,dur}
@@ -705,6 +708,7 @@ renderProgress();
 function setStatus(t){statusEl.textContent=t;statusEl.hidden=!t;}
 
 const PART={mc:'Trắc nghiệm',tf:'Đúng – Sai',sa:'Trả lời ngắn'};
+/* ████████ VÙNG KHUNG – KHÔNG SỬA (từ đây đến hết file): hiện câu hỏi, chấm điểm (0.5 / Đ-S 0.3-0.7-1.2-2 / 0.5), lưu tạm, kết thúc, gửi kết quả, đăng nhập theo lớp → cá nhân/nhóm. Chỉ được đổi chữ hiển thị, màu sắc. ████████ */
 function showQuestion(i){
   const Q=QUESTIONS[i];
   let body='';
