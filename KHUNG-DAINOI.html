@@ -489,6 +489,26 @@ occ(-30,-160,30,200); occ(-64,-154,64,2);
 STATIONS.forEach(s=>occ(s.x-9,s.z-9,s.x+9,s.z+9));
 occ(-112,86,-88,104); occ(88,80,112,100); occ(-112,-50,-92,-40);
 
+
+/* ---------- khách tham quan: các đoàn đi theo tuyến cố định trên lối đi trống ---------- */
+const TUYEN=[
+ {p:[[-230,297],[230,297]]},                                              // vỉa hè ven sông Hương
+ {p:[[-70,292],[-70,252],[-28,236],[0,214],[0,140],[0,104]]},             // cửa Quảng Đức → Ngọ Môn → cầu Trung Đạo
+ {p:[[-35,232],[35,232],[35,192],[-35,192]],vong:true},                   // sân trước Kỳ Đài
+ {p:[[-31,104],[-31,36],[31,36],[31,104]],vong:true},                     // quanh điện Thái Hòa
+ {p:[[-100,140],[-100,94],[-66,92],[-66,30],[-128,30]]},                  // Thế Miếu – Cửu Đỉnh – Hiển Lâm Các
+ {p:[[100,140],[100,86],[78,82],[78,40],[124,40]]},                       // Thái Miếu
+ {p:[[0,34],[0,-62],[-20,-64],[-20,-100]]}                                // Tử Cấm Thành
+];
+TUYEN.forEach(r=>{ const P=r.vong?[...r.p,r.p[0]]:r.p; let L=0; r.seg=[];
+  for(let i=0;i<P.length-1;i++){ const [x1,z1]=P[i],[x2,z2]=P[i+1], l=Math.hypot(x2-x1,z2-z1); r.seg.push({x1,z1,dx:(x2-x1)/l,dz:(z2-z1)/l,l,o:L}); L+=l;
+    occ(Math.min(x1,x2)-3,Math.min(z1,z2)-3,Math.max(x1,x2)+3,Math.max(z1,z2)+3); }   // cây không mọc trên tuyến
+  r.L=L; });
+// khách đứng ngắm, chụp ảnh ở các công trình (không đứng trên trạm)
+const DUNG=[[-14,190,0],[-10,192,.4],[12,189,-.3],[16,191,0],[-122,38,2.6],[-117,39,3],[-112,37,2.8],[-60,236,1.8],[-56,240,1.5],[50,226,-1.4],
+  [-8,98,3.1],[10,100,3.1],[-112,104,3.1],[94,92,3.1],[52,-40,1.6],[-44,-70,1.2]];
+DUNG.forEach(([x,z])=>occ(x-2,z-2,x+2,z+2));
+
 /* trees */
 { let s=7; const rnd=()=>((s=(s*16807)%2147483647)/2147483647); const pts=[];
   for(let k=0;k<4000 && pts.length<340;k++){
@@ -588,6 +608,51 @@ function applyTheme(){
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- khách tham quan (InstancedMesh: vài lệnh vẽ cho cả trăm người, nhẹ cho iPad) ---------- */
+const KHACH=[];
+{ let s0=23; const rr=()=>((s0=(s0*16807)%2147483647)/2147483647);
+  const AO=[0xd8433b,0x2f6fb5,0xf2f0ea,0xe7b93a,0x3f8f5a,0x6a3d8f,0xe57fa0,0x34495e,0xf08a3c,0x1f9aa8,0xffffff,0x8b5a3c];
+  const DA=[0xf0c8a0,0xe0b088,0xc99470,0xf5d6b8,0x9c6b4a];
+  TUYEN.forEach((r,ri)=>{ const nDoan=r.L>300?3:r.L>150?2:1;
+    for(let d=0;d<nDoan;d++){ const n=3+((rr()*4)|0), s=rr()*r.L*2, v=(4+rr()*1.5)*(rr()<.5?1:-1);
+      for(let k=0;k<n;k++) KHACH.push({r,s:s-Math.ceil(k/2)*3.6*Math.sign(v),v,lech:k===0?0:(k%2?1:-1)*(.6+rr()*1.6),dan:k===0,
+        ao:AO[(rr()*AO.length)|0],da:DA[(rr()*DA.length)|0],non:rr()<.35,mu:rr()<.3,c:1.3+rr()*.3,pha:rr()*7}); } });
+  DUNG.forEach(([x,z,h])=>KHACH.push({x,z,h,ao:AO[(rr()*AO.length)|0],da:DA[(rr()*DA.length)|0],non:rr()<.35,mu:rr()<.3,c:1.3+rr()*.3,pha:rr()*7,chup:rr()<.5}));
+}
+const NK=KHACH.length, khO=new THREE.Object3D(), khM=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.8});
+function khMesh(geo,n){ const m=new THREE.InstancedMesh(geo,khM,n); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.castShadow=true; m.frustumCulled=false; scene.add(m); return m; }
+const khThan=khMesh(new THREE.CylinderGeometry(.42,.62,2.6,8).translate(0,2.75,0),NK),        // áo
+      khChan=khMesh(new THREE.CylinderGeometry(.5,.42,1.5,8).translate(0,.75,0),NK),           // quần / chân
+      khDau=khMesh(new THREE.SphereGeometry(.42,10,8).translate(0,4.45,0),NK),
+      khNon=khMesh(new THREE.ConeGeometry(1.05,.7,12).translate(0,5.05,0),NK),                 // nón lá
+      khMu=khMesh(new THREE.CylinderGeometry(.75,.75,.12,12).translate(0,4.8,0),NK),          // mũ rộng vành
+      khCo=khMesh(new THREE.BoxGeometry(1.1,.75,.05).translate(.6,6.6,0),NK),                 // cờ của hướng dẫn viên đoàn
+      khCan=khMesh(new THREE.CylinderGeometry(.04,.04,4.2,4).translate(0,4.9,0),NK),
+      khMay=khMesh(new THREE.BoxGeometry(.5,.36,.3).translate(0,4.3,.62),NK);                  // máy ảnh
+const khC=new THREE.Color(), AN=new THREE.Matrix4().makeScale(0,0,0);
+KHACH.forEach((k,i)=>{ khThan.setColorAt(i,khC.set(k.ao)); khChan.setColorAt(i,khC.set(k.ao===0x34495e?0x2c2c2c:[0x2d3e66,0x3a3a3a,0xd9cfb8][i%3]));
+  khDau.setColorAt(i,khC.set(k.da)); khNon.setColorAt(i,khC.set(0xe2cd92)); khMu.setColorAt(i,khC.set([0xf2efe8,0x2f6fb5,0xd8433b][i%3]));
+  khCo.setColorAt(i,khC.set([0xe7b93a,0xd8433b,0x2f9a6a][i%3])); khCan.setColorAt(i,khC.set(0x555555)); khMay.setColorAt(i,khC.set(0x222222)); });
+function khDat(k,x,z,h,bob,i){
+  khO.position.set(x,groundH(x,z)+bob,z); khO.rotation.set(0,h,0); khO.scale.setScalar(k.c); khO.updateMatrix();
+  khThan.setMatrixAt(i,khO.matrix); khChan.setMatrixAt(i,khO.matrix); khDau.setMatrixAt(i,khO.matrix);
+  khNon.setMatrixAt(i,k.non?khO.matrix:AN); khMu.setMatrixAt(i,!k.non&&k.mu?khO.matrix:AN);
+  khCo.setMatrixAt(i,k.dan?khO.matrix:AN); khCan.setMatrixAt(i,k.dan?khO.matrix:AN); khMay.setMatrixAt(i,k.chup?khO.matrix:AN);
+}
+function viTri(r,s){ const L=r.L; let d=r.vong?((s%L)+L)%L:(((s%(2*L))+2*L)%(2*L)), lui=false; if(!r.vong&&d>L){ d=2*L-d; lui=true; }
+  let g=r.seg[r.seg.length-1]; for(const q of r.seg) if(d<=q.o+q.l){ g=q; break; }
+  const u=Math.min(d-g.o,g.l); return {x:g.x1+g.dx*u,z:g.z1+g.dz*u,dx:lui?-g.dx:g.dx,dz:lui?-g.dz:g.dz}; }
+function capNhatKhach(dt,t){
+  for(let i=0;i<NK;i++){ const k=KHACH[i];
+    if(k.r){ k.s+=k.v*dt; const p=viTri(k.r,k.s), sg=Math.sign(k.v), dx=p.dx*sg, dz=p.dz*sg;
+      khDat(k,p.x-dz*k.lech,p.z+dx*k.lech,Math.atan2(dx,dz),Math.abs(Math.sin(t*7+k.pha))*.12,i); }
+    else khDat(k,k.x,k.z,k.h+Math.sin(t*.4+k.pha)*.5,0,i); }
+  for(const m of [khThan,khChan,khDau,khNon,khMu,khCo,khCan,khMay]) m.instanceMatrix.needsUpdate=true;
+}
+capNhatKhach(0,0);
+for(const m of [khThan,khChan,khDau,khNon,khMu,khCo,khCan,khMay]) m.instanceColor.needsUpdate=true;
+
 
 /* ---------- labels ---------- */
 const labelsEl=document.getElementById('labels'); const labels=[];
@@ -723,6 +788,7 @@ function tick(){
   flaps[0].piv.rotation.x=-.14*Math.abs(sw)*amp-.04*Math.sin(t*2); flaps[1].piv.rotation.x=.2*Math.abs(sw)*amp+.04*Math.sin(t*2+1);
   body.position.y=moving?Math.abs(Math.cos(walkPhase))*.12:Math.sin(t*2)*.02;
   head.rotation.y=moving?0:Math.sin(t*.7)*.25;
+  capNhatKhach(dt,t);
   // stations: chỉ trạm kế tiếp mới mở câu hỏi
   for(const s of STATIONS){
     s.mesh.gem.rotation.y+=dt*1.5; s.mesh.gem.position.y=11+Math.sin(t*2+s.n)*.5;
