@@ -157,6 +157,14 @@ select{min-height:46px;border-radius:12px;border:1.5px solid var(--line);backgro
 .diag{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:15px}
 .diag b{text-align:right}
 .yes{color:var(--good)} .no{color:var(--bad)}
+.field{display:flex;flex-direction:column;gap:6px}
+input[type=text],textarea{width:100%;font:inherit;font-size:16px;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 12px}
+textarea{min-height:84px;resize:vertical}
+.row-wrap{display:flex;gap:8px;align-items:stretch}
+.row-wrap .row-btn{flex:1;min-width:0}
+.row-wrap .del{align-self:center;flex:none}
+.tag{font-size:12px;font-weight:700;color:var(--on-soft);background:var(--accent-soft);padding:2px 8px;border-radius:999px}
+.ipa-f{font-family:var(--font-ipa)}
 </style>
 </head>
 <body>
@@ -253,6 +261,15 @@ function streakOf(days,todayKey,goal){
   d.setDate(d.getDate()-1);
   while((days[dayKey(d)]||0)>=goal){ n++; d.setDate(d.getDate()-1); }
   return n;
+}
+function autoKeys(u){
+  const SKIP=['please','thank','thanks','that','this','with','have','would','could','will','your','from','just','here','there'];
+  const all=canonWords(u);
+  const ws=all.filter((w,i)=>w.length>=4&&SKIP.indexOf(w)<0&&all.indexOf(w)===i);
+  ws.sort((a,b)=>b.length-a.length);
+  const pick=ws.slice(0,2);
+  if(!pick.length&&all.length) pick.push(all.reduce((a,b)=>b.length>a.length?b:a));
+  return pick;
 }
 /*PURE-END*/
 
@@ -386,6 +403,23 @@ const ROLES=[
 const LV=['Đọc theo','Có gợi ý','Tự nói'];
 const STOP=new Set(['the','and','you','for','are','was','can','your','but','not','have','has','with','from','that','would','could']);
 
+/* ---- Nội dung người dùng tự thêm ---- */
+let pendingDel=null, D=null;
+const MY_G={id:'my',t:'Từ của tôi',sub:'Những từ bạn tự thêm',tip:'Đây là các từ bạn tự thêm. Nghe mẫu, nói, rồi ghi âm để so sánh giọng mình với giọng mẫu.',items:[]};
+const MY_T={id:'my',t:'Câu của tôi',sub:'Những câu bạn tự thêm',s:[]};
+function drillGroups(){ return DRILLS.concat([MY_G]); }
+function groupItems(g){
+  const extra=store.custom.words.filter(x=>x.g===g.id).map(x=>({w:x.w,ipa:x.ipa||'',vi:x.vi||'',c:null,cipa:'',custom:true,cid:x.id}));
+  return g.items.concat(extra);
+}
+function sentTopics(){ return SENTS.concat([MY_T]); }
+function topicSents(t){
+  const base=t.s.map((a,i)=>({en:a[0],vi:a[1],key:String(i)}));
+  const extra=store.custom.sents.filter(x=>x.t===t.id).map(x=>({en:x.en,vi:x.vi||'',key:x.id,custom:true,cid:x.id}));
+  return base.concat(extra);
+}
+function allRoles(){ return ROLES.concat(store.custom.roles); }
+
 const PLAN=[
  {t:'Tuần 1: Làm quen với âm',d:'Mỗi ngày luyện vài âm khó và vài câu cứu nguy. Chỉ cần đọc to thành tiếng, chưa cần hoàn hảo.',tasks:[
    {l:'Luyện âm cuối',k:'drill',v:'end'},{l:'Luyện âm th',k:'drill',v:'th'},{l:'Nhại câu cứu nguy',k:'sent',v:'cuu-nguy'}]},
@@ -408,12 +442,14 @@ const TIPS=[
 
 /* ====================== LƯU TRỮ ====================== */
 const KEY='noi-tu-tin-v1';
-function defStore(){return {start:dayKey(new Date()),days:{},best:{},weak:{},done:{},settings:{rate:0.9,accent:'en-US',voice:'',theme:'auto',goal:8}};}
+function defStore(){return {start:dayKey(new Date()),days:{},best:{},weak:{},done:{},custom:{words:[],sents:[],roles:[]},settings:{rate:0.9,accent:'en-US',voice:'',theme:'auto',goal:8}};}
 function load(){
   try{
     const r=localStorage.getItem(KEY);
     if(r){ const o=JSON.parse(r); const d=defStore();
-      return Object.assign(d,o,{settings:Object.assign(d.settings,o.settings||{})}); }
+      const st=Object.assign(d,o,{settings:Object.assign(d.settings,o.settings||{})});
+      st.custom=Object.assign({words:[],sents:[],roles:[]},st.custom||{});
+      return st; }
   }catch(e){}
   return defStore();
 }
@@ -547,7 +583,7 @@ function applyTheme(){
   if(t==='light'||t==='dark') r.setAttribute('data-theme',t); else r.removeAttribute('data-theme');
 }
 function findDrillItem(w){
-  for(const g of DRILLS){ const it=g.items.find(x=>x.w===w); if(it) return it; }
+  for(const g of drillGroups()){ const it=groupItems(g).find(x=>x.w===w); if(it) return it; }
   return null;
 }
 function weakList(){
@@ -581,9 +617,10 @@ function errMsg(c){
 /* ====================== TRẠNG THÁI ĐIỀU HƯỚNG ====================== */
 let V={view:'home'};
 let P=null;
-function go(v){ stopAll(); P=null; V=v; show(); window.scrollTo(0,0); }
+function go(v){ stopAll(); P=null; pendingDel=null; if(!(v.view==='role'&&v.add)) D=null; V=v; show(); window.scrollTo(0,0); }
 function goBack(){
   const v=V;
+  if(v.add) return go({view:v.view});
   if(v.view==='drill'){ if(v.card) return go({view:'drill',g:v.g}); if(v.g) return go({view:'drill'}); }
   if(v.view==='sent'){ if(v.card) return go({view:'sent',t:v.t}); if(v.t) return go({view:'sent'}); }
   if(v.view==='role'&&v.sc) return go({view:'role'});
@@ -593,14 +630,14 @@ function goBack(){
 function newP(o){ return Object.assign({res:null,msg:'',mine:null,live:'',listening:false,recording:false,hide:false,self:false,tok:0},o); }
 function openCard(kind,id,i){
   stopAll();
-  if(kind==='drill'){ const g=DRILLS.find(x=>x.id===id); P=newP({kind:'drill',g:g,list:g.items,i:i}); V={view:'drill',g:id,card:true}; }
-  else if(kind==='sent'){ const t=SENTS.find(x=>x.id===id); P=newP({kind:'sent',t:t,list:t.s.map(a=>({en:a[0],vi:a[1]})),i:i}); V={view:'sent',t:id,card:true}; }
+  if(kind==='drill'){ const g=drillGroups().find(x=>x.id===id); P=newP({kind:'drill',g:g,list:groupItems(g),i:i}); V={view:'drill',g:id,card:true}; }
+  else if(kind==='sent'){ const t=sentTopics().find(x=>x.id===id); P=newP({kind:'sent',t:t,list:topicSents(t),i:i}); V={view:'sent',t:id,card:true}; }
   else { const l=weakList(); if(!l.length){ go({view:'weak'}); return; } P=newP({kind:'weak',g:null,list:l,i:i}); V={view:'weak',card:true}; }
   show(); window.scrollTo(0,0); speak(modelText(),false);
 }
 function openRole(id,level){
   stopAll();
-  const sc=ROLES.find(x=>x.id===id);
+  const sc=allRoles().find(x=>x.id===id);
   P=newP({kind:'role',sc:sc,level:level,turn:0,log:[],okCount:0,phase:'ask',showKeys:false,showSample:false});
   V={view:'role',sc:id,level:level};
   show(); window.scrollTo(0,0);
@@ -624,8 +661,8 @@ function handleSpoken(text){
   if(P.kind==='drill'||P.kind==='weak'){
     const it=P.list[P.i];
     const H=canonWords(text);
-    const tw=canonWords(it.w)[0];
-    const ok=H.indexOf(tw)>=0;
+    const tw=canonWords(it.w);
+    const ok=tw.length>0&&tw.every(x=>H.indexOf(x)>=0);
     const asC=!ok&&it.c&&H.indexOf(canonWords(it.c)[0])>=0;
     P.res={ok:ok,asC:!!asC,heard:text};
     weakWord(it.w,ok);
@@ -635,7 +672,7 @@ function handleSpoken(text){
     const toks=it.en.split(/\s+/);
     const a=align(toks,text);
     P.res={heard:text,toks:toks,tokOk:a.tokOk,score:a.score};
-    store.best[P.t.id+':'+P.i]=Math.max(store.best[P.t.id+':'+P.i]||0,a.score);
+    const bk=P.t.id+':'+it.key; store.best[bk]=Math.max(store.best[bk]||0,a.score);
     weakFromTokens(toks,a.tokOk);
   }else if(P.kind==='role'){
     const T=P.sc.turns[P.turn];
@@ -706,27 +743,42 @@ function viewHome(){
     PLAN.map((p,i)=>'<div class="tl"'+(i+1===wk?' aria-current="step"':'')+'><span class="n">'+(i+1)+'</span><div><b>'+p.t.split(': ')[1]+'</b><div class="muted small">'+p.d.split('. ')[0]+'.</div></div></div>').join('')+
   '</div><p class="muted small" style="margin-top:8px">Ngày thứ '+(dayNo+1)+' của lộ trình. Bạn có thể học bất kỳ phần nào, kế hoạch chỉ là gợi ý.</p></section>';
 }
+function delRow(row,k,id){
+  return '<div class="row-wrap">'+row+'<button class="btn small del" data-a="del" data-k="'+k+'" data-v="'+id+'">'+(pendingDel===k+':'+id?'Bấm lại để xóa':'Xóa')+'</button></div>';
+}
 function viewDrillList(){
-  return head('Luyện âm')+'<p class="muted">Chọn một nhóm âm. Nghe mẫu, nói, rồi ghi âm để so sánh giọng bạn với giọng mẫu.</p><div class="list">'+
-   DRILLS.map(g=>{ const d=g.items.filter(it=>store.done['d:'+g.id+':'+it.w]).length;
-     return '<button class="row-btn" data-a="drill-g" data-v="'+g.id+'"><span class="rb-main"><b>'+g.t+'</b><span class="muted small">'+g.sub+'</span></span><span class="rb-side">'+d+'/'+g.items.length+'</span>'+ico('next')+'</button>'; }).join('')+'</div>';
+  return head('Luyện âm')+'<p class="muted">Chọn một nhóm âm. Nghe mẫu, nói, rồi ghi âm để so sánh giọng bạn với giọng mẫu.</p>'+
+   '<button class="btn primary" data-a="add-word">+ Thêm từ của tôi</button><div class="list">'+
+   drillGroups().map(g=>{ const items=groupItems(g); const d=items.filter(it=>store.done['d:'+g.id+':'+it.w]).length;
+     return '<button class="row-btn" data-a="drill-g" data-v="'+g.id+'"><span class="rb-main"><b>'+g.t+'</b><span class="muted small">'+g.sub+'</span></span><span class="rb-side">'+d+'/'+items.length+'</span>'+ico('next')+'</button>'; }).join('')+'</div>';
 }
 function viewDrillGroup(){
-  const g=DRILLS.find(x=>x.id===V.g);
-  return head(g.t,true)+'<section class="card"><p class="eyebrow">Mẹo phát âm</p><p>'+g.tip+'</p></section><div class="list">'+
-   g.items.map((it,i)=>{ const ok=store.done['d:'+g.id+':'+it.w];
-     return '<button class="row-btn" data-a="drill-i" data-v="'+i+'"><span class="rb-main"><b>'+it.w+'</b><span class="ipa">'+it.ipa+(it.c?' · dễ nhầm với '+it.c:'')+'</span></span>'+(ok?'<span class="rb-side">✓</span>':'')+ico('next')+'</button>'; }).join('')+'</div>';
+  const g=drillGroups().find(x=>x.id===V.g);
+  const items=groupItems(g);
+  return head(g.t,true)+'<section class="card"><p class="eyebrow">Mẹo phát âm</p><p>'+g.tip+'</p></section>'+
+   '<button class="btn" data-a="add-word" data-v="'+g.id+'">+ Thêm từ vào nhóm này</button>'+
+   (items.length?'':'<section class="card"><p class="muted">Chưa có từ nào. Bấm nút phía trên để thêm từ đầu tiên.</p></section>')+
+   '<div class="list">'+
+   items.map((it,i)=>{ const ok=store.done['d:'+g.id+':'+it.w];
+     const sub=[it.ipa,it.vi,it.c?'dễ nhầm với '+it.c:''].filter(Boolean).join(' · ');
+     const row='<button class="row-btn" data-a="drill-i" data-v="'+i+'"><span class="rb-main"><b>'+esc(it.w)+'</b><span class="ipa-f muted small">'+esc(sub)+'</span></span>'+(ok?'<span class="rb-side">✓</span>':'')+ico('next')+'</button>';
+     return it.custom?delRow(row,'word',it.cid):row; }).join('')+'</div>';
 }
 function viewSentTopics(){
-  return head('Nhại câu')+'<p class="muted">Nghe một câu, nhại theo từng từ. Từ nào máy nghe chưa khớp sẽ được gạch dưới để bạn luyện lại.</p><div class="list">'+
-   SENTS.map(t=>{ const d=t.s.filter((_,i)=>(store.best[t.id+':'+i]||0)>=70).length;
-     return '<button class="row-btn" data-a="sent-t" data-v="'+t.id+'"><span class="rb-main"><b>'+t.t+'</b><span class="muted small">'+t.sub+'</span></span><span class="rb-side">'+d+'/'+t.s.length+'</span>'+ico('next')+'</button>'; }).join('')+'</div>';
+  return head('Nhại câu')+'<p class="muted">Nghe một câu, nhại theo từng từ. Từ nào máy nghe chưa khớp sẽ được gạch dưới để bạn luyện lại.</p>'+
+   '<button class="btn primary" data-a="add-sent">+ Thêm câu của tôi</button><div class="list">'+
+   sentTopics().map(t=>{ const L=topicSents(t); const d=L.filter(x=>(store.best[t.id+':'+x.key]||0)>=70).length;
+     return '<button class="row-btn" data-a="sent-t" data-v="'+t.id+'"><span class="rb-main"><b>'+t.t+'</b><span class="muted small">'+t.sub+'</span></span><span class="rb-side">'+d+'/'+L.length+'</span>'+ico('next')+'</button>'; }).join('')+'</div>';
 }
 function viewSentList(){
-  const t=SENTS.find(x=>x.id===V.t);
-  return head(t.t,true)+'<div class="list">'+
-   t.s.map((a,i)=>{ const b=store.best[t.id+':'+i]||0;
-     return '<button class="row-btn" data-a="sent-i" data-v="'+i+'"><span class="rb-main"><b>'+esc(a[0])+'</b><span class="muted small">'+esc(a[1])+'</span></span>'+(b?starsHtml(b):'')+ico('next')+'</button>'; }).join('')+'</div>';
+  const t=sentTopics().find(x=>x.id===V.t);
+  const L=topicSents(t);
+  return head(t.t,true)+'<button class="btn" data-a="add-sent" data-v="'+t.id+'">+ Thêm câu vào chủ đề này</button>'+
+   (L.length?'':'<section class="card"><p class="muted">Chưa có câu nào. Bấm nút phía trên để thêm câu đầu tiên.</p></section>')+
+   '<div class="list">'+
+   L.map((it,i)=>{ const b=store.best[t.id+':'+it.key]||0;
+     const row='<button class="row-btn" data-a="sent-i" data-v="'+i+'"><span class="rb-main"><b>'+esc(it.en)+'</b><span class="muted small">'+esc(it.vi)+'</span></span>'+(b?starsHtml(b):'')+ico('next')+'</button>';
+     return it.custom?delRow(row,'sent',it.cid):row; }).join('')+'</div>';
 }
 function ctrlRow(){
   return '<div class="ctrl"><button class="btn" data-a="play">'+ico('play')+' Nghe mẫu</button><button class="btn" data-a="slow">'+ico('play')+' Nghe chậm</button></div>';
@@ -796,10 +848,12 @@ function viewCard(){
   '<section class="card">'+micBlock('Bấm mic rồi nói: '+it.w)+drillResult(it)+recBlock()+'</section>'+navRow();
 }
 function viewRoleList(){
-  return head('Hội thoại')+'<p class="muted">Máy đóng vai người đối diện. Bạn trả lời theo 3 mức: đọc theo câu có sẵn, trả lời có từ gợi ý, rồi tự nói chỉ với nghĩa tiếng Việt.</p><div class="list">'+
-   ROLES.map(s=>'<section class="card"><h3>'+s.t+'</h3><p class="muted small">'+s.intro+'</p><div class="ctrl">'+
+  return head('Hội thoại')+'<p class="muted">Máy đóng vai người đối diện. Bạn trả lời theo 3 mức: đọc theo câu có sẵn, trả lời có từ gợi ý, rồi tự nói chỉ với nghĩa tiếng Việt.</p>'+
+   '<button class="btn primary" data-a="role-add">+ Tạo tình huống của tôi</button><div class="list">'+
+   allRoles().map(s=>'<section class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h3>'+esc(s.t)+'</h3>'+(s.custom?'<span class="tag">Của tôi</span>':'')+'</div><p class="muted small">'+esc(s.intro)+'</p><div class="ctrl">'+
      [1,2,3].map(l=>'<button class="btn" data-a="role-open" data-v="'+s.id+':'+l+'">Mức '+l+(store.done['r:'+s.id+':'+l]?' ✓':'')+'</button>').join('')+
-   '</div><p class="muted small">1: '+LV[0]+' · 2: '+LV[1]+' · 3: '+LV[2]+'</p></section>').join('')+'</div>';
+   '</div><p class="muted small">1: '+LV[0]+' · 2: '+LV[1]+' · 3: '+LV[2]+'</p>'+
+   (s.custom?'<button class="btn small" data-a="del" data-k="role" data-v="'+s.id+'">'+(pendingDel==='role:'+s.id?'Bấm lại để xóa':'Xóa tình huống')+'</button>':'')+'</section>').join('')+'</div>';
 }
 function viewRole(){
   const sc=P.sc, n=sc.turns.length;
@@ -815,9 +869,9 @@ function viewRole(){
   const T=sc.turns[P.turn], r=P.res;
   let prompt;
   if(P.level===1){
-    prompt='<p class="label">Đọc to câu trả lời này</p><p class="sent">'+tokHtml(T.u.split(/\s+/),r&&r.type==='sent'?r.tokOk:null)+'</p><p class="muted">'+esc(T.uv)+'</p>';
+    prompt='<p class="label">Đọc to câu trả lời này</p><p class="sent">'+tokHtml(T.u.split(/\s+/),r&&r.type==='sent'?r.tokOk:null)+'</p><p class="muted">'+esc(T.uv||'(chưa có nghĩa tiếng Việt)')+'</p>';
   }else{
-    prompt='<p class="label">Hãy trả lời bằng tiếng Anh</p><p class="sent" style="font-size:20px">'+esc(T.uv)+'</p>'+
+    prompt='<p class="label">Hãy trả lời bằng tiếng Anh</p><p class="sent" style="font-size:20px">'+esc(T.uv||'(chưa có nghĩa tiếng Việt)')+'</p>'+
       ((P.level===2||P.showKeys)?'<div class="chips"><span class="small">Từ gợi ý:</span>'+T.k.map(k=>'<span class="chip">'+esc(k.split('|').join(' / '))+'</span>').join('')+'</div>':'<button class="btn small" data-a="role-keys">Gợi ý từ khóa</button>')+
       ((P.showSample||r)?'<div class="sample"><span>Câu mẫu: <b>'+esc(T.u)+'</b></span><button class="btn small" data-a="role-say">Nghe</button></div>':'<button class="btn small" data-a="role-sample">Xem câu mẫu</button>');
   }
@@ -857,17 +911,104 @@ function viewSettings(){
    '<details class="tipbox"><summary>Máy không chấm được giọng?</summary><p>iPhone: dùng Safari, vào Cài đặt, Bàn phím, bật Đọc chính tả. Android: dùng Chrome và cho phép micro. Cả hai cần kết nối mạng. Nếu vẫn không được, bạn có thể ghi âm rồi tự chấm.</p></details></section>'+
   '<section class="card"><h3>Dữ liệu</h3>'+
    (P&&P.confirm==='reset'?'<p class="msg">Bắt đầu lại lộ trình từ tuần 1? Điểm và từ hay sai vẫn được giữ.</p><div class="ctrl"><button class="btn primary" data-a="reset-do">Đồng ý, bắt đầu lại</button><button class="btn" data-a="confirm-no">Hủy</button></div>':'<button class="btn" data-a="reset-ask">Bắt đầu lại lộ trình 4 tuần</button>')+
-   (P&&P.confirm==='wipe'?'<p class="msg">Xóa toàn bộ tiến độ, điểm và từ hay sai trên máy này? Không thể khôi phục.</p><div class="ctrl"><button class="btn danger" data-a="wipe-do">Xóa tất cả</button><button class="btn" data-a="confirm-no">Hủy</button></div>':'<button class="btn" data-a="wipe-ask">Xóa toàn bộ dữ liệu</button>')+
+   (P&&P.confirm==='wipe'?'<p class="msg">Xóa toàn bộ tiến độ, điểm, từ hay sai và nội dung bạn tự thêm trên máy này? Không thể khôi phục.</p><div class="ctrl"><button class="btn danger" data-a="wipe-do">Xóa tất cả</button><button class="btn" data-a="confirm-no">Hủy</button></div>':'<button class="btn" data-a="wipe-ask">Xóa toàn bộ dữ liệu</button>')+
    '<p class="muted small">Tiến độ chỉ lưu trên trình duyệt của máy này.</p></section>';
+}
+/* ====================== THÊM TỪ, CÂU, TÌNH HUỐNG ====================== */
+function val(id){ const e=$('#'+id); return e?e.value:''; }
+function formErr(msg){ const m=$('#f-msg'); if(m){ m.textContent=msg; m.hidden=false; } }
+function clearFields(ids){ ids.forEach(id=>{ const e=$('#'+id); if(e) e.value=''; }); const m=$('#f-msg'); if(m) m.hidden=true; }
+function saveWord(){
+  const g=val('f-g'), w=val('f-w').trim().replace(/\s+/g,' '), vi=val('f-vi').trim(), ipa=val('f-ipa').trim();
+  const grp=drillGroups().find(x=>x.id===g)||MY_G;
+  if(!w) return formErr('Hãy nhập từ tiếng Anh.');
+  if(!/^[A-Za-z][A-Za-z' -]*$/.test(w)) return formErr('Chỉ dùng chữ cái tiếng Anh, dấu cách, dấu gạch ngang hoặc dấu nháy.');
+  if(groupItems(grp).some(it=>it.w.toLowerCase()===w.toLowerCase())) return formErr('Từ này đã có trong nhóm.');
+  store.custom.words.push({id:'w'+Date.now(),g:grp.id,w:w,vi:vi,ipa:ipa});
+  save(); clearFields(['f-w','f-vi','f-ipa']);
+  toast('Đã thêm “'+w+'”.');
+  const f=$('#f-w'); if(f&&f.focus) f.focus();
+}
+function saveSent(){
+  const t=val('f-t'), en=val('f-en').trim().replace(/\s+/g,' '), vi=val('f-vi').trim();
+  const top=sentTopics().find(x=>x.id===t)||MY_T;
+  if(!en) return formErr('Hãy nhập câu tiếng Anh.');
+  if(!/[A-Za-z]/.test(en)) return formErr('Câu cần có chữ cái tiếng Anh.');
+  if(en.length>140) return formErr('Câu hơi dài. Hãy chia thành các câu ngắn hơn, tối đa 140 ký tự.');
+  if(topicSents(top).some(x=>x.en.toLowerCase()===en.toLowerCase())) return formErr('Câu này đã có trong chủ đề.');
+  store.custom.sents.push({id:'s'+Date.now(),t:top.id,en:en,vi:vi});
+  save(); clearFields(['f-en','f-vi']);
+  toast('Đã thêm câu.');
+  const f=$('#f-en'); if(f&&f.focus) f.focus();
+}
+function newDraft(){ return {t:'',intro:'',turns:[{p:'',u:'',uv:'',k:''},{p:'',u:'',uv:'',k:''}]}; }
+function collectDraft(){
+  if(!D) return;
+  D.t=val('r-t'); D.intro=val('r-intro');
+  D.turns=D.turns.map((_,i)=>({p:val('r-p'+i),u:val('r-u'+i),uv:val('r-uv'+i),k:val('r-k'+i)}));
+}
+function saveRole(){
+  collectDraft();
+  const t=D.t.trim();
+  if(!t) return formErr('Hãy đặt tên cho tình huống.');
+  const turns=[];
+  for(let i=0;i<D.turns.length;i++){
+    const x=D.turns[i], p=x.p.trim().replace(/\s+/g,' '), u=x.u.trim().replace(/\s+/g,' '), uv=x.uv.trim();
+    if(!p||!u) return formErr('Lượt '+(i+1)+': cần cả câu máy nói và câu bạn trả lời.');
+    if(!/[A-Za-z]/.test(p)||!/[A-Za-z]/.test(u)) return formErr('Lượt '+(i+1)+': câu cần có chữ cái tiếng Anh.');
+    if(p.length>140||u.length>140) return formErr('Lượt '+(i+1)+': câu quá dài, tối đa 140 ký tự.');
+    let k=x.k.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    if(!k.length) k=autoKeys(u);
+    turns.push({p:p,u:u,uv:uv,k:k});
+  }
+  store.custom.roles.push({id:'u'+Date.now(),t:t,intro:D.intro.trim()||'Tình huống do bạn tạo.',turns:turns,custom:true});
+  save(); toast('Đã lưu tình huống.'); D=null; go({view:'role'});
+}
+function viewDrillAdd(){
+  const sel=V.g||'my';
+  return head('Thêm từ',true)+
+  '<section class="card"><div class="field"><label class="label" for="f-g">Thêm vào nhóm</label><select id="f-g">'+
+    drillGroups().map(g=>'<option value="'+g.id+'"'+(g.id===sel?' selected':'')+'>'+esc(g.t)+'</option>').join('')+'</select></div>'+
+  '<div class="field"><label class="label" for="f-w">Từ hoặc cụm từ tiếng Anh</label><input id="f-w" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: schedule"></div>'+
+  '<div class="field"><label class="label" for="f-vi">Nghĩa tiếng Việt (không bắt buộc)</label><input id="f-vi" type="text" maxlength="60" autocomplete="off" placeholder="ví dụ: lịch trình"></div>'+
+  '<div class="field"><label class="label" for="f-ipa">Phiên âm IPA (không bắt buộc)</label><input id="f-ipa" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: /ˈskedʒuːl/"></div>'+
+  '<p id="f-msg" class="msg" role="alert" hidden></p><button class="btn primary" data-a="save-word">Lưu từ</button>'+
+  '<p class="muted small">Sau khi lưu, ô nhập được xóa để bạn thêm từ tiếp theo. Bấm nút quay lại khi xong.</p></section>';
+}
+function viewSentAdd(){
+  const sel=V.t||'my';
+  return head('Thêm câu',true)+
+  '<section class="card"><div class="field"><label class="label" for="f-t">Thêm vào chủ đề</label><select id="f-t">'+
+    sentTopics().map(t=>'<option value="'+t.id+'"'+(t.id===sel?' selected':'')+'>'+esc(t.t)+'</option>').join('')+'</select></div>'+
+  '<div class="field"><label class="label" for="f-en">Câu tiếng Anh</label><textarea id="f-en" maxlength="140" rows="2" autocomplete="off" placeholder="ví dụ: Could you recommend a good restaurant?"></textarea></div>'+
+  '<div class="field"><label class="label" for="f-vi">Nghĩa tiếng Việt (không bắt buộc)</label><input id="f-vi" type="text" maxlength="140" autocomplete="off" placeholder="ví dụ: Bạn gợi ý giúp một nhà hàng ngon được không?"></div>'+
+  '<p id="f-msg" class="msg" role="alert" hidden></p><button class="btn primary" data-a="save-sent">Lưu câu</button>'+
+  '<p class="muted small">Câu ngắn (tối đa 140 ký tự) sẽ dễ luyện và máy chấm chính xác hơn.</p></section>';
+}
+function viewRoleAdd(){
+  if(!D) D=newDraft();
+  const n=D.turns.length;
+  return head('Tạo tình huống',true)+
+  '<section class="card"><div class="field"><label class="label" for="r-t">Tên tình huống</label><input id="r-t" type="text" maxlength="40" autocomplete="off" value="'+esc(D.t)+'" placeholder="ví dụ: Gọi taxi"></div>'+
+  '<div class="field"><label class="label" for="r-intro">Bối cảnh (không bắt buộc)</label><input id="r-intro" type="text" maxlength="100" autocomplete="off" value="'+esc(D.intro)+'" placeholder="ví dụ: Bạn đang đứng trước khách sạn và cần một chiếc taxi."></div>'+
+  '<p class="muted small">Mỗi lượt gồm một câu máy nói rồi một câu bạn trả lời. Từ khóa để trống thì app tự chọn từ quan trọng trong câu trả lời. Dùng dấu | cho từ thay thế, ví dụ: taxi|cab.</p></section>'+
+  D.turns.map((x,i)=>'<section class="card"><h3>Lượt '+(i+1)+'</h3>'+
+    '<div class="field"><label class="label" for="r-p'+i+'">Máy nói (tiếng Anh)</label><input id="r-p'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.p)+'"></div>'+
+    '<div class="field"><label class="label" for="r-u'+i+'">Bạn trả lời (tiếng Anh)</label><input id="r-u'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.u)+'"></div>'+
+    '<div class="field"><label class="label" for="r-uv'+i+'">Nghĩa tiếng Việt của câu bạn trả lời</label><input id="r-uv'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.uv)+'"></div>'+
+    '<div class="field"><label class="label" for="r-k'+i+'">Từ khóa để chấm (không bắt buộc)</label><input id="r-k'+i+'" type="text" maxlength="80" autocapitalize="none" autocomplete="off" value="'+esc(x.k)+'" placeholder="cách nhau bằng dấu phẩy, ví dụ: taxi, airport"></div></section>').join('')+
+  '<p id="f-msg" class="msg" role="alert" hidden></p>'+
+  '<div class="ctrl"><button class="btn" data-a="turn-add"'+(n>=8?' disabled':'')+'>+ Thêm lượt</button><button class="btn" data-a="turn-del"'+(n<=1?' disabled':'')+'>Bỏ lượt cuối</button></div>'+
+  '<button class="btn primary" data-a="save-role">Lưu tình huống</button>';
 }
 const TABS=[['home','Hôm nay','home'],['drill','Luyện âm','wave'],['sent','Nhại câu','repeat'],['role','Hội thoại','chat'],['weak','Từ sai','flag']];
 function show(){
   let h='';
   const v=V.view;
   if(v==='home') h=viewHome();
-  else if(v==='drill') h=V.card?viewCard():V.g?viewDrillGroup():viewDrillList();
-  else if(v==='sent') h=V.card?viewCard():V.t?viewSentList():viewSentTopics();
-  else if(v==='role') h=V.sc&&P?viewRole():viewRoleList();
+  else if(v==='drill') h=V.add?viewDrillAdd():V.card?viewCard():V.g?viewDrillGroup():viewDrillList();
+  else if(v==='sent') h=V.add?viewSentAdd():V.card?viewCard():V.t?viewSentList():viewSentTopics();
+  else if(v==='role') h=V.add?viewRoleAdd():V.sc&&P?viewRole():viewRoleList();
   else if(v==='weak') h=V.card&&P?viewCard():viewWeak();
   else if(v==='settings') h=viewSettings();
   $('#main').innerHTML=h;
@@ -925,6 +1066,24 @@ function act(a,v,el){
     }
     case 'role-again': return openRole(P.sc.id,P.level);
     case 'role-up': return openRole(P.sc.id,P.level+1);
+    case 'add-word': return go({view:'drill',add:true,g:v||''});
+    case 'add-sent': return go({view:'sent',add:true,t:v||''});
+    case 'role-add': D=newDraft(); return go({view:'role',add:true});
+    case 'save-word': return saveWord();
+    case 'save-sent': return saveSent();
+    case 'save-role': return saveRole();
+    case 'turn-add': collectDraft(); if(D&&D.turns.length<8) D.turns.push({p:'',u:'',uv:'',k:''}); return show();
+    case 'turn-del': collectDraft(); if(D&&D.turns.length>1) D.turns.pop(); return show();
+    case 'del': {
+      const kind=el.dataset.k, tag=kind+':'+v;
+      if(pendingDel!==tag){ pendingDel=tag; return show(); }
+      pendingDel=null;
+      const c=store.custom;
+      if(kind==='word') c.words=c.words.filter(x=>x.id!==v);
+      else if(kind==='sent') c.sents=c.sents.filter(x=>x.id!==v);
+      else if(kind==='role') c.roles=c.roles.filter(x=>x.id!==v);
+      save(); toast('Đã xóa.'); return show();
+    }
     case 'test-voice': return speak('Hello! Nice to meet you. Let us practice together.',false);
     case 'reset-ask': P=P||{}; P.confirm='reset'; return show();
     case 'wipe-ask': P=P||{}; P.confirm='wipe'; return show();
