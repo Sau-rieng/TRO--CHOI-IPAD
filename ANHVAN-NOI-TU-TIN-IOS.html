@@ -165,6 +165,7 @@ textarea{min-height:84px;resize:vertical}
 .row-wrap .del{align-self:center;flex:none}
 .tag{font-size:12px;font-weight:700;color:var(--on-soft);background:var(--accent-soft);padding:2px 8px;border-radius:999px}
 .ipa-f{font-family:var(--font-ipa)}
+pre{margin:8px 0;padding:10px 12px;background:var(--surface2);border-radius:10px;font-size:12.5px;line-height:1.5;overflow-x:auto;white-space:pre}
 </style>
 </head>
 <body>
@@ -442,7 +443,7 @@ const TIPS=[
 
 /* ====================== LƯU TRỮ ====================== */
 const KEY='noi-tu-tin-v1';
-function defStore(){return {start:dayKey(new Date()),days:{},best:{},weak:{},done:{},custom:{words:[],sents:[],roles:[]},settings:{rate:0.9,accent:'en-US',voice:'',theme:'auto',goal:8}};}
+function defStore(){return {start:dayKey(new Date()),days:{},best:{},weak:{},done:{},custom:{words:[],sents:[],roles:[]},settings:{rate:0.9,accent:'en-US',voice:'',theme:'auto',goal:8,tr:''}};}
 function load(){
   try{
     const r=localStorage.getItem(KEY);
@@ -909,10 +910,93 @@ function viewSettings(){
    (proto?'':'<p class="note">Micro chỉ hoạt động khi trang được mở qua https (ví dụ GitHub Pages). Mở trực tiếp từ file sẽ không dùng được micro.</p>')+
    '<button class="btn" data-a="test-voice">'+ico('play')+' Đọc thử một câu</button>'+
    '<details class="tipbox"><summary>Máy không chấm được giọng?</summary><p>iPhone: dùng Safari, vào Cài đặt, Bàn phím, bật Đọc chính tả. Android: dùng Chrome và cho phép micro. Cả hai cần kết nối mạng. Nếu vẫn không được, bạn có thể ghi âm rồi tự chấm.</p></details></section>'+
+  '<section class="card"><h3>Dịch tiếng Việt sang tiếng Anh</h3>'+
+   '<p class="muted small">Dùng Google Dịch qua Apps Script của bạn. Cài một lần, dùng cho mọi nơi có nút Dịch.</p>'+
+   '<div class="form-row"><label class="label" for="tr-url">Địa chỉ Apps Script (kết thúc bằng /exec)</label><input id="tr-url" type="text" data-set="tr" autocapitalize="none" autocomplete="off" spellcheck="false" value="'+esc(s.tr||'')+'" placeholder="https://script.google.com/macros/s/.../exec"></div>'+
+   '<div class="ctrl"><button class="btn" data-a="tr-test">Thử dịch</button></div>'+
+   '<p id="tr-out" class="msg" role="status" hidden></p>'+
+   '<details class="tipbox"><summary>Cách cài (làm một lần)</summary>'+
+    '<ol class="small" style="padding-left:20px;margin:8px 0;display:flex;flex-direction:column;gap:6px">'+
+     '<li>Vào script.google.com bằng tài khoản Google của bạn, bấm <b>Dự án mới</b>.</li>'+
+     '<li>Xóa mã mẫu, dán mã bên dưới (bấm <b>Sao chép mã</b>).</li>'+
+     '<li>Bấm <b>Triển khai</b>, chọn <b>Tùy chọn triển khai mới</b>, loại <b>Ứng dụng web</b>.</li>'+
+     '<li>Thực thi với tư cách: <b>Tôi</b>. Ai có quyền truy cập: <b>Bất kỳ ai</b>. Bấm <b>Triển khai</b> và cho phép quyền.</li>'+
+     '<li>Sao chép <b>URL ứng dụng web</b> (kết thúc bằng /exec) rồi dán vào ô phía trên.</li>'+
+    '</ol><pre>'+esc(AS_CODE)+'</pre><button class="btn small" data-a="copy-code">Sao chép mã</button></details></section>'+
   '<section class="card"><h3>Dữ liệu</h3>'+
    (P&&P.confirm==='reset'?'<p class="msg">Bắt đầu lại lộ trình từ tuần 1? Điểm và từ hay sai vẫn được giữ.</p><div class="ctrl"><button class="btn primary" data-a="reset-do">Đồng ý, bắt đầu lại</button><button class="btn" data-a="confirm-no">Hủy</button></div>':'<button class="btn" data-a="reset-ask">Bắt đầu lại lộ trình 4 tuần</button>')+
    (P&&P.confirm==='wipe'?'<p class="msg">Xóa toàn bộ tiến độ, điểm, từ hay sai và nội dung bạn tự thêm trên máy này? Không thể khôi phục.</p><div class="ctrl"><button class="btn danger" data-a="wipe-do">Xóa tất cả</button><button class="btn" data-a="confirm-no">Hủy</button></div>':'<button class="btn" data-a="wipe-ask">Xóa toàn bộ dữ liệu</button>')+
    '<p class="muted small">Tiến độ chỉ lưu trên trình duyệt của máy này.</p></section>';
+}
+/* ====================== DỊCH TIẾNG VIỆT SANG TIẾNG ANH ====================== */
+const TRANSLATE_URL='';
+function trUrl(){ return String(store.settings.tr||TRANSLATE_URL||'').trim(); }
+const AS_CODE=[
+  'function doGet(e) {',
+  '  var q = String((e && e.parameter && e.parameter.q) || "").slice(0, 300);',
+  '  var out = { ok: false };',
+  '  if (q) {',
+  '    try { out = { ok: true, en: LanguageApp.translate(q, "vi", "en") }; }',
+  '    catch (err) { out = { ok: false, error: String(err) }; }',
+  '  }',
+  '  return ContentService.createTextOutput(JSON.stringify(out))',
+  '    .setMimeType(ContentService.MimeType.JSON);',
+  '}'
+].join('\n');
+let trBusy=false;
+function tidyEn(s,mode){
+  s=String(s||'').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();
+  if(mode==='word'){ s=s.replace(/[.!?,;:]+$/,'').trim(); if(s!=='I') s=s.toLowerCase(); }
+  return s;
+}
+async function translateVi(text){
+  const url=trUrl();
+  if(!url) throw new Error('nourl');
+  const ctl=new AbortController();
+  const timer=setTimeout(()=>ctl.abort(),15000);
+  try{
+    const r=await fetch(url+(url.indexOf('?')>=0?'&':'?')+'q='+encodeURIComponent(text),{signal:ctl.signal});
+    if(!r.ok) throw new Error('http');
+    const j=await r.json();
+    if(!j||!j.ok||!j.en) throw new Error('bad');
+    return String(j.en);
+  } finally { clearTimeout(timer); }
+}
+function trErr(e){
+  const m=e&&e.message;
+  if(m==='nourl') return 'Chưa cài chức năng dịch. Vào Cài đặt, mục "Dịch tiếng Việt sang tiếng Anh", để cài một lần.';
+  if(e&&e.name==='AbortError') return 'Dịch quá lâu nên đã dừng. Thử lại sau vài giây.';
+  if(m==='http'||m==='bad'||(e&&e.name==='SyntaxError')) return 'Chưa dịch được. Kiểm tra lại địa chỉ Apps Script, và quyền truy cập phải là "Bất kỳ ai".';
+  return 'Không kết nối được. Kiểm tra mạng rồi thử lại.';
+}
+async function doTranslate(kind,i,el){
+  const map={word:['f-vi','f-w'],sent:['f-vi','f-en'],rp:['r-pv'+i,'r-p'+i],ru:['r-uv'+i,'r-u'+i]};
+  const ids=map[kind]; if(!ids) return;
+  const src=val(ids[0]).trim();
+  if(!src) return formErr('Hãy gõ tiếng Việt trước, rồi bấm Dịch.');
+  if(!trUrl()) return formErr(trErr(new Error('nourl')));
+  if(trBusy) return;
+  trBusy=true;
+  const old=el?el.textContent:'';
+  if(el){ el.disabled=true; el.textContent='Đang dịch…'; }
+  const m0=$('#f-msg'); if(m0) m0.hidden=true;
+  try{
+    const en=tidyEn(await translateVi(src),kind==='word'?'word':'');
+    const dst=$('#'+ids[1]);
+    if(dst){ dst.value=en; toast('Đã dịch. Hãy kiểm tra và sửa nếu cần.'); }
+  }catch(e){ if($('#f-msg')) formErr(trErr(e)); }
+  finally{ trBusy=false; if(el){ el.disabled=false; el.textContent=old; } }
+}
+async function trTest(){
+  const out=$('#tr-out'); if(!out) return;
+  out.hidden=false;
+  if(!trUrl()){ out.textContent='Hãy dán địa chỉ Apps Script vào ô phía trên trước.'; return; }
+  out.textContent='Đang thử…';
+  try{ const en=await translateVi('Xin chào, bạn khỏe không?'); out.textContent='Dịch được: “'+tidyEn(en)+'”'; }
+  catch(e){ out.textContent=trErr(e); }
+}
+function trNote(){
+  return trUrl()?'':'<div class="note">Chưa cài chức năng dịch. Bạn vẫn thêm được bằng cách gõ tiếng Anh trực tiếp.<br><button class="btn small" data-a="settings" style="margin-top:8px">Mở Cài đặt để cài một lần</button></div>';
 }
 /* ====================== THÊM TỪ, CÂU, TÌNH HUỐNG ====================== */
 function val(id){ const e=$('#'+id); return e?e.value:''; }
@@ -941,11 +1025,11 @@ function saveSent(){
   toast('Đã thêm câu.');
   const f=$('#f-en'); if(f&&f.focus) f.focus();
 }
-function newDraft(){ return {t:'',intro:'',turns:[{p:'',u:'',uv:'',k:''},{p:'',u:'',uv:'',k:''}]}; }
+function newDraft(){ return {t:'',intro:'',turns:[{p:'',u:'',uv:'',k:'',pv:''},{p:'',u:'',uv:'',k:'',pv:''}]}; }
 function collectDraft(){
   if(!D) return;
   D.t=val('r-t'); D.intro=val('r-intro');
-  D.turns=D.turns.map((_,i)=>({p:val('r-p'+i),u:val('r-u'+i),uv:val('r-uv'+i),k:val('r-k'+i)}));
+  D.turns=D.turns.map((_,i)=>({p:val('r-p'+i),u:val('r-u'+i),uv:val('r-uv'+i),k:val('r-k'+i),pv:val('r-pv'+i)}));
 }
 function saveRole(){
   collectDraft();
@@ -967,10 +1051,12 @@ function saveRole(){
 function viewDrillAdd(){
   const sel=V.g||'my';
   return head('Thêm từ',true)+
-  '<section class="card"><div class="field"><label class="label" for="f-g">Thêm vào nhóm</label><select id="f-g">'+
+  '<section class="card">'+trNote()+
+  '<div class="field"><label class="label" for="f-g">Thêm vào nhóm</label><select id="f-g">'+
     drillGroups().map(g=>'<option value="'+g.id+'"'+(g.id===sel?' selected':'')+'>'+esc(g.t)+'</option>').join('')+'</select></div>'+
-  '<div class="field"><label class="label" for="f-w">Từ hoặc cụm từ tiếng Anh</label><input id="f-w" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: schedule"></div>'+
-  '<div class="field"><label class="label" for="f-vi">Nghĩa tiếng Việt (không bắt buộc)</label><input id="f-vi" type="text" maxlength="60" autocomplete="off" placeholder="ví dụ: lịch trình"></div>'+
+  '<div class="field"><label class="label" for="f-vi">Gõ nghĩa tiếng Việt, rồi bấm Dịch</label><input id="f-vi" type="text" maxlength="60" autocomplete="off" placeholder="ví dụ: lịch trình"></div>'+
+  '<button class="btn small" data-a="tr-word">Dịch sang tiếng Anh</button>'+
+  '<div class="field"><label class="label" for="f-w">Từ hoặc cụm từ tiếng Anh (bạn có thể sửa)</label><input id="f-w" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: schedule"></div>'+
   '<div class="field"><label class="label" for="f-ipa">Phiên âm IPA (không bắt buộc)</label><input id="f-ipa" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: /ˈskedʒuːl/"></div>'+
   '<p id="f-msg" class="msg" role="alert" hidden></p><button class="btn primary" data-a="save-word">Lưu từ</button>'+
   '<p class="muted small">Sau khi lưu, ô nhập được xóa để bạn thêm từ tiếp theo. Bấm nút quay lại khi xong.</p></section>';
@@ -978,10 +1064,12 @@ function viewDrillAdd(){
 function viewSentAdd(){
   const sel=V.t||'my';
   return head('Thêm câu',true)+
-  '<section class="card"><div class="field"><label class="label" for="f-t">Thêm vào chủ đề</label><select id="f-t">'+
+  '<section class="card">'+trNote()+
+  '<div class="field"><label class="label" for="f-t">Thêm vào chủ đề</label><select id="f-t">'+
     sentTopics().map(t=>'<option value="'+t.id+'"'+(t.id===sel?' selected':'')+'>'+esc(t.t)+'</option>').join('')+'</select></div>'+
-  '<div class="field"><label class="label" for="f-en">Câu tiếng Anh</label><textarea id="f-en" maxlength="140" rows="2" autocomplete="off" placeholder="ví dụ: Could you recommend a good restaurant?"></textarea></div>'+
-  '<div class="field"><label class="label" for="f-vi">Nghĩa tiếng Việt (không bắt buộc)</label><input id="f-vi" type="text" maxlength="140" autocomplete="off" placeholder="ví dụ: Bạn gợi ý giúp một nhà hàng ngon được không?"></div>'+
+  '<div class="field"><label class="label" for="f-vi">Gõ câu tiếng Việt, rồi bấm Dịch</label><textarea id="f-vi" maxlength="200" rows="2" autocomplete="off" placeholder="ví dụ: Bạn gợi ý giúp một nhà hàng ngon được không?"></textarea></div>'+
+  '<button class="btn small" data-a="tr-sent">Dịch sang tiếng Anh</button>'+
+  '<div class="field"><label class="label" for="f-en">Câu tiếng Anh (bạn có thể sửa)</label><textarea id="f-en" maxlength="140" rows="2" autocomplete="off" placeholder="ví dụ: Could you recommend a good restaurant?"></textarea></div>'+
   '<p id="f-msg" class="msg" role="alert" hidden></p><button class="btn primary" data-a="save-sent">Lưu câu</button>'+
   '<p class="muted small">Câu ngắn (tối đa 140 ký tự) sẽ dễ luyện và máy chấm chính xác hơn.</p></section>';
 }
@@ -989,13 +1077,17 @@ function viewRoleAdd(){
   if(!D) D=newDraft();
   const n=D.turns.length;
   return head('Tạo tình huống',true)+
-  '<section class="card"><div class="field"><label class="label" for="r-t">Tên tình huống</label><input id="r-t" type="text" maxlength="40" autocomplete="off" value="'+esc(D.t)+'" placeholder="ví dụ: Gọi taxi"></div>'+
+  '<section class="card">'+trNote()+
+  '<div class="field"><label class="label" for="r-t">Tên tình huống</label><input id="r-t" type="text" maxlength="40" autocomplete="off" value="'+esc(D.t)+'" placeholder="ví dụ: Gọi taxi"></div>'+
   '<div class="field"><label class="label" for="r-intro">Bối cảnh (không bắt buộc)</label><input id="r-intro" type="text" maxlength="100" autocomplete="off" value="'+esc(D.intro)+'" placeholder="ví dụ: Bạn đang đứng trước khách sạn và cần một chiếc taxi."></div>'+
-  '<p class="muted small">Mỗi lượt gồm một câu máy nói rồi một câu bạn trả lời. Từ khóa để trống thì app tự chọn từ quan trọng trong câu trả lời. Dùng dấu | cho từ thay thế, ví dụ: taxi|cab.</p></section>'+
+  '<p class="muted small">Mỗi lượt gồm một câu máy nói rồi một câu bạn trả lời. Bạn gõ tiếng Việt và bấm Dịch, hoặc gõ thẳng tiếng Anh. Từ khóa để trống thì app tự chọn từ quan trọng trong câu trả lời. Dùng dấu | cho từ thay thế, ví dụ: taxi|cab.</p></section>'+
   D.turns.map((x,i)=>'<section class="card"><h3>Lượt '+(i+1)+'</h3>'+
+    '<div class="field"><label class="label" for="r-pv'+i+'">Máy nói: gõ tiếng Việt (không bắt buộc)</label><input id="r-pv'+i+'" type="text" maxlength="200" autocomplete="off" value="'+esc(x.pv||'')+'"></div>'+
+    '<button class="btn small" data-a="tr-rp" data-v="'+i+'">Dịch sang tiếng Anh</button>'+
     '<div class="field"><label class="label" for="r-p'+i+'">Máy nói (tiếng Anh)</label><input id="r-p'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.p)+'"></div>'+
+    '<div class="field"><label class="label" for="r-uv'+i+'">Bạn trả lời: gõ tiếng Việt</label><input id="r-uv'+i+'" type="text" maxlength="200" autocomplete="off" value="'+esc(x.uv)+'"></div>'+
+    '<button class="btn small" data-a="tr-ru" data-v="'+i+'">Dịch sang tiếng Anh</button>'+
     '<div class="field"><label class="label" for="r-u'+i+'">Bạn trả lời (tiếng Anh)</label><input id="r-u'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.u)+'"></div>'+
-    '<div class="field"><label class="label" for="r-uv'+i+'">Nghĩa tiếng Việt của câu bạn trả lời</label><input id="r-uv'+i+'" type="text" maxlength="140" autocomplete="off" value="'+esc(x.uv)+'"></div>'+
     '<div class="field"><label class="label" for="r-k'+i+'">Từ khóa để chấm (không bắt buộc)</label><input id="r-k'+i+'" type="text" maxlength="80" autocapitalize="none" autocomplete="off" value="'+esc(x.k)+'" placeholder="cách nhau bằng dấu phẩy, ví dụ: taxi, airport"></div></section>').join('')+
   '<p id="f-msg" class="msg" role="alert" hidden></p>'+
   '<div class="ctrl"><button class="btn" data-a="turn-add"'+(n>=8?' disabled':'')+'>+ Thêm lượt</button><button class="btn" data-a="turn-del"'+(n<=1?' disabled':'')+'>Bỏ lượt cuối</button></div>'+
@@ -1069,10 +1161,16 @@ function act(a,v,el){
     case 'add-word': return go({view:'drill',add:true,g:v||''});
     case 'add-sent': return go({view:'sent',add:true,t:v||''});
     case 'role-add': D=newDraft(); return go({view:'role',add:true});
+    case 'tr-word': return doTranslate('word',0,el);
+    case 'tr-sent': return doTranslate('sent',0,el);
+    case 'tr-rp': return doTranslate('rp',+v,el);
+    case 'tr-ru': return doTranslate('ru',+v,el);
+    case 'tr-test': return trTest();
+    case 'copy-code': { try{ navigator.clipboard.writeText(AS_CODE).then(()=>toast('Đã sao chép mã.')).catch(()=>toast('Chưa sao chép được. Hãy chọn mã rồi sao chép thủ công.')); }catch(e){ toast('Chưa sao chép được. Hãy chọn mã rồi sao chép thủ công.'); } return; }
     case 'save-word': return saveWord();
     case 'save-sent': return saveSent();
     case 'save-role': return saveRole();
-    case 'turn-add': collectDraft(); if(D&&D.turns.length<8) D.turns.push({p:'',u:'',uv:'',k:''}); return show();
+    case 'turn-add': collectDraft(); if(D&&D.turns.length<8) D.turns.push({p:'',u:'',uv:'',k:'',pv:''}); return show();
     case 'turn-del': collectDraft(); if(D&&D.turns.length>1) D.turns.pop(); return show();
     case 'del': {
       const kind=el.dataset.k, tag=kind+':'+v;
@@ -1099,6 +1197,7 @@ document.addEventListener('click',e=>{
 function setSetting(k,val,live){
   if(k==='rate'){ store.settings.rate=parseFloat(val); const o=$('#rateval'); if(o) o.textContent=store.settings.rate.toFixed(1); }
   else if(k==='goal') store.settings.goal=parseInt(val,10);
+  else if(k==='tr') store.settings.tr=String(val).trim();
   else store.settings[k]=val;
   if(k==='theme') applyTheme();
   save();
