@@ -410,7 +410,7 @@ const MY_G={id:'my',t:'Từ của tôi',sub:'Những từ bạn tự thêm',tip:
 const MY_T={id:'my',t:'Câu của tôi',sub:'Những câu bạn tự thêm',s:[]};
 function drillGroups(){ return DRILLS.concat([MY_G]); }
 function groupItems(g){
-  const extra=store.custom.words.filter(x=>x.g===g.id).map(x=>({w:x.w,ipa:x.ipa||'',vi:x.vi||'',c:null,cipa:'',custom:true,cid:x.id}));
+  const extra=store.custom.words.filter(x=>x.g===g.id).map(x=>({w:x.w,ipa:x.ipa||ipaOf(x.w),vi:x.vi||'',c:null,cipa:'',custom:true,cid:x.id}));
   return g.items.concat(extra);
 }
 function sentTopics(){ return SENTS.concat([MY_T]); }
@@ -984,6 +984,7 @@ async function doTranslate(kind,i,el){
     const en=tidyEn(await translateVi(src),kind==='word'?'word':'');
     const dst=$('#'+ids[1]);
     if(dst){ dst.value=en; toast('Đã dịch. Hãy kiểm tra và sửa nếu cần.'); }
+    if(kind==='word'&&dst) await fillIpa(en);
   }catch(e){ if($('#f-msg')) formErr(trErr(e)); }
   finally{ trBusy=false; if(el){ el.disabled=false; el.textContent=old; } }
 }
@@ -998,17 +999,75 @@ async function trTest(){
 function trNote(){
   return trUrl()?'':'<div class="note">Chưa cài chức năng dịch. Bạn vẫn thêm được bằng cách gõ tiếng Anh trực tiếp.<br><button class="btn small" data-a="settings" style="margin-top:8px">Mở Cài đặt để cài một lần</button></div>';
 }
+/* ====================== PHIÊN ÂM IPA (từ điển CMU đi kèm) ====================== */
+const IPA={map:null,p:null,fail:false};
+function loadIpa(){
+  if(IPA.map) return Promise.resolve(true);
+  if(IPA.p) return IPA.p;
+  IPA.p=fetch('noi-tu-tin-ipa.txt').then(r=>{ if(!r.ok) throw new Error('http'); return r.text(); }).then(t=>{
+    const m=Object.create(null), L=t.split('\n');
+    if(L.length<1000) throw new Error('short');
+    for(let i=0;i<L.length;i++){ const k=L[i].indexOf('\t'); if(k>0) m[L[i].slice(0,k)]=L[i].slice(k+1); }
+    IPA.map=m; return true;
+  }).catch(()=>{ IPA.p=null; IPA.fail=true; return false; });
+  return IPA.p;
+}
+function ipaSuffix(base,kind){
+  const last=base.charAt(base.length-1);
+  if(kind==='s'){
+    if('szʃʒ'.indexOf(last)>=0) return base+'ɪz';
+    if('ptkfθ'.indexOf(last)>=0) return base+'s';
+    return base+'z';
+  }
+  if(kind==='ed'){
+    if(last==='t'||last==='d') return base+'ɪd';
+    if('pkfsʃθ'.indexOf(last)>=0) return base+'t';
+    return base+'d';
+  }
+  return base+'ɪŋ';
+}
+function ipaWord(w){
+  const m=IPA.map; if(!m) return '';
+  w=String(w).toLowerCase().replace(/[’`]/g,"'").replace(/^'+|'+$/g,'');
+  if(!w) return '';
+  if(m[w]) return m[w];
+  let b;
+  if(/ies$/.test(w)&&m[b=w.slice(0,-3)+'y']) return ipaSuffix(m[b],'s');
+  if(/es$/.test(w)&&m[b=w.slice(0,-2)]) return ipaSuffix(m[b],'s');
+  if(/s$/.test(w)&&m[b=w.slice(0,-1)]) return ipaSuffix(m[b],'s');
+  if(/ied$/.test(w)&&m[b=w.slice(0,-3)+'y']) return ipaSuffix(m[b],'ed');
+  if(/ed$/.test(w)&&(m[b=w.slice(0,-2)]||m[b=w.slice(0,-1)])) return ipaSuffix(m[b],'ed');
+  if(/ing$/.test(w)&&(m[b=w.slice(0,-3)]||m[b=w.slice(0,-3)+'e'])) return ipaSuffix(m[b],'ing');
+  return '';
+}
+function ipaText(text){
+  const toks=String(text||'').toLowerCase().match(/[a-z][a-z']*/g)||[];
+  const out=[], miss=[];
+  toks.forEach(t=>{ const x=ipaWord(t); if(x) out.push(x); else miss.push(t); });
+  return {ipa:(out.length&&!miss.length)?'/'+out.join(' ')+'/':'',miss:miss,n:toks.length};
+}
+function ipaOf(w){ return ipaText(w).ipa; }
+async function fillIpa(text){
+  const box=$('#f-ipa'); if(!box) return;
+  const ok=await loadIpa();
+  if(!ok) return formErr('Chưa tải được phiên âm. Kiểm tra mạng rồi bấm "Tra phiên âm".');
+  const r=ipaText(text);
+  if(!r.n) return formErr('Chưa có chữ tiếng Anh để tra phiên âm.');
+  if(r.ipa){ box.value=r.ipa; const m=$('#f-msg'); if(m) m.hidden=true; return; }
+  box.value='';
+  formErr('Chưa có phiên âm cho “'+r.miss.join(', ')+'”. Bạn có thể gõ tay hoặc bỏ trống.');
+}
 /* ====================== THÊM TỪ, CÂU, TÌNH HUỐNG ====================== */
 function val(id){ const e=$('#'+id); return e?e.value:''; }
 function formErr(msg){ const m=$('#f-msg'); if(m){ m.textContent=msg; m.hidden=false; } }
 function clearFields(ids){ ids.forEach(id=>{ const e=$('#'+id); if(e) e.value=''; }); const m=$('#f-msg'); if(m) m.hidden=true; }
 function saveWord(){
-  const g=val('f-g'), w=val('f-w').trim().replace(/\s+/g,' '), vi=val('f-vi').trim(), ipa=val('f-ipa').trim();
+  const g=val('f-g'), w=val('f-w').trim().replace(/\s+/g,' '), vi=val('f-vi').trim(), ipa0=val('f-ipa').trim();
   const grp=drillGroups().find(x=>x.id===g)||MY_G;
   if(!w) return formErr('Hãy nhập từ tiếng Anh.');
   if(!/^[A-Za-z][A-Za-z' -]*$/.test(w)) return formErr('Chỉ dùng chữ cái tiếng Anh, dấu cách, dấu gạch ngang hoặc dấu nháy.');
   if(groupItems(grp).some(it=>it.w.toLowerCase()===w.toLowerCase())) return formErr('Từ này đã có trong nhóm.');
-  store.custom.words.push({id:'w'+Date.now(),g:grp.id,w:w,vi:vi,ipa:ipa});
+  store.custom.words.push({id:'w'+Date.now(),g:grp.id,w:w,vi:vi,ipa:ipa0||ipaOf(w)});
   save(); clearFields(['f-w','f-vi','f-ipa']);
   toast('Đã thêm “'+w+'”.');
   const f=$('#f-w'); if(f&&f.focus) f.focus();
@@ -1057,7 +1116,8 @@ function viewDrillAdd(){
   '<div class="field"><label class="label" for="f-vi">Gõ nghĩa tiếng Việt, rồi bấm Dịch</label><input id="f-vi" type="text" maxlength="60" autocomplete="off" placeholder="ví dụ: lịch trình"></div>'+
   '<button class="btn small" data-a="tr-word">Dịch sang tiếng Anh</button>'+
   '<div class="field"><label class="label" for="f-w">Từ hoặc cụm từ tiếng Anh (bạn có thể sửa)</label><input id="f-w" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: schedule"></div>'+
-  '<div class="field"><label class="label" for="f-ipa">Phiên âm IPA (không bắt buộc)</label><input id="f-ipa" type="text" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: /ˈskedʒuːl/"></div>'+
+  '<div class="field"><label class="label" for="f-ipa">Phiên âm IPA (tự điền sau khi dịch, bạn có thể sửa)</label><input id="f-ipa" type="text" maxlength="100" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="ví dụ: /ˈskedʒʊl/"></div>'+
+  '<button class="btn small" data-a="ipa-word">Tra phiên âm</button>'+
   '<p id="f-msg" class="msg" role="alert" hidden></p><button class="btn primary" data-a="save-word">Lưu từ</button>'+
   '<p class="muted small">Sau khi lưu, ô nhập được xóa để bạn thêm từ tiếp theo. Bấm nút quay lại khi xong.</p></section>';
 }
@@ -1104,6 +1164,9 @@ function show(){
   else if(v==='weak') h=V.card&&P?viewCard():viewWeak();
   else if(v==='settings') h=viewSettings();
   $('#main').innerHTML=h;
+  if(v==='drill'&&!V.add&&!IPA.map&&!IPA.p&&!IPA.fail&&store.custom.words.some(x=>!x.ipa)){
+    loadIpa().then(ok=>{ if(ok&&V.view==='drill'&&!V.add&&!P) show(); });
+  }
   $('#tabs').innerHTML=TABS.map(t=>'<button class="tab" data-a="tab" data-v="'+t[0]+'"'+(t[0]===v?' aria-current="page"':'')+'>'+ico(t[2])+'<span>'+t[1]+'</span></button>').join('');
 }
 
@@ -1158,7 +1221,8 @@ function act(a,v,el){
     }
     case 'role-again': return openRole(P.sc.id,P.level);
     case 'role-up': return openRole(P.sc.id,P.level+1);
-    case 'add-word': return go({view:'drill',add:true,g:v||''});
+    case 'add-word': loadIpa(); return go({view:'drill',add:true,g:v||''});
+    case 'ipa-word': { const w=val('f-w').trim(); if(!w) return formErr('Hãy nhập hoặc dịch từ tiếng Anh trước, rồi bấm Tra phiên âm.'); return fillIpa(w); }
     case 'add-sent': return go({view:'sent',add:true,t:v||''});
     case 'role-add': D=newDraft(); return go({view:'role',add:true});
     case 'tr-word': return doTranslate('word',0,el);

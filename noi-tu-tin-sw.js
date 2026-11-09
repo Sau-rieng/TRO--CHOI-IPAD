@@ -1,6 +1,6 @@
 /* Service worker của app "Nói Tự Tin". Chỉ xử lý file của app này, bỏ qua mọi game khác trong repo. */
-const CACHE='noi-tu-tin-v1';
-const OWN=['ANHVAN-NOI-TU-TIN.html','noi-tu-tin.webmanifest','noi-tu-tin-192.png','noi-tu-tin-512.png'];
+const CACHE='noi-tu-tin-v2';
+const OWN=['ANHVAN-NOI-TU-TIN.html','noi-tu-tin.webmanifest','noi-tu-tin-192.png','noi-tu-tin-512.png','noi-tu-tin-ipa.txt'];
 self.addEventListener('install',e=>{ self.skipWaiting(); });
 self.addEventListener('activate',e=>{ e.waitUntil(self.clients.claim()); });
 self.addEventListener('fetch',e=>{
