@@ -284,10 +284,22 @@
     $('kcHet').hidden = false;
   }
   function chuThuong(r, q) { return q.t === 'mc' ? 'chọn ' + 'ABCD'[r] : q.t === 'tf' ? 'chọn ' + r.map(function (v, j) { return 'abcd'[j] + (v ? 'Đ' : 'S'); }).join(' ') : 'ghi ' + r; }
+  // Chi tiết từng câu gửi về sổ: [mã câu trong bộ, lựa chọn theo thứ tự gốc, điểm]
+  function chiTiet() {
+    return picks.map(function (p, i) {
+      var r = chosen[i], q = Q[i], c = (p.t === 'mc' ? BO.tn : p.t === 'tf' ? BO.ds : BO.tln)[p.id] || {}, x = '';
+      if (answers[i] !== undefined && r !== undefined && r !== null) {
+        if (p.t === 'mc') x = 'ABCD'[p.p[r]] || '';
+        else if (p.t === 'tf') x = r.map(function (v) { return v ? 'D' : 'S'; }).join('');
+        else x = String(r).trim().replace(/,/g, '.');
+      }
+      return [c.c || '', x, answers[i] === undefined ? '' : Math.round(answers[i] * 100) / 100];
+    });
+  }
   function baoCao() {
     return { kind: 'result', game: KH.tenKQ, id: sessionId, lop: player.lop, name: player.name || '', sbd: player.sbd || '', group: player.group || '', sheet: '',
       score: tong(), correct: Q.filter(function (q, i) { return answers[i] !== undefined && answers[i] >= q.max - 1e-9; }).length, answered: daLam(), startedAt: startedAt, endedAt: endedAt,
-      reason: { timeout: 'Hết thời gian', violation: 'Rời màn hình 2 lần', quit: 'Tự thoát', done: 'Hoàn thành ' + NQ + ' câu' }[reason] || reason, violations: leaves,
+      reason: { timeout: 'Hết thời gian', violation: 'Rời màn hình 2 lần', quit: 'Tự thoát', done: 'Hoàn thành ' + NQ + ' câu' }[reason] || reason, violations: leaves, bo: BO ? BO.ma : '', ct: chiTiet(),
       detail: '[' + O.ten + '] ' + Q.map(function (q, i) { return 'Câu ' + (i + 1) + ' ' + { mc: 'TN', tf: 'Đ/S', sa: 'TLN' }[q.t] + ' ' + q.kt + ': ' + (answers[i] === undefined ? 'chưa làm' : chuThuong(chosen[i], q) + ', ' + fmt(answers[i]) + 'đ'); }).join('; ') };
   }
   var dangGui = false;
