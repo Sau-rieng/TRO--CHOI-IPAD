@@ -182,6 +182,7 @@
       var t = Number(tong) || ((Number(rep.correct) || 0) + (Number(rep.wrong) || 0) + (Number(rep.none) || 0)) || (rep.pattern ? rep.pattern.length : 0);
       var du = { loai: 'hoatdong', mahs: sbd, mahoatdong: maTro, cauhoi: tenTro,
         solanthu: rep.score != null ? rep.score : dung, dungsai: dung + '/' + t, thoigian: giay(rep) };
+      if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.maluot = rep.id || ''; du.lydo = rep.reason || ''; du.diem = rep.score; }
       guiVaGhiNho(lop.url, du, key);
     } catch (e) {}
   };
@@ -198,6 +199,7 @@
       var dung = Number(rep.correct) || 0, t = Number(tong) || Number(rep.answered) || 0;
       var du = { loai: 'nhom', nhom: String(rep.group), matro: maTro, tentro: tenTro, diem: rep.score != null ? rep.score : dung,
         dungsai: dung + '/' + t, thoigian: giay(rep), maluot: rep.id || '' };
+      if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.lydo = rep.reason || ''; }
       guiVaGhiNho(lop.url, du, key);
     } catch (e) {}
   };

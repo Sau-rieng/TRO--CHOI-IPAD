@@ -965,11 +965,23 @@ function respText(Q,r){
   if(Q.t==='tf')return 'chọn '+r.map((v,j)=>'abcd'[j]+(v?'Đ':'S')).join(' ');
   return 'ghi '+r;
 }
+/* Chi tiết từng câu gửi về sổ: [mã câu trong bộ, lựa chọn theo thứ tự gốc, điểm] */
+function chiTiet(){
+  return picks.map((p,i)=>{
+    const r=chosen[i],c=(p.t==='mc'?BO.tn:p.t==='tf'?BO.ds:BO.tln)[p.id]||{};let x='';
+    if(answers[i]!==undefined&&r!==undefined&&r!==null){
+      if(p.t==='mc')x='ABCD'[p.perm[r]]||'';
+      else if(p.t==='tf'){const o=['','','',''];r.forEach((v,j)=>{o[p.perm[j]]=v?'D':'S';});x=o.map(v=>v||'-').join('');}
+      else x=String(r).trim().replace(/,/g,'.');
+    }
+    return [c.c||'',x,answers[i]===undefined?'':Math.round(answers[i]*100)/100];
+  });
+}
 function buildReport(){
   const done=answers.filter(a=>a!==undefined).length;
   return {kind:'result',game:KH.tenKQ,id:sessionId,lop:player.lop,name:player.name||'',sbd:player.sbd||'',group:player.group||'',sheet:player.sheet||'',
     score:totalScore(),correct:QUESTIONS.filter((Q,i)=>isFull(i,answers[i])).length,answered:done,startedAt,endedAt,
-    reason:{timeout:'Hết thời gian',violation:'Rời màn hình 2 lần',quit:'Tự thoát',done:'Hoàn thành 11 câu'}[reason]||reason,violations:leaves,
+    reason:{timeout:'Hết thời gian',violation:'Rời màn hình 2 lần',quit:'Tự thoát',done:'Hoàn thành 11 câu'}[reason]||reason,violations:leaves,bo:BO?BO.ma:'',ct:chiTiet(),
     detail:'[Đua xe F1] '+QUESTIONS.map((Q,i)=>`Câu ${i+1} ${({mc:'TN',tf:'Đ/S',sa:'TLN'})[Q.t]} ${Q.bai}: `+(answers[i]===undefined?'chưa làm':`${respText(Q,chosen[i])}, ${fmt(answers[i])}đ`)).join('; ')};
 }
 let sending=false;
