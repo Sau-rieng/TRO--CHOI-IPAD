@@ -941,7 +941,7 @@ function setWho(){ $('who').textContent=S?`${S.name} · ${S.cls} · SBD ${S.sbd}
 function goFull(){ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(()=>{}); }
 
 const ACC='rbivhq', accessOk=v=>{let x=2166136261>>>0;for(const ch of 'dn-access:'+String(v).trim()){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)>>>0;}return x.toString(36)===ACC;};
-const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
+const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202','12CLB':'261200'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){ const pre=SBD_PREFIX[$('fClass').value]; $('sbdPre').textContent=pre||'——————'; $('fSbd').disabled=!pre; if(!pre) $('fSbd').value=''; }
 $('fClass').addEventListener('change',()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
 $('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,2); if(v!==$('fSbd').value) $('fSbd').value=v; });
