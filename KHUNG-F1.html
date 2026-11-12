@@ -875,7 +875,7 @@ const isFull=(i,pts)=>pts!==undefined&&pts>=QUESTIONS[i].max-1e-9;
 function answer(i,resp){
   if(state!=='landed'||locked||reason||answers[i]!==undefined)return;
   const Q=QUESTIONS[i],pts=gradeOf(Q,resp),full=pts>=Q.max-1e-9;
-  answers[i]=pts;chosen[i]=resp;score=totalScore();if(nhom())try{window.TC&&TC.tienDo(buildReport());}catch(_){}
+  answers[i]=pts;chosen[i]=resp;score=totalScore();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   let verdict='',secs=7;
   if(Q.t==='mc'){
     card.querySelectorAll('.opt').forEach(b=>{b.disabled=true;const kk=+b.dataset.k;if(kk===Q.a)b.classList.add('right');else if(kk===resp)b.classList.add('wrong');});
@@ -1031,7 +1031,7 @@ function beginPlay(){
   $('who').textContent=tenNguoi();$('tieuDe').firstChild.textContent='Đua xe F1 · '+(BO?BO.ten:'');
   $('timer').hidden=false;$('exitBtn').hidden=false;$('start').hidden=true;
   if(document.activeElement)document.activeElement.blur();
-  next();if(nhom())try{window.TC&&TC.tienDo(buildReport());}catch(_){}
+  next();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
 }
 const SBD_PREFIX={};
 (window.DS_LOP||[]).forEach(l=>{SBD_PREFIX[l.ten]=l.tiento;const o=document.createElement('option');o.textContent=l.ten;o.value=l.ten;$('fClass').appendChild(o);});

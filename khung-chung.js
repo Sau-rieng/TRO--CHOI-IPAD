@@ -223,7 +223,7 @@
     if (locked || reason || answers[i] !== undefined) return;
     var q = Q[i], d = cham(q, r), du = d >= q.max - 1e-9, the = $('kcThe'), giai = '', giay = 7;
     answers[i] = d; chosen[i] = r; luu(); veTien();
-    if (nhom()) try { window.TC && TC.tienDo(baoCao()); } catch (e) {}
+    try { window.TC && TC.tienDo(baoCao()); } catch (e) {}
     if (q.t === 'mc') {
       [].forEach.call(the.querySelectorAll('.kcOpt'), function (b) { b.disabled = true; var k = +b.dataset.k; if (k === q.a) b.classList.add('dung'); else if (k === r) b.classList.add('sai'); });
       giai = du ? '<strong>Chính xác! +0.5 điểm.</strong> ' : '<strong>Chưa đúng.</strong> Đáp án đúng là ' + 'ABCD'[q.a] + '. ';
@@ -379,7 +379,7 @@
     $('kcAi').textContent = tenNguoi(); $('kcTieuDe').firstChild.textContent = O.ten + ' · ' + (BO ? BO.ten : '');
     if (document.activeElement) document.activeElement.blur();
     veTien();
-    if (nhom()) try { window.TC && TC.tienDo(baoCao()); } catch (e) {}
+    try { window.TC && TC.tienDo(baoCao()); } catch (e) {}
     goi(O.batDau, { tiepTuc: !!tiep, daLam: daLam(), tong: NQ, kieu: KH.kieu, boCau: BO ? BO.ten : '' });
   }
 
