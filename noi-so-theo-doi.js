@@ -40,7 +40,7 @@
       || dsLop().filter(function (l) { return s.length === 8 && s.indexOf(l.tiento) === 0; })[0] || null;
   }
   // Ma rieng cua may + ten hien o vach xuat phat (de giao vien thay ai da san sang)
-  var MAY = '', TEN_VACH = '';
+  var MAY = '', TEN_VACH = '', SBD_VACH = '';
   try { MAY = localStorage.getItem('tc_may') || ''; if (!MAY) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('tc_may', MAY); } }
   catch (e) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function luuLop(t) { try { if (t) localStorage.setItem(KL, t); } catch (e) {} }
@@ -69,11 +69,11 @@
     if (k === 'login' || k === 'check') {
       var tenLop = d.lop || d.cls || '';
       luuLop(tenLop);
-      TEN_VACH = String(d.group || d.name || d.member || '').trim();
+      TEN_VACH = String(d.group || d.name || d.member || '').trim(); SBD_VACH = d.group ? '' : String(d.sbd || '').trim();
       var l = timLop(tenLop, d.sbd);
       if (!l) return Promise.resolve({ ok: false, error: 'Chưa có sổ theo dõi của lớp ' + tenLop + '.' });
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_vao', matro: KHUNG ? '' : MATRO, khung: KHUNG, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH }).then(function (r) {
+      return guiSo(l.url, { action: 'tc_vao', matro: KHUNG ? '' : MATRO, khung: KHUNG, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH, mahs: SBD_VACH }).then(function (r) {
         if (chuaCapNhat(r)) return KHUNG ? { ok: false, error: 'Sổ theo dõi lớp chưa cập nhật bản có bộ câu trò chơi. Báo giáo viên.' } : duPhong(d, body);
         cheDoCu = false;
         var tNhan = Date.now();
@@ -130,7 +130,7 @@
       var l = timLop(docLop());
       if (!l) return Promise.reject(new Error('Chưa có sổ theo dõi của lớp.'));
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_tt', matro: MATRO, may: MAY, ten: TEN_VACH, lop: l.ten }).then(function (r) {
+      return guiSo(l.url, { action: 'tc_tt', matro: MATRO, may: MAY, ten: TEN_VACH, mahs: SBD_VACH, lop: l.ten }).then(function (r) {
         if (chuaCapNhat(r)) return { ok: true, tt: 'MO', xp: 0 };
         var tNhan = Date.now();
         return { ok: true, tt: r.tt || 'MO', xp: Number(r.xp) || 0, phut: Number(r.phut) || 0,
@@ -138,8 +138,15 @@
       });
     },
     // Tro nhom gui diem hien tai sau moi cau de trang giao vien ve cot moc dan (khong cho tra loi)
+    // Tro ca nhan (rep.sbd, khong co nhom): so do lop tren trang giao vien thay em dang o cau may
     tienDo: function (rep, ket) {
       try {
+        if (rep && !rep.group && rep.sbd && MATRO) {
+          var lc = timLop(rep.lop || docLop(), rep.sbd);
+          if (lc && /^https:\/\//.test(lc.url)) gocFetch(lc.url, { method: 'POST', body: JSON.stringify({ action: 'tc_tiendo', matro: MATRO, mahs: String(rep.sbd).trim(), maluot: rep.id || '',
+            diem: rep.score != null ? rep.score : (rep.correct || 0), xong: rep.answered || 0, ket: !!ket }) }).catch(function () {});
+          return;
+        }
         if (!rep || !rep.group || !MATRO) return;
         var l = timLop(rep.lop || rep.cls || docLop());
         if (!l || !/^https:\/\//.test(l.url)) return;
@@ -184,6 +191,7 @@
         solanthu: rep.score != null ? rep.score : dung, dungsai: dung + '/' + t, thoigian: giay(rep) };
       if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.maluot = rep.id || ''; du.lydo = rep.reason || ''; du.diem = rep.score; }
       guiVaGhiNho(lop.url, du, key);
+      try { window.TC.tienDo(rep, true); } catch (e) {}
     } catch (e) {}
   };
   // Tro choi nhom: gui 1 dong vao tab TRO CHOI NHOM cua so lop (tim lop theo ten lop da chon)
