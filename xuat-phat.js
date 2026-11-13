@@ -74,8 +74,8 @@
               if (daXong) return;
               if (t.tt === 'DONG') { daXong = true; an(); hong(loi('Giáo viên đã đóng trò chơi.')); return; }
               if (t.tt === 'CHO' && !t.xp) { cancelAnimationFrame(khung); choLenh('Giáo viên đã hủy lượt xuất phát. Chờ lệnh mới'); hoiLai(3000); return; }
-              hen = setTimeout(kiem, 3000);
-            }, function () { hen = setTimeout(kiem, 3000); });
+              hen = setTimeout(kiem, 3000 + Math.random() * 2000);
+            }, function () { hen = setTimeout(kiem, 4000 + Math.random() * 2000); });
           }, 3000);
         }
         function hoi() {
@@ -86,8 +86,8 @@
             if (t.tt === 'DONG') { daXong = true; an(); hong(loi('Giáo viên đã đóng trò chơi.')); return; }
             if (t.tt === 'MO') { ket(null); return; }   // giao vien chuyen sang mo tu do: vao choi ngay
             if (t.xp) { batDau(t.xp, t.phut || phutMd); return; }
-            hoiLai(2500 + Math.random() * 1500);
-          }, function () { hoiLai(4000); });
+            hoiLai(3000 + Math.random() * 2000);
+          }, function () { hoiLai(4000 + Math.random() * 2000); });
         }
         if (r.xp) batDau(r.xp, phutMd); else hoiLai(1500 + Math.random() * 1500);
       });
