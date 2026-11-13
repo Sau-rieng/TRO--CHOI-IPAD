@@ -46,8 +46,16 @@
   function luuLop(t) { try { if (t) localStorage.setItem(KL, t); } catch (e) {} }
   function docLop() { try { return localStorage.getItem(KL) || ''; } catch (e) { return ''; } }
   var gocFetch = window.fetch ? window.fetch.bind(window) : null;
-  function guiSo(url, du) {
-    return gocFetch(url, { method: 'POST', body: JSON.stringify(du) }).then(function (r) { return r.json(); });
+  // Ca lop cung bam mot luc thi may chu Google hay tu choi vai yeu cau -> tu thu lai (cach nhau 1-6 giay, ngau nhien)
+  function guiSo(url, du, soLan) {
+    soLan = soLan === undefined ? 4 : soLan;
+    return gocFetch(url, { method: 'POST', body: JSON.stringify(du) }).then(function (r) { return r.json(); })
+      .catch(function (e) {
+        if (soLan <= 0 || (typeof navigator !== 'undefined' && navigator.onLine === false)) throw e;
+        try { window.dispatchEvent(new CustomEvent('tc-thu-lai', { detail: { con: soLan } })); } catch (x) {}
+        var cho = (5 - soLan) * 1200 + 800 + Math.random() * 1500;
+        return new Promise(function (xong) { setTimeout(xong, cho); }).then(function () { return guiSo(url, du, soLan - 1); });
+      });
   }
   function chuaCapNhat(r) { return r && r.ok === false && /khong hop le/i.test(String(r.msg || '')) && !r.loi; }
   function duPhong(d, body) {

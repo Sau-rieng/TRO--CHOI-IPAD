@@ -340,9 +340,14 @@
     m.textContent = 'Đang hỏi giáo viên cách chơi…';
     if (!window.TC || !TC.cauHinh) { m.textContent = 'Trò chơi chưa nối với sổ theo dõi.'; return; }
     TC.cauHinh(lop).then(function (r) {
-      if (so !== soHoi) return; CFG = r; hienKieu();
+      if (so !== soHoi) return; hoiLop.lan = 0; CFG = r; hienKieu();
       m.textContent = r.tt === 'DONG' ? 'Trò chơi đang đóng. Chờ giáo viên mở nhé.' : !r.bo ? 'Giáo viên chưa chọn bộ câu cho trò chơi này.' : r.kieu === 'NHOM' ? 'Hôm nay chơi theo nhóm: chọn nhóm của em.' : 'Hôm nay chơi cá nhân: nhập họ tên và số báo danh.';
-    }, function (e) { if (so === soHoi) m.textContent = e.message || 'Không hỏi được sổ theo dõi. Kiểm tra mạng.'; });
+    }, function (e) {
+      if (so !== soHoi) return;
+      if (/chưa/.test(e.message || '') || (hoiLop.lan = (hoiLop.lan || 0) + 1) > 6) { hoiLop.lan = 0; m.textContent = e.message && /chưa/.test(e.message) ? e.message : 'Không hỏi được giáo viên. Kiểm tra mạng rồi chọn lại lớp.'; return; }
+      m.textContent = 'Máy chủ đang đông, đang hỏi lại…';
+      setTimeout(function () { if (so === soHoi) { soHoi--; hoiLop(); } }, 2000 + Math.random() * 3000);
+    });
   }
   function vaoChoi(e) {
     e.preventDefault();
@@ -356,6 +361,8 @@
     if (kieu !== 'NHOM' && !/^\d{2}$/.test(duoi)) return sai('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');
     var sbd = kieu === 'NHOM' ? '' : TIEN_TO[lop] + duoi;
     loi.hidden = true; btn.disabled = true; btn.textContent = 'Đang kiểm tra mã…';
+    var thuLai = function () { if (btn.disabled && /mã|đông/.test(btn.textContent)) btn.textContent = 'Máy chủ đông, đang thử lại…'; };
+    window.addEventListener('tc-thu-lai', thuLai);
     api(kieu === 'NHOM' ? { kind: 'login', code: ma, lop: lop, group: nh } : { kind: 'login', code: ma, lop: lop, name: ten, sbd: sbd }).then(function (r) {
       if (!r.ok) { if (r.error === 'code') { $('kcMa').value = ''; } throw { tb: r.error === 'code' ? 'Mã giáo viên không đúng.' : (r.error || 'Máy chủ từ chối đăng nhập.') }; }
       if (!r.boCau || !r.boCau.tn || r.boCau.tn.length < 6 || r.boCau.ds.length < 3 || r.boCau.tln.length < 2) throw { tb: 'Bộ câu giáo viên chọn chưa đủ câu cho một lượt chơi.' };
@@ -372,7 +379,7 @@
         luu(); batDauChoi(false);
       });
     }).catch(function (ex) { sai(ex && ex.tb ? ex.tb : ex && ex.xp ? ex.message : loiMang(ex)); })
-      .then(function () { btn.disabled = false; btn.textContent = 'Vào chơi'; });
+      .then(function () { window.removeEventListener('tc-thu-lai', thuLai); btn.disabled = false; btn.textContent = 'Vào chơi'; });
   }
   function batDauChoi(tiep) {
     $('kcVao').hidden = true; $('kcHud').hidden = false; $('kcThoat').hidden = false;
