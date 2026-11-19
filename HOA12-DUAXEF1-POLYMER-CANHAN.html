@@ -245,7 +245,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
       <label for="fClass">Lớp</label>
       <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
       <label for="fSbd">Số báo danh</label>
-      <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled aria-describedby="sbdHint"></div>
+      <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="8" placeholder="__" disabled aria-describedby="sbdHint"></div>
       <label for="fCode">Mã giáo viên</label>
       <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
     </div>
@@ -970,7 +970,7 @@ function beginPlay(){
 const SBD_PREFIX={'9D01':'260901','9D03':'260903','10E01':'261001','12G01':'261201','12G02':'261202','12CLB':'261200','12AFTER':'261207'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){const pre=SBD_PREFIX[$('fClass').value],inp=$('fSbd');$('sbdPre').textContent=pre||'••••••';inp.disabled=!pre;if(!pre)inp.value='';}
 $('fClass').addEventListener('change',()=>{syncSbd();if(!$('fSbd').disabled)$('fSbd').focus();});
-$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
+$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,8);});
 syncSbd();
 $('login').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -978,8 +978,8 @@ $('login').addEventListener('submit',async e=>{
   const fail=t=>{err.textContent=t;err.hidden=false;};
   const miss=[!name&&'họ và tên',!lop&&'lớp',!tail&&'số báo danh',!code&&'mã giáo viên'].filter(Boolean);
   if(miss.length)return fail('Cần nhập '+miss.join(', ')+'.');
-  if(!/^\d{2}$/.test(tail)){$('fSbd').focus();return fail('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');}
-  const sbd=SBD_PREFIX[lop]+tail;
+  if(!/^(\d{2}|\d{8})$/.test(tail)){$('fSbd').focus();return fail('Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.');}
+  const sbd=(tail.length===8?tail:SBD_PREFIX[lop]+tail);
   err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
   try{
     const r=await api({kind:'login',code,lop,name,sbd});

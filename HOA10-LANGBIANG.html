@@ -206,7 +206,7 @@ button{font-family:var(--f-body)}
     </ul>
     <label class="field" for="fName">Họ và tên<input id="fName" type="text" autocomplete="name" placeholder="Nguyễn Văn A"></label>
     <div class="frow"><label class="field" for="fClass">Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D02</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
-    <label class="field" for="fSbd">Số báo danh (2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label></div>
+    <label class="field" for="fSbd">Số báo danh (2 số cuối)<span class="sbd"><span id="sbdPrefix" aria-label="6 số đầu do máy cấp">______</span><input id="fSbd" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="__" disabled aria-label="2 số cuối của số báo danh"></span></label></div>
     <label class="field" for="fAccess">Mã vào chơi<input id="fAccess" type="password" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="Giáo viên đọc mã"></label>
     <div class="err" id="loginErr"></div>
     <div class="q-actions"><button class="btn" type="submit">Bắt đầu leo núi</button></div>
@@ -811,12 +811,12 @@ document.getElementById('exitYes').onclick=()=>{exitAskEl.hidden=true;finishGame
 const sbdPrefix=cls=>{if(cls==='DEMO')return '269999';const m=/^(\d{1,2})[A-Za-z]+(\d{2})$/.exec(cls||'');return m?'26'+m[1].padStart(2,'0')+m[2]:'';};
 const fClass=document.getElementById('fClass'),fSbd=document.getElementById('fSbd'),sbdPre=document.getElementById('sbdPrefix');
 fClass.addEventListener('change',()=>{const pre=sbdPrefix(fClass.value);sbdPre.textContent=pre||'______';fSbd.disabled=!pre;if(pre)fSbd.focus();});
-fSbd.addEventListener('input',()=>{const v=fSbd.value.replace(/\D/g,'').slice(0,2);if(v!==fSbd.value)fSbd.value=v;});
+fSbd.addEventListener('input',()=>{const v=fSbd.value.replace(/\D/g,'').slice(0,8);if(v!==fSbd.value)fSbd.value=v;});
 function beginPlay(){loggedIn=true;loginEl.hidden=true;dpad.hidden=false;renderCount();host.focus({preventScroll:true});}
 document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();
-  const name=document.getElementById('fName').value.trim(),cls=fClass.value,tail=fSbd.value.trim(),sbd=sbdPrefix(cls)+tail;
+  const name=document.getElementById('fName').value.trim(),cls=fClass.value,tail=fSbd.value.trim(),sbd=(tail.length===8?tail:sbdPrefix(cls)+tail);
   const err=document.getElementById('loginErr');
-  if(!name){err.textContent='Nhập họ và tên.';return;} if(!cls){err.textContent='Chọn lớp.';return;} if(!/^\d{2}$/.test(tail)){err.textContent='Nhập đủ 2 số cuối của số báo danh.';return;}
+  if(!name){err.textContent='Nhập họ và tên.';return;} if(!cls){err.textContent='Chọn lớp.';return;} if(!/^(\d{2}|\d{8})$/.test(tail)){err.textContent='Nhập đủ 2 số cuối của số báo danh.';return;}
   const fA=document.getElementById('fAccess'),maVao=fA.value.trim(),nut=e.target.querySelector('button[type=submit]');
   if(!maVao){err.textContent='Nhập mã vào chơi do giáo viên đọc.';fA.focus();return;}
   nut.disabled=true;nut.textContent='Đang kiểm tra mã…';err.textContent='';

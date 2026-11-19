@@ -199,7 +199,7 @@ dl.info dt{color:var(--muted)}dl.info dd{margin:0;font-weight:600;font-variant-n
           <div class="fields">
             <label class="full">Họ và tên<input id="fName" autocomplete="off" maxlength="60" placeholder="Nguyễn Văn A"></label>
             <label>Lớp<select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select></label>
-            <label>Số báo danh<span class="sbd"><span class="sbdpre" id="sbdPre">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled></span></label>
+            <label>Số báo danh<span class="sbd"><span class="sbdpre" id="sbdPre">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="8" placeholder="__" disabled></span></label>
             <span class="hint" id="sbdHint">Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.</span>
             <label class="full" id="codeWrap">Mã giáo viên<input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập"></label>
           </div>
@@ -555,7 +555,7 @@ function syncSbd(){
   $('#sbdHint').textContent=pre?`Số báo danh lớp ${fClass.value}: ${pre}__ · em nhập 2 số cuối.`:'Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.';
 }
 fClass.addEventListener('change',()=>{syncSbd();if(!fSbd.disabled)fSbd.focus();});
-fSbd.addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
+fSbd.addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,8);});
 if(TRIAL){$('#codeWrap').hidden=true;$('#trialNote').hidden=false;$('#unlockFields').hidden=true;}
 async function api(data){
   if(!SHEET_URL){if(window.LAM_DEMO&&window.demoApi)return window.demoApi(data);throw new Error('nourl');}
@@ -569,8 +569,8 @@ $('#login').addEventListener('submit',async e=>{
   const err=$('#loginErr'),btn=$('#goBtn'),fail=t=>{err.textContent=t;err.hidden=false;};
   const miss=[!name&&'họ và tên',!lop&&'lớp',!tail&&'2 số cuối của số báo danh',!TRIAL&&!code&&'mã giáo viên'].filter(Boolean);
   if(miss.length)return fail('Em cần nhập '+miss.join(', ')+'.');
-  if(!/^\d{2}$/.test(tail)){fSbd.focus();return fail('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');}
-  const sbd=SBD_PREFIX[lop]+tail;
+  if(!/^(\d{2}|\d{8})$/.test(tail)){fSbd.focus();return fail('Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.');}
+  const sbd=(tail.length===8?tail:SBD_PREFIX[lop]+tail);
   let sheet='',lr=null;
   if(!TRIAL){
     err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
