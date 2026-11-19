@@ -261,7 +261,7 @@ button{font:inherit}
     <div class="grow">
       <div class="field"><label for="fClass">Lớp</label>
         <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option></select></div>
-      <div class="field"><label for="fSbd">SBD <span class="hint">(2 số cuối)</span></label><div class="sbd" id="sbdBox"><span class="pre" id="sbdPre" aria-hidden="true">——————</span><input id="fSbd" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="__" disabled></div></div>
+      <div class="field"><label for="fSbd">SBD <span class="hint">(2 số cuối)</span></label><div class="sbd" id="sbdBox"><span class="pre" id="sbdPre" aria-hidden="true">——————</span><input id="fSbd" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="__" disabled></div></div>
     </div>
     <div class="field"><label for="fAccess">Mã vào chơi <span class="hint">(giáo viên cấp)</span></label><input id="fAccess" type="password" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="12" placeholder="••••••" required></div>
     <p class="rules1">5 phút · 10 câu · đúng +1 điểm, sai 0 điểm · mỗi câu chọn 1 lần · rời màn hình lần 1 bị khóa, lần 2 tự nộp bài.</p>
@@ -942,14 +942,14 @@ const ACC='rbivhq', accessOk=v=>{let x=2166136261>>>0;for(const ch of 'dn-access
 const SBD_PREFIX={'9D01':'260901','9D03':'260903'};if(window.LAM_DEMO)SBD_PREFIX.DEMO='269999';
 function syncSbd(){ const pre=SBD_PREFIX[$('fClass').value]; $('sbdPre').textContent=pre||'——————'; $('fSbd').disabled=!pre; if(!pre) $('fSbd').value=''; }
 $('fClass').addEventListener('change',()=>{ syncSbd(); if(!$('fSbd').disabled) $('fSbd').focus(); });
-$('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,2); if(v!==$('fSbd').value) $('fSbd').value=v; });
+$('fSbd').addEventListener('input',()=>{ const v=$('fSbd').value.replace(/\D/g,'').slice(0,8); if(v!==$('fSbd').value) $('fSbd').value=v; });
 function showLogin(){ $('fName').value=''; $('fClass').value=''; $('fSbd').value=''; $('fAccess').value=''; syncSbd(); $('loginErr').textContent=''; gate('gLogin'); $('timer').textContent='05:00'; $('timer').classList.remove('warn'); setWho(); setTimeout(()=>$('fName').focus(),50); }
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const name=$('fName').value.trim().replace(/\s+/g,' '), cls=$('fClass').value, last=$('fSbd').value.trim(), sbd=(SBD_PREFIX[cls]||'')+last;
+  const name=$('fName').value.trim().replace(/\s+/g,' '), cls=$('fClass').value, last=$('fSbd').value.trim(), sbd=(last.length===8?last:(SBD_PREFIX[cls]||'')+last);
   if(!name){ $('loginErr').textContent='Hãy nhập họ và tên.'; $('fName').focus(); return; }
   if(!cls){ $('loginErr').textContent='Hãy chọn lớp.'; $('fClass').focus(); return; }
-  if(!/^\d{2}$/.test(last)){ $('loginErr').textContent='Hãy nhập đủ 2 số cuối của SBD.'; $('fSbd').focus(); return; }
+  if(!/^(\d{2}|\d{8})$/.test(last)){ $('loginErr').textContent='Hãy nhập 2 số cuối của SBD (hoặc đủ 8 số).'; $('fSbd').focus(); return; }
   const access=$('fAccess').value.trim();
   if(!access){ $('loginErr').textContent='Hãy nhập mã vào chơi do giáo viên cấp.'; $('fAccess').focus(); return; }
   let j={ok:true,ticket:''};

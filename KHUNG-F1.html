@@ -251,7 +251,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
         <label for="fName">Họ và tên</label>
         <input id="fName" autocomplete="off" autocapitalize="words" maxlength="60" placeholder="Nguyễn Văn A">
         <label for="fSbd">Số báo danh</label>
-        <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" aria-describedby="sbdHint"></div>
+        <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="8" placeholder="__" aria-describedby="sbdHint"></div>
       </div>
       <div id="oNhom" hidden>
         <label for="fGroup">Nhóm</label>
@@ -1055,7 +1055,7 @@ function cfgLop(){
   },e=>{if(so!==cfgSo)return;m.textContent=e.message||'Không hỏi được sổ theo dõi. Kiểm tra mạng.';});
 }
 $('fClass').addEventListener('change',cfgLop);
-$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
+$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,8);});
 $('login').addEventListener('submit',async e=>{
   e.preventDefault();
   const lop=$('fClass').value,code=$('fCode').value.trim(),err=$('loginErr'),btn=$('go');
@@ -1066,8 +1066,8 @@ $('login').addEventListener('submit',async e=>{
   const name=$('fName').value.trim().replace(/\s+/g,' '),tail=$('fSbd').value.trim(),group=$('fGroup').value;
   const miss=(kieu==='NHOM'?[!group&&'nhóm']:[!name&&'họ và tên',!tail&&'số báo danh']).concat([!code&&'mã giáo viên']).filter(Boolean);
   if(miss.length)return fail('Cần nhập '+miss.join(', ')+'.');
-  if(kieu!=='NHOM'&&!/^\d{2}$/.test(tail)){$('fSbd').focus();return fail('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');}
-  const sbd=kieu==='NHOM'?'':SBD_PREFIX[lop]+tail;
+  if(kieu!=='NHOM'&&!/^(\d{2}|\d{8})$/.test(tail)){$('fSbd').focus();return fail('Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.');}
+  const sbd=kieu==='NHOM'?'':(tail.length===8?tail:SBD_PREFIX[lop]+tail);
   err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
   try{
     const r=await api(kieu==='NHOM'?{kind:'login',code,lop,group}:{kind:'login',code,lop,name,sbd});

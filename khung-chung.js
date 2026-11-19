@@ -56,7 +56,7 @@
 .kcF select option{color:#111}\
 .kcF .kcGhi{grid-column:1/-1;margin:0;color:var(--kcGold);font-weight:600;font-size:14px}\
 .kcSbd{display:flex;gap:6px}.kcSbd b{display:flex;align-items:center;padding:0 10px;border-radius:10px;background:rgba(255,255,255,.1);color:var(--kcGold);font-family:ui-monospace,Menlo,monospace;font-size:17px}\
-.kcSbd input{max-width:90px;font-family:ui-monospace,Menlo,monospace}\
+.kcSbd input{max-width:130px;font-family:ui-monospace,Menlo,monospace}\
 @media (max-width:420px){.kcF{grid-template-columns:1fr;gap:4px}}\
 .kcLoi{color:#ff9d93;font-weight:600;font-size:14px}\
 .kcNut{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:10px 20px;border-radius:12px;border:0;background:#c9271d;color:#fff;font-weight:700;font-size:16px;cursor:pointer}\
@@ -115,7 +115,7 @@
         '<label for="kcLopChon">Lớp</label><select id="kcLopChon"><option value="">Chọn lớp</option></select>' +
         '<p class="kcGhi" id="kcGhi">👉 Chọn lớp trước – máy sẽ hiện ô <b>chọn nhóm</b> (hoặc họ tên, số báo danh) theo cách chơi giáo viên đặt.</p>' +
         '<label for="kcHoTen" class="kcCN" hidden>Họ và tên</label><input id="kcHoTen" class="kcCN" hidden autocomplete="off" autocapitalize="words" maxlength="60" placeholder="Nguyễn Văn A">' +
-        '<label for="kcSbd" class="kcCN" hidden>Số báo danh</label><div class="kcSbd kcCN" hidden><b id="kcTienTo">••••••</b><input id="kcSbd" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="__"></div>' +
+        '<label for="kcSbd" class="kcCN" hidden>Số báo danh</label><div class="kcSbd kcCN" hidden><b id="kcTienTo">••••••</b><input id="kcSbd" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="__"></div>' +
         '<label for="kcNhom" class="kcNH" hidden>Nhóm</label><select id="kcNhom" class="kcNH" hidden><option value="">Chọn nhóm</option>' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return '<option>Nhóm ' + n + '</option>'; }).join('') + '</select>' +
         '<label for="kcMa">Mã giáo viên</label><input id="kcMa" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">' +
       '</div><p class="kcLoi" id="kcLoi" hidden></p><div class="kcHang"><button class="kcNut" id="kcDi" type="submit">Vào chơi</button></div></div></div></form></div>' +
@@ -358,8 +358,8 @@
     var kieu = CFG.kieu === 'NHOM' ? 'NHOM' : 'CA NHAN', ten = $('kcHoTen').value.trim().replace(/\s+/g, ' '), duoi = $('kcSbd').value.trim(), nh = $('kcNhom').value;
     var thieu = (kieu === 'NHOM' ? [!nh && 'nhóm'] : [!ten && 'họ và tên', !duoi && 'số báo danh']).concat([!ma && 'mã giáo viên']).filter(Boolean);
     if (thieu.length) return sai('Cần nhập ' + thieu.join(', ') + '.');
-    if (kieu !== 'NHOM' && !/^\d{2}$/.test(duoi)) return sai('Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.');
-    var sbd = kieu === 'NHOM' ? '' : TIEN_TO[lop] + duoi;
+    if (kieu !== 'NHOM' && !/^(\d{2}|\d{8})$/.test(duoi)) return sai('Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.');
+    var sbd = kieu === 'NHOM' ? '' : (duoi.length === 8 ? duoi : TIEN_TO[lop] + duoi);
     loi.hidden = true; btn.disabled = true; btn.textContent = 'Đang kiểm tra mã…';
     var thuLai = function () { if (btn.disabled && /mã|đông/.test(btn.textContent)) btn.textContent = 'Máy chủ đông, đang thử lại…'; };
     window.addEventListener('tc-thu-lai', thuLai);
@@ -436,7 +436,7 @@
     dungGiaoDien();
     (window.DS_LOP || []).forEach(function (l) { TIEN_TO[l.ten] = l.tiento; var op = document.createElement('option'); op.value = op.textContent = l.ten; $('kcLopChon').appendChild(op); });
     $('kcLopChon').onchange = hoiLop;
-    $('kcSbd').oninput = function () { this.value = this.value.replace(/\D/g, '').slice(0, 2); };
+    $('kcSbd').oninput = function () { this.value = this.value.replace(/\D/g, '').slice(0, 8); };
     $('kcForm').onsubmit = vaoChoi;
     $('kcKhoaForm').onsubmit = moKhoa;
     $('kcThoat').onclick = function () { if (dangChoi()) { goi(O.tamDung, 'thoat'); $('kcHoiThoat').hidden = false; } };

@@ -196,7 +196,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
       <label for="fClass">Lớp</label>
       <select id="fClass"><option value="">Chọn lớp</option><option>9D01</option><option>9D03</option><option>10E01</option><option>12G01</option><option>12G02</option></select>
       <label for="fSbd">Số báo danh</label>
-      <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="2" placeholder="__" disabled aria-describedby="sbdHint"></div>
+      <div class="sbd"><span class="sbdpre" id="sbdPre" aria-label="Phần đầu số báo danh theo lớp">••••••</span><input id="fSbd" autocomplete="off" inputmode="numeric" maxlength="8" placeholder="__" disabled aria-describedby="sbdHint"></div>
       <span></span><small class="hintline" id="sbdHint">Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.</small>
       <label for="fAccess">Mã vào chơi</label><input id="fAccess" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Giáo viên đọc mã">
     </div>
@@ -1002,15 +1002,15 @@ function syncSbd(){
   $('sbdHint').textContent=pre?`Số báo danh của lớp ${$('fClass').value}: ${pre}__ · em nhập 2 số cuối.`:'Chọn lớp trước. 6 số đầu theo lớp, em nhập 2 số cuối.';
 }
 $('fClass').addEventListener('change',()=>{syncSbd();if(!$('fSbd').disabled)$('fSbd').focus();});
-$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,2);});
+$('fSbd').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,8);});
 $('login').addEventListener('reset',()=>setTimeout(syncSbd,0));
 $('login').addEventListener('submit',async e=>{
   e.preventDefault();
   const name=$('fName').value.trim().replace(/\s+/g,' '),lop=$('fClass').value,tail=$('fSbd').value.trim();
   const miss=[!name&&'họ và tên',!lop&&'lớp',!tail&&'2 số cuối của số báo danh'].filter(Boolean);
   if(miss.length){$('loginErr').textContent='Em cần nhập '+miss.join(', ')+'.';$('loginErr').hidden=false;return;}
-  if(!/^\d{2}$/.test(tail)){$('loginErr').textContent='Phần em nhập của số báo danh phải gồm đúng 2 chữ số, ví dụ 05 hoặc 17.';$('loginErr').hidden=false;$('fSbd').focus();return;}
-  const sbd=SBD_PREFIX[lop]+tail, maVao=$('fAccess').value.trim();
+  if(!/^(\d{2}|\d{8})$/.test(tail)){$('loginErr').textContent='Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.';$('loginErr').hidden=false;$('fSbd').focus();return;}
+  const sbd=(tail.length===8?tail:SBD_PREFIX[lop]+tail), maVao=$('fAccess').value.trim();
   if(!maVao){$('loginErr').textContent='Em cần nhập mã vào chơi do giáo viên đọc.';$('loginErr').hidden=false;$('fAccess').focus();return;}
   $('go').disabled=true;$('go').textContent='Đang kiểm tra mã…';$('loginErr').hidden=true;
   const v=window.TC?await TC.vao(lop,maVao,sbd):{ok:true,phut:5};

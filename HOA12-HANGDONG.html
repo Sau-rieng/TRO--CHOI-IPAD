@@ -50,7 +50,7 @@
 <div id="progress">💎 Đã trả lời 0/10 • Điểm: 0</div>
 <div id="timer" style="display:none">⏱ 5:00</div>
 <canvas id="mm" width="136" height="152"></canvas>
-<div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><select id="in-class"><option value="">Chọn lớp</option><option>12G01</option><option>12G02</option></select><input id="in-sbd" inputmode="numeric" maxlength="2" placeholder="Số báo danh: chọn lớp rồi gõ 2 số cuối" autocomplete="off"><input id="in-access" type="password" inputmode="numeric" maxlength="12" placeholder="Mã vào chơi (giáo viên đọc)" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để được cấp lại lượt chơi (sẽ bắt đầu lại từ đầu với bộ 10 câu hỏi mới).</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Bắt đầu lại</button></div></div></div>
+<div id="start-overlay"><div id="start-box"><h2>🦇 Khám Phá Hang Động</h2><p>10 câu hỏi về ester, mỗi câu 1 điểm. Mỗi câu chỉ được trả lời một lần, trả lời xong khối câu hỏi sẽ biến mất. Nhập thông tin để bắt đầu.</p><input id="in-name" placeholder="Họ và tên" autocomplete="off"><select id="in-class"><option value="">Chọn lớp</option><option>12G01</option><option>12G02</option></select><input id="in-sbd" inputmode="numeric" maxlength="8" placeholder="Số báo danh: chọn lớp rồi gõ 2 số cuối" autocomplete="off"><input id="in-access" type="password" inputmode="numeric" maxlength="12" placeholder="Mã vào chơi (giáo viên đọc)" autocomplete="off"><div id="start-err"></div><button class="quiz-opt" id="start-btn" style="text-align:center;width:100%">Bắt đầu</button><div id="resume-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #4a3f7a"><p style="margin:0 0 8px">Nhờ giáo viên nhập mã để được cấp lại lượt chơi (sẽ bắt đầu lại từ đầu với bộ 10 câu hỏi mới).</p><input id="in-resume-code" placeholder="Mã giáo viên" autocomplete="off"><div id="resume-err" style="min-height:18px;font-size:13px;color:#ffb0b0;margin:4px 0"></div><button class="quiz-opt" id="resume-btn" style="text-align:center;width:100%">Bắt đầu lại</button></div></div></div>
 <div id="end-overlay" style="display:none"><div id="end-box"><h2>🏁 Kết thúc</h2><div id="end-text" style="white-space:pre-line;line-height:1.7;font-size:15px"></div></div></div>
 <div id="lock-overlay"><div id="lock-box"><h2>🔒 Màn hình đã bị khóa</h2><p>Bạn đã thoát khỏi chế độ toàn màn hình khi đang làm bài. Nhờ giáo viên nhập mã để tiếp tục.</p><input id="in-code" type="password" inputmode="numeric" placeholder="Mã mở khóa của giáo viên" autocomplete="off"><div id="lock-err"></div><button class="quiz-opt" id="unlock-btn" style="text-align:center;width:100%">Mở khóa</button></div></div>
 <div id="quiz-overlay"><div id="quiz-box"><div id="quiz-num">CÂU HỎI</div><div id="quiz-q"></div><div id="quiz-options"></div><div id="quiz-feedback"></div></div></div>
@@ -462,11 +462,11 @@
     const err=document.getElementById('start-err'), btn=document.getElementById('start-btn');
     const tail=document.getElementById('in-sbd').value.trim(), ma=document.getElementById('in-access').value.trim();
     if(!n || !c || !tail){ err.textContent='Vui lòng nhập đủ họ tên, lớp và số báo danh.'; return; }
-    if(!/^\d{2}$/.test(tail)){ err.textContent='Gõ đủ 2 số cuối của số báo danh.'; return; }
+    if(!/^(\d{2}|\d{8})$/.test(tail)){ err.textContent='Gõ đủ 2 số cuối của số báo danh.'; return; }
     if(!ma){ err.textContent='Nhập mã vào chơi do giáo viên đọc.'; return; }
     requestFS();
     btn.disabled=true; err.textContent='Đang kiểm tra mã...';
-    const sbd=sbdPrefix(c)+tail;
+    const sbd=(tail.length===8?tail:sbdPrefix(c)+tail);
     const v=window.TC?await TC.vao(c,ma,sbd):{ok:true,phut:5};
     if(!v.ok){ err.textContent=v.msg; btn.disabled=false; return; }
     document.getElementById('in-access').value=''; err.textContent='';
