@@ -261,6 +261,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
       </div>
       <label for="fCode">Mã giáo viên</label>
       <input id="fCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
+      <label for="fLai" class="fL2" hidden>🔑 Mã mở khóa – giáo viên cho chơi lần 2</label><input id="fLai" class="fL2" hidden type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">
     </div>
     <p class="hintline" id="sbdHint" hidden>Em chỉ nhập 2 số cuối của số báo danh.</p>
     <p class="err" id="loginErr" hidden></p>
@@ -1096,14 +1097,17 @@ $('login').addEventListener('submit',async e=>{
   const miss=(kieu==='NHOM'?[!group&&'nhóm']:[!name&&'họ và tên',!tail&&'số báo danh']).concat([!code&&'mã giáo viên']).filter(Boolean);
   if(miss.length)return fail('Cần nhập '+miss.join(', ')+'.');
   if(kieu!=='NHOM'&&!/^(\d{2}|\d{8})$/.test(tail)){$('fSbd').focus();return fail('Số báo danh: nhập 2 số cuối (ví dụ 05) hoặc đủ 8 số nếu em học nhiều lớp.');}
-  const sbd=kieu==='NHOM'?'':(tail.length===8?tail:SBD_PREFIX[lop]+tail);
+  let sbd=kieu==='NHOM'?'':(tail.length===8?tail:SBD_PREFIX[lop]+tail);
+  const malai=$('fLai').hidden?'':$('fLai').value.trim();
   err.hidden=true;btn.disabled=true;btn.textContent='Đang kiểm tra mã…';
   try{
-    const r=await api(kieu==='NHOM'?{kind:'login',code,lop,group}:{kind:'login',code,lop,name,sbd});
+    const r=await api(kieu==='NHOM'?{kind:'login',code,lop,group}:{kind:'login',code,lop,name,sbd,malai});
+    if(!r.ok&&r.lan2){document.querySelectorAll('.fL2').forEach(x=>x.hidden=false);$('fLai').value='';}
     if(!r.ok){if(r.error==='code'){$('fCode').value='';$('fCode').focus();}return fail(r.error==='code'?'Mã giáo viên không đúng.':(r.error||'Máy chủ từ chối đăng nhập.'));}
     if(!r.boCau||!r.boCau.tn||r.boCau.tn.length<6||r.boCau.ds.length<3||r.boCau.tln.length<2)return fail('Bộ câu giáo viên chọn chưa đủ câu cho một lượt chơi.');
     if((r.kieu==='NHOM'?'NHOM':'CA NHAN')!==kieu){CFG.kieu=r.kieu;hienKieu();return fail('Giáo viên vừa đổi cách chơi. Em kiểm tra lại ô nhập rồi bấm Vào chơi.');}
-    $('fCode').value='';
+    $('fCode').value='';$('fLai').value='';document.querySelectorAll('.fL2').forEach(x=>x.hidden=true);
+    if(r.sbd&&kieu!=='NHOM')sbd=r.sbd;   // lớp gộp: máy chủ tìm SBD thật theo 2 số cuối + họ tên
     BO=r.boCau;KH={kieu,maKQ:r.maKQ||r.matro,tenKQ:r.tenKQ||'Đua xe F1'};
     LIMIT=(Number(r.minutes)||5)*60*1000;
     btn.textContent='Ở vạch xuất phát…';const xp=window.XuatPhat?await XuatPhat.cho(r,{ten:kieu==='NHOM'?`${group} · Lớp ${lop}`:`${name} · Lớp ${lop}`}):null;
