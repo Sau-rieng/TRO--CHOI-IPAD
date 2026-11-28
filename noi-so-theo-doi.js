@@ -152,8 +152,10 @@
       var tGui = Date.now();
       return guiSo(l.url, { action: 'tc_tt', matro: MATRO, may: MAY, ten: TEN_VACH, mahs: SBD_VACH, lop: l.ten }).then(function (r) {
         if (chuaCapNhat(r)) return { ok: true, tt: 'MO', xp: 0 };
+        // máy chủ báo lỗi / bận (không có trạng thái): KHÔNG coi là "mở tự do" – để vạch xuất phát hỏi lại
+        if (!r || r.ok === false || ['MO', 'CHO', 'DONG'].indexOf(r.tt) < 0) throw new Error((r && r.msg) || 'Máy chủ chưa trả trạng thái');
         var tNhan = Date.now();
-        return { ok: true, tt: r.tt || 'MO', xp: Number(r.xp) || 0, phut: Number(r.phut) || 0,
+        return { ok: true, tt: r.tt, xp: Number(r.xp) || 0, phut: Number(r.phut) || 0,
           lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui };
       });
     },
