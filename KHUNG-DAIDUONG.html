@@ -50,11 +50,11 @@ body.dangHoi #goiY,body.dangHoi #loiNhan,body.dangHoi #pad{display:none!importan
 
 /* đồng hồ độ sâu (bên trái, giữa) */
 /* bản đồ nhỏ: 11 trạm (đã làm / trạm tiếp theo / chưa làm) + vị trí tàu ngầm; nền càng sẫm càng sâu */
-#banDo{left:12px;top:calc(118px + env(safe-area-inset-top,0px));padding:6px 6px 5px;text-align:center}
+#banDo{left:12px;top:150px;padding:6px 6px 5px;text-align:center}
 #banDo small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 #banDo canvas{display:block;width:106px;height:300px;border-radius:8px}
 #banDo .bdSau{font-size:12px;color:var(--muted);margin-top:3px} #banDo .bdSau b{color:var(--ink);font:700 14px var(--f-display)}
-@media (max-height:600px){#banDo{top:100px}#banDo canvas{width:58px;height:164px}#banDo small{display:none}}
+@media (max-height:600px){#banDo small{display:none}}
 
 /* phím tắt (máy tính) */
 #phim{left:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto auto;gap:2px 8px;padding:8px 10px;color:var(--muted);font-size:11px;white-space:nowrap}
@@ -112,7 +112,7 @@ function dayY(x,z){
   if(Math.abs(x)>60)y+=(Math.abs(x)-60)*.35;
   return y+Math.sin(x*.13)*Math.sin(z*.11)*1.6+Math.sin(x*.37+z*.21)*.6+Math.sin(z*.05+x*.02)*1.2;
 }
-const BIEN={x:75,zMax:30,zMin:-395};
+const BIEN={x:40,zMax:24,zMin:-368,hanhLang:22};
 
 // ================= TIỆN ÍCH HÌNH =================
 function tex(draw,w=256,h=256){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);return new THREE.CanvasTexture(c)}
@@ -175,10 +175,10 @@ const dayMat=new THREE.MeshLambertMaterial({vertexColors:true,map:floorTex});
 dayMat.onBeforeCompile=sh=>{sh.uniforms.uT=U.uT;
   sh.vertexShader='varying vec3 vWp;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvWp=(modelMatrix*vec4(transformed,1.)).xyz;');
   sh.fragmentShader='uniform float uT;varying vec3 vWp;\nfloat caus(vec2 p,float t){vec2 i=p;float c=1.;for(int n=0;n<3;n++){float tt=t*(1.-(3.5/float(n+1)));i=p+vec2(cos(tt-i.x)+sin(tt+i.y),sin(tt-i.y)+cos(tt+i.x));c+=1./length(vec2(p.x/(sin(i.x+tt)/.005),p.y/(cos(i.y+tt)/.005)));}c/=3.;c=1.17-pow(c,1.4);return pow(abs(c),8.);}\n'+
-    sh.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat fd=clamp(1.-(-vWp.y-12.)/40.,0.,1.);diffuseColor.rgb*=.86+.7*min(caus(vWp.xz*.28,uT*.45),1.2)*fd;')};
+    sh.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat fd=clamp(1.-(-vWp.y-12.)/40.,0.,1.);diffuseColor.rgb*=.9+.32*min(caus(vWp.xz*.28,uT*.45),1.)*fd;')};
 {
   const g=new THREE.PlaneGeometry(200,440,100,220);g.rotateX(-PI/2);g.translate(0,0,-180);
-  const P=g.attributes.position,c=new Float32Array(P.count*3),cs=new THREE.Color(0xe3cf9c),cm=new THREE.Color(0x8c8270),cd=new THREE.Color(0x2c3038),r=rnd(5);
+  const P=g.attributes.position,c=new Float32Array(P.count*3),cs=new THREE.Color(0xd2bd8c),cm=new THREE.Color(0x8c8270),cd=new THREE.Color(0x2c3038),r=rnd(5);
   for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i),y=dayY(x,z);P.setY(i,y);
     const k=ss(-18,-90,y),n=.92+r()*.16;_C.copy(cs);
     // mảng màu: cát hồng, rêu xanh, sỏi sẫm ở vùng cạn → đáy sinh động hơn
@@ -461,6 +461,7 @@ const tren=(x,z,h)=>v3(x,dayY(x,z)+h,z);
 // 11 · Cá cần câu (vực thẳm)
 {const c=caCanCau();c.g.scale.setScalar(1.5);tram({id:'cacancau',vi:'Cá cần câu',tt:'Cá cần câu sống ở vực thẳm tối đen, dùng "đèn" phát sáng trên đầu để dụ mồi.',c:v3(4,-80,-352),trig:6.5,ly:3.2,g:c.g,anim:c.anim,chay:vongTron(3,.12,.8)})}
 const labelsEl=$('labels');
+const DUONG=[[0,20]].concat(T.map(s=>[s.c.x,s.c.z]),[[4,-366]]);   // đường đi qua 11 trạm (giới hạn hành lang)
 T.forEach(s=>{s.el=document.createElement('div');s.el.className='nhan cho';labelsEl.appendChild(s.el)});
 T.forEach(s=>s.chay(s,0));
 
@@ -610,12 +611,16 @@ renderer.domElement.addEventListener('wheel',e=>{if(mode==='play'){e.preventDefa
  cv.addEventListener('pointerdown',e=>{pts.set(e.pointerId,e);if(pts.size===2){const[a,b]=[...pts.values()];d0=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}});
  cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,e);if(pts.size===2&&mode==='play'){const[a,b]=[...pts.values()],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);if(d0>0){zoom(d0/d);d0=d}}});
  const up=e=>{pts.delete(e.pointerId);d0=0};cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);}
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function datBanDo(){   // bản đồ nằm dưới nút Thoát (không che nút), cao vừa chỗ trống bên trái
+  const bd=$('banDo'),ten=document.querySelector('.kcTen'),day=ten?ten.getBoundingClientRect().bottom:110,top=Math.round(day+14);
+  bd.style.top=top+'px';const h=Math.max(110,Math.min(300,innerHeight-top-(innerWidth>820?150:60)-40)),cv=$('bdCv');cv.style.height=h+'px';cv.style.width=Math.round(h*.353)+'px';
+}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);datBanDo()}
 addEventListener('resize',resize);
 
 // ================= VÒNG LẶP =================
 const clock=new THREE.Clock(),proj=v3(0,0,0),camWant=v3(0,0,0),lookAtV=v3(0,0,0);
-let bdT=0,time=0,camGoc=0,fpsN=0,fpsT=0,veLech=false,botT=0;
+let vanT=0,bdT=0,time=0,camGoc=0,fpsN=0,fpsT=0,veLech=false,botT=0;
 function datNhan(el,v,y,chiTrongMan){
   proj.copy(v);proj.y+=y;proj.project(camera);
   let x=proj.x,yy=proj.y;const behind=proj.z>1;if(behind){x=-x;yy=-yy}
@@ -631,6 +636,7 @@ function datNhan(el,v,y,chiTrongMan){
 const BW=184,BH=520,bdX=x=>(x+75)/150*BW,bdY=z=>(z+395)/425*BH,bdG=$('bdCv').getContext('2d');
 const bdNen=(()=>{const c=document.createElement('canvas');c.width=BW;c.height=BH;const g=c.getContext('2d'),a=new THREE.Color(0x8fe0ee),b=new THREE.Color(0x0a3a62),d=new THREE.Color(0x050c1c);
   for(let py=0;py<BH;py+=4)for(let px=0;px<BW;px+=4){const x=-75+px/BW*150,z=-395+py/BH*425,y=dayY(x,z),k=ss(-16,-92,y);_C.copy(a).lerp(b,Math.min(1,k*1.6)).lerp(d,Math.max(0,k*1.6-.6)/1);g.fillStyle='#'+_C.getHexString();g.fillRect(px,py,4,4)}
+  g.lineCap=g.lineJoin='round';g.lineWidth=BIEN.hanhLang*2/150*BW;g.strokeStyle='rgba(255,255,255,.16)';g.beginPath();DUONG.forEach((d,i)=>i?g.lineTo(bdX(d[0]),bdY(d[1])):g.moveTo(bdX(d[0]),bdY(d[1])));g.stroke();   // vùng được đi
   g.setLineDash([6,6]);g.lineWidth=3;g.strokeStyle='rgba(255,255,255,.45)';g.beginPath();g.moveTo(bdX(0),bdY(14));T.forEach(s=>g.lineTo(bdX(s.c.x),bdY(s.c.z)));g.stroke();
   g.setLineDash([]);g.font='600 15px system-ui,sans-serif';g.fillStyle='rgba(255,255,255,.8)';g.textAlign='center';g.fillText('Xuất phát',bdX(0),BH-8);g.fillText('Vực thẳm',BW/2,16);return c})();
 const BD_MAU={ok:'#5fd18b',part:'#e0a33a',bad:'#ff7d73',xong:'#7f97a3'};
@@ -671,6 +677,8 @@ function tick(){
     const fwd=v3(Math.sin(yaw),0,Math.cos(yaw)),acc=keys.boost?40:18;
     if(keys.up){vel.addScaledVector(fwd,acc*dt);thrust=1}
     if(keys.down){vel.addScaledVector(fwd,-acc*.6*dt);thrust=1}
+    // trợ giúp: gần trạm tiếp theo (trong 40 m) mà không bấm Nổi/Lặn thì tàu tự nổi/lặn về độ sâu của trạm
+    if(tramTiep<T.length&&!keys.rise&&!keys.sink){const q=T[tramTiep].g.position;if(Math.hypot(sub.position.x-q.x,sub.position.z-q.z)<40){vel.y+=Math.max(-1,Math.min(1,(q.y-sub.position.y)/6))*7*dt}}
     if(keys.rise)vel.y+=16*dt;
     if(keys.sink)vel.y-=16*dt;
     vel.multiplyScalar(Math.exp(-1.5*dt));vel.y*=Math.exp(-1.2*dt);
@@ -678,8 +686,11 @@ function tick(){
     vel.y=Math.max(-9,Math.min(9,vel.y));
     sub.position.addScaledVector(vel,dt);
     const p=sub.position;p.x=Math.max(-BIEN.x,Math.min(BIEN.x,p.x));p.z=Math.max(BIEN.zMin,Math.min(BIEN.zMax,p.z));
+    {let bx=0,bz=0,bd=1e9;for(let i=0;i<DUONG.length-1;i++){const a=DUONG[i],b=DUONG[i+1],ux=b[0]-a[0],uz=b[1]-a[1],L=ux*ux+uz*uz,t=Math.max(0,Math.min(1,((p.x-a[0])*ux+(p.z-a[1])*uz)/L)),cx=a[0]+ux*t,cz=a[1]+uz*t,d=Math.hypot(p.x-cx,p.z-cz);if(d<bd){bd=d;bx=cx;bz=cz}}
+     if(bd>BIEN.hanhLang){const k=BIEN.hanhLang/bd;p.x=bx+(p.x-bx)*k;p.z=bz+(p.z-bz)*k;vel.x*=.5;vel.z*=.5;if(!vanT){vanT=1;nhan('Tàu chỉ đi trong vùng các trạm. Xem <b>bản đồ</b> bên trái để quay lại đường đi.',3500)}}else vanT=0}
     const san=dayY(p.x,p.z)+1.1;if(p.y<san){p.y=san;if(vel.y<0)vel.y=0}if(p.y>-1.6){p.y=-1.6;if(vel.y>0)vel.y=0}
-    if(tramTiep<T.length){const s=T[tramTiep];if(p.distanceTo(s.g.position)<s.trig)toiTram(s)}
+    if(tramTiep<T.length){const s=T[tramTiep],q=s.g.position,ngang=Math.hypot(p.x-q.x,p.z-q.z),doc=Math.abs(p.y-q.y);
+      if(p.distanceTo(q)<s.trig+3||(ngang<s.trig+4&&doc<s.trig+8))toiTram(s)}
     sub.rotation.set(0,yaw,0);
     subM.rotation.x+=(-vel.y*.05-subM.rotation.x)*Math.min(1,dt*4);
     subM.rotation.z+=(turn*-.25-subM.rotation.z)*Math.min(1,dt*4);
@@ -748,7 +759,7 @@ KHUNG.khoiTao({
     if(!tt.tiepTuc)luuMau();
     mode='play';chay=true;dangHoi=false;hoiTram=null;lockOffset=null;chase=8;clearKeys();
     sub.visible=true;datCanh();camSau();
-    $('pad').hidden=false;$('phim').hidden=false;$('banDo').hidden=false;veNhan();veBanDo();
+    $('pad').hidden=false;$('phim').hidden=false;$('banDo').hidden=false;datBanDo();setTimeout(datBanDo,300);veNhan();veBanDo();
     if(tt.tiepTuc&&tramTiep)nhan(`Chơi tiếp: lái tới <b>Trạm ${tramTiep+1} · ${T[Math.min(tramTiep,10)].vi}</b>.`,6000);
     else nhan('Tàu ngầm đã xuống nước! Biển đông sinh vật, chỉ con có biển <b>❓</b> mới là trạm. Lái tới <b>Trạm 1 · Cá hề · Hải quỳ</b> (biển ❓ màu vàng).',8000);
     renderer.domElement.focus&&renderer.domElement.focus({preventScroll:true});
