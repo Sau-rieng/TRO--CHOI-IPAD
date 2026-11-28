@@ -41,6 +41,15 @@
   }
   // Ma rieng cua may + ten hien o vach xuat phat (de giao vien thay ai da san sang)
   var MAY = '', TEN_VACH = '', SBD_VACH = '';
+  // Luc vao choi (gio may chu) + trang thai tro luc vao: gui kem ket qua de so ghi em vao dung gio / muon / truoc Xuat phat
+  var VAO = null;
+  try { VAO = JSON.parse(localStorage.getItem('tc_vao') || 'null'); } catch (e) {}
+  function luuVao() { try { localStorage.setItem('tc_vao', JSON.stringify(VAO)); } catch (e) {} }
+  function vaoKQ(rep) {
+    if (!VAO || !VAO.vao || !rep || !rep.startedAt) return undefined;
+    var lc = Number(VAO.lech) || 0;
+    return { vao: VAO.vao, tt: VAO.tt, bd: Math.round(Number(rep.startedAt) + lc), kt: rep.endedAt ? Math.round(Number(rep.endedAt) + lc) : 0 };
+  }
   try { MAY = localStorage.getItem('tc_may') || ''; if (!MAY) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('tc_may', MAY); } }
   catch (e) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function luuLop(t) { try { if (t) localStorage.setItem(KL, t); } catch (e) {} }
@@ -86,6 +95,7 @@
         cheDoCu = false;
         var tNhan = Date.now();
         if (r && r.ok && KHUNG && r.matro) MATRO = r.matro;
+        if (r && r.ok) { var lc = r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0; VAO = { vao: Math.round(tNhan + lc), tt: r.tt || 'MO', lech: lc }; luuVao(); }
         if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten,
           tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui,
           matro: r.matro, kieu: r.kieu, boCau: r.boCau, tenBo: r.tenBo, maKQ: r.maKQ, tenKQ: r.tenKQ };
@@ -201,6 +211,7 @@
       var du = { loai: 'hoatdong', mahs: sbd, mahoatdong: maTro, cauhoi: tenTro,
         solanthu: rep.score != null ? rep.score : dung, dungsai: dung + '/' + t, thoigian: giay(rep) };
       if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.maluot = rep.id || ''; du.lydo = rep.reason || ''; du.diem = rep.score; }
+      du.vao = vaoKQ(rep);
       guiVaGhiNho(lop.url, du, key);
       try { window.TC.tienDo(rep, true); } catch (e) {}
     } catch (e) {}
@@ -219,6 +230,7 @@
       var du = { loai: 'nhom', nhom: String(rep.group), matro: maTro, tentro: tenTro, diem: rep.score != null ? rep.score : dung,
         dungsai: dung + '/' + t, thoigian: giay(rep), maluot: rep.id || '' };
       if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.lydo = rep.reason || ''; }
+      du.vao = vaoKQ(rep);
       guiVaGhiNho(lop.url, du, key);
     } catch (e) {}
   };
