@@ -205,14 +205,20 @@
       var lop = timLop(rep.lop || rep.cls || docLop(), '') || dsLop().filter(function (l) { return sbd.length === 8 && sbd.indexOf(l.tiento) === 0; })[0];
       if (!lop || !/^https:\/\//.test(lop.url)) { window.__tcGui = Promise.resolve({ ok: false, msg: 'Số báo danh ' + sbd + ' không thuộc lớp nào.' }); return; }
       var key = 'noiso_' + maTro + '_' + (rep.id || sbd + '_' + (rep.endedAt || rep.finishedAt || ''));
-      try { if (localStorage.getItem(key)) { window.__tcGui = Promise.resolve({ ok: true }); return; } } catch (e) {}
+      var chinh = dsLop().filter(function (l) { return sbd.length === 8 && sbd.indexOf(l.tiento) === 0 && /^https:\/\//.test(l.url); })[0];
+      if (chinh && chinh.url === lop.url) chinh = null;
+      var daGui = function (k) { try { return !!localStorage.getItem(k); } catch (e) { return false; } };
+      if (daGui(key) && (!chinh || daGui(key + '_chinh'))) { window.__tcGui = Promise.resolve({ ok: true }); return; }
       var dung = Number(rep.correct != null ? rep.correct : rep.score) || 0;
       var t = Number(tong) || ((Number(rep.correct) || 0) + (Number(rep.wrong) || 0) + (Number(rep.none) || 0)) || (rep.pattern ? rep.pattern.length : 0);
       var du = { loai: 'hoatdong', mahs: sbd, mahoatdong: maTro, cauhoi: tenTro,
         solanthu: rep.score != null ? rep.score : dung, dungsai: dung + '/' + t, thoigian: giay(rep) };
       if (Array.isArray(rep.ct)) { du.ct = rep.ct; du.bo = rep.bo || ''; du.maluot = rep.id || ''; du.lydo = rep.reason || ''; du.diem = rep.score; }
       du.vao = vaoKQ(rep);
-      guiVaGhiNho(lop.url, du, key);
+      // em hoc nhieu lop (vd 12AFTER dung SBD lop chinh 12G01): ghi vao so lop dang choi VA so lop chinh
+      var p1 = daGui(key) ? Promise.resolve({ ok: true }) : guiVaGhiNho(lop.url, du, key);
+      if (chinh && !daGui(key + '_chinh')) guiVaGhiNho(chinh.url, du, key + '_chinh');
+      window.__tcGui = p1;
       try { window.TC.tienDo(rep, true); } catch (e) {}
     } catch (e) {}
   };
