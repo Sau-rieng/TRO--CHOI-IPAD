@@ -179,6 +179,8 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family
 .lights i.on{background:#e3261b;box-shadow:0 0 18px #ff3b2e,inset 0 0 0 2px rgba(255,255,255,.3)}
 /* ---- Câu đúng/sai, trả lời ngắn, điểm lẻ ---- */
 .dot.part{background:#c98b2b;border-color:#c98b2b;color:#fff}
+.dot.done{background:#4f6bc4;border-color:#4f6bc4;color:#fff}.opt.chon{background:rgba(79,107,196,.3);border-color:#8fa6ff}
+#review li.xc{cursor:pointer}#review li.xc:hover{filter:brightness(1.15)}.revCT{flex-basis:100%;list-style:none;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5;text-align:left}.revCT .d{color:#7ee2a2;font-weight:700}.revCT .s{color:#ff9d93;font-weight:700}.revCT small{display:block;opacity:.8;margin-top:4px}
 .dot.sep{margin-left:7px}
 .hintq{font-size:calc(13px*var(--k));color:var(--ink-dim);margin:0 0 calc(8px*var(--k));line-height:1.4}
 .tfl{display:grid;gap:calc(6px*var(--k))}
@@ -631,12 +633,12 @@ beacon.visible=false;scene.add(beacon);
  }}
 function drawFlag(tw,n){
   const g=tw.fc.getContext('2d');
-  const bg={todo:'#b8322a',cur:'#e8b65e',ok:'#3f9a5a',no:'#6f6a64',part:'#c98b2b'}[tw.state];
+  const bg={todo:'#b8322a',cur:'#e8b65e',ok:'#3f9a5a',no:'#6f6a64',part:'#c98b2b',done:'#4f6bc4'}[tw.state];
   g.fillStyle=bg;g.fillRect(0,0,192,96);
   g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=5;g.strokeRect(6,6,180,84);
   g.fillStyle=tw.state==='cur'?'#2a1d10':'#fff';g.textAlign='center';g.textBaseline='middle';
   g.font='bold 22px Arial,sans-serif';g.fillText('CỔNG',48,50);
-  g.font='bold 58px Georgia,serif';g.fillText(tw.state==='ok'?'✓':String(n+1),128,52);
+  g.font='bold 58px Georgia,serif';g.fillText(tw.state==='ok'||tw.state==='done'?'✓':String(n+1),128,52);
   tw.ft.needsUpdate=true;
   if(typeof updateMinimap==='function')updateMinimap();
 }
@@ -828,10 +830,10 @@ refit();
 const totalScore=()=>Math.round(answers.reduce((a,v)=>a+(v||0),0)*100)/100;
 function renderProgress(){
   prog.innerHTML=Array.from({length:NQ},(_,i)=>{
-    const a=answers[i],c=a===undefined?(i===cur?'cur':''):(isFull(i,a)?'ok':a>0?'part':'no');
+    const a=answers[i],c=a===undefined?(i===cur?'cur':''):anDiem()?'done':(isFull(i,a)?'ok':a>0?'part':'no');
     const Q=QUESTIONS[i],t=Q?PART[Q.t]:'';
     return `<span class="dot ${c}${i===6||i===9?' sep':''}" title="Câu ${i+1}${t?' · '+t:''}">${i+1}</span>`;
-  }).join('')+`<span class="score">${fmt(score)} điểm</span>`;
+  }).join('')+`<span class="score">${anDiem()?answers.filter(a=>a!==undefined).length+'/'+NQ+' câu':fmt(score)+' điểm'}</span>`;
 }
 renderProgress();
 function setStatus(t){statusEl.textContent=t;statusEl.hidden=!t;}
@@ -872,11 +874,25 @@ function gradeOf(Q,resp){
   const v=parseNum(resp);return v!==null&&Math.abs(v-Q.ans)<=Q.tol?0.5:0;
 }
 const isFull=(i,pts)=>pts!==undefined&&pts>=QUESTIONS[i].max-1e-9;
+const AN_KQ=true;   // chơi xong (nộp bài) mới hiện điểm, đúng/sai, đáp án
+const anDiem=()=>AN_KQ&&!reason;
 function answer(i,resp){
   if(state!=='landed'||locked||reason||answers[i]!==undefined)return;
   const Q=QUESTIONS[i],pts=gradeOf(Q,resp),full=pts>=Q.max-1e-9;
   answers[i]=pts;chosen[i]=resp;score=totalScore();try{window.TC&&TC.tienDo(buildReport());}catch(_){}
   let verdict='',secs=7;
+  if(anDiem()){
+    secs=3;
+    if(Q.t==='mc')card.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(+b.dataset.k===resp)b.classList.add('chon');});
+    else if(Q.t==='tf'){card.querySelectorAll('.tfo').forEach(b=>b.disabled=true);$('tfRow').remove();}
+    else{$('saIn').disabled=true;$('submit').remove();}
+    const last0=i===NQ-1;
+    $('after').innerHTML=`<div class="explain"><strong>Đã ghi đáp án.</strong> Điểm, câu đúng/sai và lời giải hiện khi ${nhom()?'nhóm':'em'} về đích (nộp bài).</div>
+     <div class="row"><span class="tip">Bảng tự đóng sau <b id="readLeft">${secs}</b> giây.</span><button class="btn" id="next">${last0?'Về đích, xem kết quả':'Chạy tiếp'}</button></div>`;
+    $('next').onclick=next;$('next').focus({preventScroll:true});
+    towers[i].state='done';drawFlag(towers[i],i);hop=1;
+    renderProgress();state='answered';save();startReadTimer(i,secs);return;
+  }
   if(Q.t==='mc'){
     card.querySelectorAll('.opt').forEach(b=>{b.disabled=true;const kk=+b.dataset.k;if(kk===Q.a)b.classList.add('right');else if(kk===resp)b.classList.add('wrong');});
     verdict=full?'<strong>Chính xác! +0.5 điểm.</strong> ':'<strong>Chưa đúng.</strong> Đáp án đúng là '+'ABCD'[Q.a]+'. ';
@@ -931,6 +947,17 @@ function finish(why){
   card.hidden=true;showEnd();save();sendResult();
   state='leaving';
 }
+function xemLaiCau(i){
+  const Q=QUESTIONS[i],r=chosen[i],a=answers[i],o=$('revCT'),ai=nhom()?'nhóm':'em';
+  if(!o.hidden&&o.dataset.i===String(i)){o.hidden=true;return;}
+  o.dataset.i=i;o.hidden=false;
+  let h=`<b>Câu ${i+1}.</b> ${Q.q}`;
+  if(Q.t==='mc')h+=Q.o.map((x,k)=>{const c=k===Q.a?'d':k===r?'s':'';return `<div${c?` class="${c}"`:''}>${'ABCD'[k]}. ${x}${k===Q.a?' ✓ đáp án':k===r?' ✗ '+ai+' chọn':''}</div>`;}).join('');
+  else if(Q.t==='tf')h+=Q.s.map((s,k)=>{const ch=r?r[k]:undefined;return `<div><b>${'abcd'[k]})</b> ${s[0]} – đáp án <b>${s[1]?'Đúng':'Sai'}</b>${ch===undefined?'':`, ${ai} chọn <span class="${ch===s[1]?'d':'s'}">${ch?'Đúng':'Sai'}</span>`}${s[2]?`<small>${s[2]}</small>`:''}</div>`;}).join('');
+  else h+=`<div>${ai==='em'?'Em':'Nhóm'} ghi: <span class="${isFull(i,a)?'d':'s'}">${r===undefined?'chưa làm':esc(String(r))}</span> · đáp án <span class="d">${Q.shown}</span></div>`;
+  if(Q.e)h+=`<small>💡 ${Q.e}</small>`;
+  o.innerHTML=h;
+}
 function showEnd(){
   setStatus('');hideFlightUI();$('minimap').hidden=true;$('lights').hidden=true;locked=false;$('lock').hidden=true;$('quit').hidden=true;$('timer').hidden=true;$('exitBtn').hidden=true;
   $('endTitle').textContent={timeout:'Hết thời gian chơi',violation:'Bài làm kết thúc vì rời màn hình lần 2',quit:(nhom()?'Nhóm':'Em')+' đã thoát trò chơi'}[reason]||'Xe đã về đích';
@@ -944,9 +971,11 @@ function showEnd(){
   $('newConfirm').hidden=true;$('again').textContent='Lượt chơi mới';
   $('review').innerHTML=QUESTIONS.map((Q,i)=>{
     const a=answers[i],bg=a===undefined?'var(--bad)':isFull(i,a)?'var(--good)':a>0?'#c98b2b':'var(--seal)';
-    const pt=a===undefined?'chưa làm':fmt(a)+'/'+fmt(Q.max)+'đ';
-    return `<li><i style="background:${bg}">${i+1}</i><span>${({mc:'TN',tf:'Đ/S',sa:'TLN'})[Q.t]}: ${pt}</span></li>`;}).join('');
+    const pt=a===undefined?'chưa làm':(isFull(i,a)?'đúng':a>0?'đúng 1 phần':'sai')+' · '+fmt(a)+'/'+fmt(Q.max)+'đ';
+    return `<li class="xc" data-i="${i}" role="button" tabindex="0"><i style="background:${bg}">${i+1}</i><span>${({mc:'TN',tf:'Đ/S',sa:'TLN'})[Q.t]}: ${pt}</span></li>`;}).join('')+'<li class="revCT" id="revCT" hidden></li>';
+  $('review').querySelectorAll('li.xc').forEach(li=>{li.onclick=li.onkeydown=e=>{if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault&&e.preventDefault();xemLaiCau(+li.dataset.i);};});
   $('end').hidden=false;$('copyMsg').hidden=true;
+  answers.forEach((a,i)=>{if(a!==undefined&&towers[i]){towers[i].state=isFull(i,a)?'ok':a>0?'part':'no';drawFlag(towers[i],i);}});
   renderProgress();
 }
 /* ---------- Gửi kết quả về Google Sheet (khi chạy dưới dạng Google Apps Script) ---------- */
@@ -1140,7 +1169,7 @@ function restore(){
   LIMIT=d.LIMIT||LIMIT;player=d.player;deadline=d.deadline;startedAt=d.startedAt;endedAt=d.endedAt||0;leaves=d.leaves||0;
   answers=(d.answers||[]).map(v=>v===null?undefined:v);chosen=d.chosen||[];sessionId=d.sessionId||'';submitted=d.submitted===true?true:(d.submitted||false);
   score=totalScore();
-  answers.forEach((a,i)=>{if(a!==undefined){towers[i].state=isFull(i,a)?'ok':a>0?'part':'no';drawFlag(towers[i],i);}});
+  answers.forEach((a,i)=>{if(a!==undefined){towers[i].state=(AN_KQ&&!d.finished)?'done':isFull(i,a)?'ok':a>0?'part':'no';drawFlag(towers[i],i);}});
   $('start').hidden=true;$('who').textContent=tenNguoi();$('tieuDe').firstChild.textContent='Đua xe F1 · '+(BO?BO.ten:'');
   if(d.finished){reason=d.reason;state='done';showEnd();sendResult();return;}
   cur=answers.length-1;

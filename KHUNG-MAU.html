@@ -54,7 +54,7 @@ function vong(t) {
     if (tramTiep < TRAM.length && x >= TRAM[tramTiep]) {       // tới trạm → hỏi câu
       x = TRAM[tramTiep]; giu = false;
       KHUNG.hoiCau().then(kq => {
-        co[kq.i] = kq.dungHet ? '#3fae6b' : kq.diem > 0 ? '#c98b2b' : '#d9483b';
+        co[kq.i] = kq.an ? '#5b7bd5' : kq.dungHet ? '#3fae6b' : kq.diem > 0 ? '#c98b2b' : '#d9483b';
         tramTiep = kq.i + 1;
       });
     }

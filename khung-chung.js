@@ -16,7 +16,7 @@
   'use strict';
   var NQ = 11, TF_PTS = [0, 0.3, 0.7, 1.2, 2];
   var TEN_PHAN = { mc: 'Trắc nghiệm', tf: 'Đúng – Sai', sa: 'Trả lời ngắn' };
-  var O = { ten: 'Trò chơi', tram: 'Trạm', luat: '' };
+  var O = { ten: 'Trò chơi', tram: 'Trạm', luat: '', anKetQua: true };   // anKetQua: chơi xong (nộp) mới hiện điểm, đúng/sai, đáp án
   var BO = null, KH = { kieu: 'CA NHAN', maKQ: '', tenKQ: '' }, Q = [], picks = null;
   var answers = [], chosen = [], cur = -1, player = null, sessionId = '', submitted = false;
   var startedAt = 0, endedAt = 0, deadline = 0, LIMIT = 5 * 60000, reason = '', leaves = 0, locked = false, cho = null, dangHoi = false;
@@ -68,7 +68,8 @@
 .kcTien{display:flex;gap:4px;align-items:center;background:var(--kcBg);border:1px solid var(--kcLine);border-radius:12px;padding:6px 8px}\
 .kcTien i{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:700;background:rgba(255,255,255,.1);color:var(--kcMut)}\
 .kcTien i.sep{margin-left:6px}.kcTien i.cur{background:var(--kcGold);color:#222}.kcTien i.ok{background:var(--kcOk);color:#fff}.kcTien i.mot{background:#c98b2b;color:#fff}.kcTien i.sai{background:var(--kcBad);color:#fff}\
-.kcTien b{margin-left:6px;font-size:14px}\
+.kcTien b{margin-left:6px;font-size:14px}.kcTien i.xong{background:#5b7bd5;color:#fff}.kcOpt.chon{background:rgba(91,123,213,.3);border-color:#8fa6ff}\
+.kcXem li.kcXc{cursor:pointer}.kcXem li.kcXc:hover{background:rgba(255,255,255,.14)}.kcXemCT{background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;margin:4px 0 10px;font-size:14px;line-height:1.5;text-align:left}.kcXemCT .d{color:#7ee2a2;font-weight:700}.kcXemCT .s{color:#ff9d93;font-weight:700}.kcXemCT small{display:block;color:#b8c2c2;margin-top:4px}\
 .kcGio{background:var(--kcBg);border:1px solid var(--kcLine);border-radius:12px;padding:8px 12px;font-weight:700;font-variant-numeric:tabular-nums}\
 .kcGio.it{background:var(--kcBad)}\
 .kcTen{position:fixed;top:10px;left:10px;z-index:40;display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none}\
@@ -166,11 +167,12 @@
   function veTien() {
     var h = '';
     for (var i = 0; i < NQ; i++) {
-      var a = answers[i], c = a === undefined ? (i === cur && dangHoi ? 'cur' : '') : a >= Q[i].max - 1e-9 ? 'ok' : a > 0 ? 'mot' : 'sai';
+      var a = answers[i], c = a === undefined ? (i === cur && dangHoi ? 'cur' : '') : anDiem() ? 'xong' : a >= Q[i].max - 1e-9 ? 'ok' : a > 0 ? 'mot' : 'sai';
       h += '<i class="' + c + (i === 6 || i === 9 ? ' sep' : '') + '">' + (i + 1) + '</i>';
     }
-    $('kcTien').innerHTML = h + '<b>' + fmt(tong()) + ' điểm</b>';
+    $('kcTien').innerHTML = h + '<b>' + (anDiem() ? daLam() + '/' + NQ + ' câu' : fmt(tong()) + ' điểm') + '</b>';
   }
+  function anDiem() { return O.anKetQua && !reason; }   // đang chơi: giấu điểm, đúng/sai
   function tenNguoi() { return nhom() ? player.lop + ' · ' + player.group : player.name + ' · ' + player.lop; }
 
   /* ---------- lưu tạm ---------- */
@@ -225,6 +227,19 @@
     var q = Q[i], d = cham(q, r), du = d >= q.max - 1e-9, the = $('kcThe'), giai = '', giay = 7;
     answers[i] = d; chosen[i] = r; luu(); veTien();
     try { window.TC && TC.tienDo(baoCao()); } catch (e) {}
+    if (anDiem()) {   // chỉ ghi nhận lựa chọn, không cho biết đúng/sai
+      giay = 3;
+      if (q.t === 'mc') [].forEach.call(the.querySelectorAll('.kcOpt'), function (b) { b.disabled = true; if (+b.dataset.k === r) b.classList.add('chon'); });
+      else if (q.t === 'tf') { [].forEach.call(the.querySelectorAll('.nn button'), function (b) { b.disabled = true; }); $('kcTfHang').remove(); }
+      else { $('kcSaIn').disabled = true; $('kcChot').remove(); }
+      var cuoi0 = daLam() >= NQ;
+      $('kcSau').innerHTML = '<div class="kcGiai"><strong>Đã ghi đáp án.</strong> Điểm, câu đúng/sai và lời giải hiện khi ' + (nhom() ? 'nhóm' : 'em') + ' nộp bài (hết ' + NQ + ' ' + O.tram.toLowerCase() + ' hoặc hết giờ).</div><div class="kcHang"><span class="hint">Tự đóng sau <b id="kcCon">' + giay + '</b> giây</span><button class="kcNut" id="kcTiep">' + (cuoi0 ? 'Nộp bài, xem kết quả' : 'Chơi tiếp') + '</button></div>';
+      $('kcTiep').onclick = dongCau; $('kcTiep').focus({ preventScroll: true });
+      goi(O.ketQua, i, { an: true, daGhi: true });
+      clearInterval(thoiGianDoc); var con0 = giay;
+      thoiGianDoc = setInterval(function () { if (locked || !$('kcHoiThoat').hidden) return; con0--; var el = $('kcCon'); if (el) el.textContent = con0; if (con0 <= 0) dongCau(); }, 1000);
+      return;
+    }
     if (q.t === 'mc') {
       [].forEach.call(the.querySelectorAll('.kcOpt'), function (b) { b.disabled = true; var k = +b.dataset.k; if (k === q.a) b.classList.add('dung'); else if (k === r) b.classList.add('sai'); });
       giai = du ? '<strong>Chính xác! +0.5 điểm.</strong> ' : '<strong>Chưa đúng.</strong> Đáp án đúng là ' + 'ABCD'[q.a] + '. ';
@@ -254,7 +269,7 @@
     var i = cur, d = cho; cho = null; dangHoi = false;
     $('kcThe').hidden = true; veTien();
     var het = daLam() >= NQ;
-    d.ok({ i: i, diem: answers[i], max: Q[i].max, dungHet: answers[i] >= Q[i].max - 1e-9, het: het, tong: tong() });
+    d.ok(anDiem() ? { i: i, an: true, het: het } : { i: i, diem: answers[i], max: Q[i].max, dungHet: answers[i] >= Q[i].max - 1e-9, het: het, tong: tong() });
     if (het) { goi(O.veDich, 'done'); setTimeout(function () { ketThuc('done'); }, O.choVeDich || 1500); }
     else goi(O.tiepTuc, 'cau');
   }
@@ -280,9 +295,23 @@
       '<dt>Trắc nghiệm</dt><dd>' + fmt(phan('mc')) + '/3 điểm</dd><dt>Đúng – Sai</dt><dd>' + fmt(phan('tf')) + '/6 điểm</dd><dt>Trả lời ngắn</dt><dd>' + fmt(phan('sa')) + '/1 điểm</dd>';
     $('kcXem').innerHTML = Q.map(function (q, i) {
       var a = answers[i], bg = a === undefined ? '#555' : a >= q.max - 1e-9 ? '#3fae6b' : a > 0 ? '#c98b2b' : '#d9483b';
-      return '<li><i style="background:' + bg + '">' + (i + 1) + '</i>' + { mc: 'TN', tf: 'Đ/S', sa: 'TLN' }[q.t] + ': ' + (a === undefined ? 'chưa làm' : fmt(a) + '/' + fmt(q.max) + 'đ') + '</li>';
-    }).join('');
+      return '<li class="kcXc" data-i="' + i + '" role="button" tabindex="0" title="Bấm để xem lại câu này"><i style="background:' + bg + '">' + (i + 1) + '</i>' + { mc: 'TN', tf: 'Đ/S', sa: 'TLN' }[q.t] + ': ' + (a === undefined ? 'chưa làm' : a >= q.max - 1e-9 ? 'đúng' : a > 0 ? 'đúng 1 phần' : 'sai') + ' · ' + (a === undefined ? '0' : fmt(a)) + '/' + fmt(q.max) + 'đ</li>';
+    }).join('') + '<li style="flex-basis:100%;background:none;padding:0;font-size:12px;color:#b8c2c2">Bấm vào từng câu để xem câu hỏi, lựa chọn của ' + (nhom() ? 'nhóm' : 'em') + ', đáp án và lời giải.</li><li id="kcXemCT" style="flex-basis:100%;background:none;padding:0;display:block"></li>';
+    [].forEach.call($('kcXem').querySelectorAll('.kcXc'), function (li) {
+      li.onclick = li.onkeydown = function (e) { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; if (e.preventDefault) e.preventDefault(); xemLaiCau(+li.getAttribute('data-i')); };
+    });
     $('kcHet').hidden = false;
+  }
+  function xemLaiCau(i) {
+    var q = Q[i], r = chosen[i], a = answers[i], o = $('kcXemCT'), h = '';
+    if (o.getAttribute('data-i') === String(i)) { o.innerHTML = ''; o.removeAttribute('data-i'); return; }
+    o.setAttribute('data-i', i);
+    h += '<b>Câu ' + (i + 1) + '.</b> ' + esc(q.q);
+    if (q.t === 'mc') h += q.o.map(function (x, k) { var c = k === q.a ? 'd' : k === r ? 's' : ''; return '<div' + (c ? ' class="' + c + '"' : '') + '>' + 'ABCD'[k] + '. ' + esc(x) + (k === q.a ? ' ✓ đáp án' : k === r ? ' ✗ ' + (nhom() ? 'nhóm' : 'em') + ' chọn' : '') + '</div>'; }).join('');
+    else if (q.t === 'tf') h += q.s.map(function (s, k) { var ch = r ? r[k] : undefined, dung = ch === s[1]; return '<div><b>' + 'abcd'[k] + ')</b> ' + esc(s[0]) + ' – đáp án <b>' + (s[1] ? 'Đúng' : 'Sai') + '</b>' + (ch === undefined ? '' : ', ' + (nhom() ? 'nhóm' : 'em') + ' chọn <span class="' + (dung ? 'd' : 's') + '">' + (ch ? 'Đúng' : 'Sai') + '</span>') + (s[2] ? '<small>' + esc(s[2]) + '</small>' : '') + '</div>'; }).join('');
+    else h += '<div>' + (nhom() ? 'Nhóm' : 'Em') + ' ghi: <span class="' + (a >= q.max - 1e-9 ? 'd' : 's') + '">' + (r === undefined ? 'chưa làm' : esc(r)) + '</span> · đáp án <span class="d">' + esc(q.shown) + '</span></div>';
+    if (q.e) h += '<small>💡 ' + esc(q.e) + '</small>';
+    o.innerHTML = '<div class="kcXemCT">' + h + '</div>';
   }
   function chuThuong(r, q) { return q.t === 'mc' ? 'chọn ' + 'ABCD'[r] : q.t === 'tf' ? 'chọn ' + r.map(function (v, j) { return 'abcd'[j] + (v ? 'Đ' : 'S'); }).join(' ') : 'ghi ' + r; }
   // Chi tiết từng câu gửi về sổ: [mã câu trong bộ, lựa chọn theo thứ tự gốc, điểm]
