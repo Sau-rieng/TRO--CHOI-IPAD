@@ -95,11 +95,12 @@
         cheDoCu = false;
         var tNhan = Date.now();
         if (r && r.ok && KHUNG && r.matro) MATRO = r.matro;
+        if (r && r.ok && /^\d{8}$/.test(String(r.mahs || '')) && SBD_VACH) SBD_VACH = String(r.mahs);
         if (r && r.ok) { var lc = r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0; VAO = { vao: Math.round(tNhan + lc), tt: r.tt || 'MO', lech: lc, xngv: r.lan > 1 ? 1 : 0 }; luuVao(); }
         if (r && !r.ok && (r.loi === 'lan2' || r.loi === 'malai')) return { ok: false, lan2: true, error: r.msg };
         if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten,
           tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui,
-          matro: r.matro, kieu: r.kieu, boCau: r.boCau, tenBo: r.tenBo, maKQ: r.maKQ, tenKQ: r.tenKQ };
+          matro: r.matro, kieu: r.kieu, boCau: r.boCau, sbd: /^\d{8}$/.test(String(r.mahs || '')) ? String(r.mahs) : '', tenBo: r.tenBo, maKQ: r.maKQ, tenKQ: r.tenKQ };
         return { ok: false, error: (r && r.msg) || 'Máy chủ từ chối đăng nhập.' };
       }, function () { return { ok: false, error: LOI_MANG }; });
     }

@@ -406,7 +406,7 @@
       return (window.XuatPhat ? XuatPhat.cho(r, { ten: kieu === 'NHOM' ? nh + ' · Lớp ' + lop : ten + ' · Lớp ' + lop }) : Promise.resolve(null)).then(function (xp) {
         picks = bocCau(); dungCau(); answers = []; chosen = []; cur = -1; reason = ''; leaves = 0; submitted = false;
         sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-        player = kieu === 'NHOM' ? { lop: lop, group: nh } : { lop: lop, name: ten, sbd: sbd };
+        player = kieu === 'NHOM' ? { lop: lop, group: nh } : { lop: lop, name: ten, sbd: r.sbd || sbd };   // lớp gộp: SBD thật do máy chủ tìm
         startedAt = xp ? xp.startAt : Date.now(); deadline = xp ? xp.endAt : startedAt + LIMIT;
         luu(); batDauChoi(false);
       });
