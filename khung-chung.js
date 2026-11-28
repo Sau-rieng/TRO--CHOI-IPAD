@@ -315,7 +315,7 @@
     fetch(SHEET_URL, { method: 'POST', body: JSON.stringify(rp), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .then(function (j) { if (!j.ok) throw new Error(j.error || 'lỗi'); submitted = true; luu(); hien(xong, 'ok'); })
-      .catch(function () { hien('Chưa gửi được kết quả' + (navigator.onLine === false ? ' (máy đang mất mạng)' : '') + '. Kiểm tra mạng rồi bấm Gửi lại.', 'bad', true); })
+      .catch(function (e) { var m = e && e.message && e.message !== 'lỗi' && !/fetch|network|load failed|json/i.test(e.message) ? e.message : ''; hien(m ? 'Chưa gửi được kết quả: ' + m : 'Chưa gửi được kết quả' + (navigator.onLine === false ? ' (máy đang mất mạng)' : '') + '. Kiểm tra mạng rồi bấm Gửi lại.', 'bad', true); })
       .then(function () { dangGui = false; });
   }
 

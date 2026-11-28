@@ -179,7 +179,9 @@
     var p = gocFetch(url, { method: 'POST', body: JSON.stringify(du) }).then(function (r) { return r.json(); })
       .then(function (j) {
         if (j && j.ok) { try { localStorage.setItem(key, '1'); } catch (e) {} return { ok: true }; }
-        return { ok: false, msg: (j && j.msg) || 'Sổ lớp từ chối kết quả.' };
+        var m = (j && j.msg) || 'Sổ lớp từ chối kết quả.';
+        if (/khong co trong danh sach/i.test(m)) m = 'SBD ' + (du.mahs || '') + ' không có trong danh sách lớp. Em kiểm tra lại SBD (SBD thật của em), báo giáo viên rồi chơi lại.';
+        return { ok: false, msg: m };
       }, function () { return { ok: false, msg: LOI_MANG }; });
     window.__tcGui = p;
     return p;
@@ -189,7 +191,8 @@
     try {
       if (!rep) return;
       var sbd = String(rep.sbd || '').trim();
-      var lop = dsLop().filter(function (l) { return sbd.length === 8 && sbd.indexOf(l.tiento) === 0; })[0];
+      // gửi về sổ của LỚP EM CHỌN khi vào chơi (em học nhiều lớp: 12G01 + 12AFTER…); không rõ lớp thì theo tiền tố SBD
+      var lop = timLop(rep.lop || rep.cls || docLop(), '') || dsLop().filter(function (l) { return sbd.length === 8 && sbd.indexOf(l.tiento) === 0; })[0];
       if (!lop || !/^https:\/\//.test(lop.url)) { window.__tcGui = Promise.resolve({ ok: false, msg: 'Số báo danh ' + sbd + ' không thuộc lớp nào.' }); return; }
       var key = 'noiso_' + maTro + '_' + (rep.id || sbd + '_' + (rep.endedAt || rep.finishedAt || ''));
       try { if (localStorage.getItem(key)) { window.__tcGui = Promise.resolve({ ok: true }); return; } } catch (e) {}
