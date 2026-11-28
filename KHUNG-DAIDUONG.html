@@ -585,7 +585,7 @@ function toiTram(s){
   nhan(`Đã tới <b>Trạm ${s.n} · ${s.vi}</b>. ${s.tt}`,6000);
   KHUNG.hoiCau().then(kq=>{
     dangHoi=false;hoiTram=null;lockOffset=null;document.body.classList.remove('dangHoi');
-    if(!T[kq.i].status)T[kq.i].status=kq.dungHet?'ok':kq.diem>0?'part':'bad';
+    if(!T[kq.i].status)T[kq.i].status=kq.an?'xong':kq.dungHet?'ok':kq.diem>0?'part':'bad';
     tramTiep=Math.max(tramTiep,kq.i+1);luuMau();veNhan();
     if(!kq.het&&tramTiep<T.length){const n=T[tramTiep];nhan(`Lái tiếp tới <b>Trạm ${n.n} · ${n.vi}</b> – tìm biển ❓ màu vàng${n.c.y<sub.position.y-6?', nhớ <b>lặn xuống</b> sâu hơn':''}.`,5000)}
   },()=>{dangHoi=false;hoiTram=null;lockOffset=null;document.body.classList.remove('dangHoi')});
@@ -756,9 +756,9 @@ KHUNG.khoiTao({
   tamDung(ly){chay=false;clearKeys();vel.set(0,0,0)},
   tiepTuc(ly){chay=true},
   ketQua(i,kq){
-    const s=T[i];s.status=kq.dungHet?'ok':kq.diem>0?'part':'bad';luuMau();veNhan();
-    flashS=s;flashT=0;flash.visible=true;flash.material.color.set(kq.dungHet?0x7dffb0:kq.diem>0?0xffc860:0xff8a80);
-    nhan(kq.dungHet?`<span class="ok">Tuyệt vời!</span> Trạm ${s.n} đúng hết.`:kq.diem>0?`Trạm ${s.n} đúng một phần, cố lên!`:`<span class="bad">Trạm ${s.n} chưa đúng.</span> Đọc giải thích rồi lái tiếp nhé.`,5000);
+    const s=T[i];s.status=kq.an?'xong':kq.dungHet?'ok':kq.diem>0?'part':'bad';luuMau();veNhan();
+    flashS=s;flashT=0;flash.visible=true;flash.material.color.set(kq.an?0x9fb4ff:kq.dungHet?0x7dffb0:kq.diem>0?0xffc860:0xff8a80);
+    nhan(kq.an?`Đã ghi đáp án trạm ${s.n}. Điểm xem khi nộp bài.`:kq.dungHet?`<span class="ok">Tuyệt vời!</span> Trạm ${s.n} đúng hết.`:kq.diem>0?`Trạm ${s.n} đúng một phần, cố lên!`:`<span class="bad">Trạm ${s.n} chưa đúng.</span> Đọc giải thích rồi lái tiếp nhé.`,5000);
   },
   veDich(ly){
     mode='end';chay=false;dangHoi=false;hoiTram=null;clearKeys();document.body.classList.remove('dangHoi');

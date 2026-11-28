@@ -820,7 +820,7 @@ function toiTram(s){
   if(dangHoi) return; dangHoi=true; huyPhim();
   say(`Mình đang ở ${s.place}. Trả lời câu hỏi ở bảng bên cạnh nhé!`,true);
   KHUNG.hoiCau().then(kq=>{ dangHoi=false;
-    if(!STATIONS[kq.i].status) STATIONS[kq.i].status=kq.dungHet?'ok':kq.diem>0?'part':'bad';
+    if(!STATIONS[kq.i].status) STATIONS[kq.i].status=kq.an?'xong':kq.dungHet?'ok':kq.diem>0?'part':'bad';
     tramTiep=Math.max(tramTiep,kq.i+1); luuMau(); refreshPanel();
     if(!kq.het) hintTimer=setTimeout(nextHint,2500);
   },()=>{ dangHoi=false; });
@@ -853,9 +853,9 @@ KHUNG.khoiTao({
   tamDung(ly){ chay=false; huyPhim(); if(ly==='cau') zoomHoi(); },
   tiepTuc(ly){ chay=true; restoreCam(); canvas.focus({preventScroll:true}); },
   ketQua(i,kq){
-    const s=STATIONS[i]; s.status=kq.dungHet?'ok':kq.diem>0?'part':'bad'; luuMau(); paintStation(s); paintLabel(s);
+    const s=STATIONS[i]; s.status=kq.an?'xong':kq.dungHet?'ok':kq.diem>0?'part':'bad'; luuMau(); paintStation(s); paintLabel(s);
     s.mesh.gem.scale.setScalar(1.8);
-    say(kq.dungHet?`Giỏi quá! Trạm ${s.n} trả lời đúng hết.`:kq.diem>0?`Trạm ${s.n} đúng một phần, cố lên nhé!`:`Trạm ${s.n} chưa đúng, xem giải thích rồi đi tiếp nhé.`,true);
+    say(kq.an?`Đã ghi đáp án trạm ${s.n}. Điểm xem khi nộp bài nhé.`:kq.dungHet?`Giỏi quá! Trạm ${s.n} trả lời đúng hết.`:kq.diem>0?`Trạm ${s.n} đúng một phần, cố lên nhé!`:`Trạm ${s.n} chưa đúng, xem giải thích rồi đi tiếp nhé.`,true);
   },
   veDich(ly){
     chay=false; huyPhim(); document.getElementById('dpad').hidden=true; restoreCam();
