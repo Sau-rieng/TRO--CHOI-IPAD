@@ -118,6 +118,7 @@
         '<label for="kcSbd" class="kcCN" hidden>Số báo danh</label><div class="kcSbd kcCN" hidden><b id="kcTienTo">••••••</b><input id="kcSbd" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="__"></div>' +
         '<label for="kcNhom" class="kcNH" hidden>Nhóm</label><select id="kcNhom" class="kcNH" hidden><option value="">Chọn nhóm</option>' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return '<option>Nhóm ' + n + '</option>'; }).join('') + '</select>' +
         '<label for="kcMa">Mã giáo viên</label><input id="kcMa" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">' +
+        '<label for="kcMaLai" class="kcL2" hidden>🔑 Mã mở khóa – giáo viên cho chơi lần 2</label><input id="kcMaLai" class="kcL2" hidden type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Giáo viên nhập">' +
       '</div><p class="kcLoi" id="kcLoi" hidden></p><div class="kcHang"><button class="kcNut" id="kcDi" type="submit">Vào chơi</button></div></div></div></form></div>' +
       // the cau hoi
       '<div class="kcThe" id="kcThe" hidden role="dialog" aria-live="polite"></div>' +
@@ -363,11 +364,13 @@
     loi.hidden = true; btn.disabled = true; btn.textContent = 'Đang kiểm tra mã…';
     var thuLai = function () { if (btn.disabled && /mã|đông/.test(btn.textContent)) btn.textContent = 'Máy chủ đông, đang thử lại…'; };
     window.addEventListener('tc-thu-lai', thuLai);
-    api(kieu === 'NHOM' ? { kind: 'login', code: ma, lop: lop, group: nh } : { kind: 'login', code: ma, lop: lop, name: ten, sbd: sbd }).then(function (r) {
+    var maLai = $('kcMaLai').hidden ? '' : $('kcMaLai').value.trim();
+    api(kieu === 'NHOM' ? { kind: 'login', code: ma, lop: lop, group: nh } : { kind: 'login', code: ma, lop: lop, name: ten, sbd: sbd, malai: maLai }).then(function (r) {
+      if (!r.ok && r.lan2) { [].forEach.call(document.querySelectorAll('.kcL2'), function (x) { x.hidden = false; }); $('kcMaLai').value = ''; }
       if (!r.ok) { if (r.error === 'code') { $('kcMa').value = ''; } throw { tb: r.error === 'code' ? 'Mã giáo viên không đúng.' : (r.error || 'Máy chủ từ chối đăng nhập.') }; }
       if (!r.boCau || !r.boCau.tn || r.boCau.tn.length < 6 || r.boCau.ds.length < 3 || r.boCau.tln.length < 2) throw { tb: 'Bộ câu giáo viên chọn chưa đủ câu cho một lượt chơi.' };
       if ((r.kieu === 'NHOM' ? 'NHOM' : 'CA NHAN') !== kieu) { CFG.kieu = r.kieu; hienKieu(); throw { tb: 'Giáo viên vừa đổi cách chơi. Em kiểm tra lại ô nhập rồi bấm Vào chơi.' }; }
-      $('kcMa').value = '';
+      $('kcMa').value = ''; $('kcMaLai').value = ''; [].forEach.call(document.querySelectorAll('.kcL2'), function (x) { x.hidden = true; });
       BO = r.boCau; KH = { kieu: kieu, maKQ: r.maKQ || r.matro, tenKQ: r.tenKQ || O.ten };
       LIMIT = (Number(r.minutes) || 5) * 60000;
       btn.textContent = 'Ở vạch xuất phát…';

@@ -48,7 +48,7 @@
   function vaoKQ(rep) {
     if (!VAO || !VAO.vao || !rep || !rep.startedAt) return undefined;
     var lc = Number(VAO.lech) || 0;
-    return { vao: VAO.vao, tt: VAO.tt, bd: Math.round(Number(rep.startedAt) + lc), kt: rep.endedAt ? Math.round(Number(rep.endedAt) + lc) : 0 };
+    return { vao: VAO.vao, tt: VAO.tt, xngv: VAO.xngv || 0, bd: Math.round(Number(rep.startedAt) + lc), kt: rep.endedAt ? Math.round(Number(rep.endedAt) + lc) : 0 };
   }
   try { MAY = localStorage.getItem('tc_may') || ''; if (!MAY) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('tc_may', MAY); } }
   catch (e) { MAY = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -90,12 +90,13 @@
       var l = timLop(tenLop, d.sbd);
       if (!l) return Promise.resolve({ ok: false, error: 'Chưa có sổ theo dõi của lớp ' + tenLop + '.' });
       var tGui = Date.now();
-      return guiSo(l.url, { action: 'tc_vao', matro: KHUNG ? '' : MATRO, khung: KHUNG, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH, mahs: SBD_VACH }).then(function (r) {
+      return guiSo(l.url, { action: 'tc_vao', matro: KHUNG ? '' : MATRO, khung: KHUNG, lop: tenLop, ma: String(d.code || '').trim(), may: MAY, ten: TEN_VACH, mahs: SBD_VACH, malai: String(d.malai || '').trim() }).then(function (r) {
         if (chuaCapNhat(r)) return KHUNG ? { ok: false, error: 'Sổ theo dõi lớp chưa cập nhật bản có bộ câu trò chơi. Báo giáo viên.' } : duPhong(d, body);
         cheDoCu = false;
         var tNhan = Date.now();
         if (r && r.ok && KHUNG && r.matro) MATRO = r.matro;
-        if (r && r.ok) { var lc = r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0; VAO = { vao: Math.round(tNhan + lc), tt: r.tt || 'MO', lech: lc }; luuVao(); }
+        if (r && r.ok) { var lc = r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0; VAO = { vao: Math.round(tNhan + lc), tt: r.tt || 'MO', lech: lc, xngv: r.lan > 1 ? 1 : 0 }; luuVao(); }
+        if (r && !r.ok && (r.loi === 'lan2' || r.loi === 'malai')) return { ok: false, lan2: true, error: r.msg };
         if (r && r.ok) return { ok: true, minutes: r.phut, sheet: '', ticket: 'so-' + Date.now().toString(36), ten: r.ten,
           tt: r.tt || 'MO', xp: Number(r.xp) || 0, lech: r.bayGio ? r.bayGio - (tGui + tNhan) / 2 : 0, rtt: tNhan - tGui,
           matro: r.matro, kieu: r.kieu, boCau: r.boCau, tenBo: r.tenBo, maKQ: r.maKQ, tenKQ: r.tenKQ };
